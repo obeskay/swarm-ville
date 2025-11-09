@@ -12,8 +12,15 @@ mod error;
 
 use tauri::Manager;
 use std::sync::Mutex;
+use serde::{Deserialize, Serialize};
 
 use crate::db::Database;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ExecuteCLIRequest {
+    cli_type: String,
+    prompt: String,
+}
 
 #[tauri::command]
 async fn init_db(app_handle: tauri::AppHandle) -> Result<String, String> {
@@ -43,6 +50,13 @@ async fn load_user_data() -> Result<String, String> {
 #[tauri::command]
 async fn detect_installed_clis() -> Result<Vec<String>, String> {
     cli::detect_clis().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn execute_cli_command(request: ExecuteCLIRequest) -> Result<String, String> {
+    cli::execute_cli_command(&request.cli_type, &request.prompt)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -79,26 +93,17 @@ async fn spawn_agent(
     Ok(format!("Agent spawned: {}", name))
 }
 
-#[tauri::command]
-async fn send_message_to_agent(
-    agent_id: String,
-    message: String,
-) -> Result<String, String> {
-    // TODO: Send message to CLI and get response
-    Ok(format!("Response from agent: {}", agent_id))
-}
-
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             init_db,
             load_user_data,
             detect_installed_clis,
+            execute_cli_command,
             start_stt,
             stop_stt,
             create_space,
             spawn_agent,
-            send_message_to_agent,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
