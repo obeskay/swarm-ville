@@ -3,15 +3,23 @@
 > AI Agent Collaboration in 2D Spatial Workspaces
 
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Status](https://img.shields.io/badge/status-in%20development-yellow.svg)
+![Status](https://img.shields.io/badge/status-early%20development-yellow.svg)
+![Platforms](https://img.shields.io/badge/platforms-macOS%20|%20Windows%20|%20Linux-blue.svg)
 
 **SwarmVille** is a desktop application for orchestrating AI agents in interactive 2D spaces. Use your existing AI CLI subscriptions (Claude, Gemini, etc.), interact with agents via speech-to-text, and coordinate complex tasks through spatial proximity.
 
-## ⚠️ Project Status
+## 🚀 Current Status
 
-**Currently in initial specification phase.** Not ready for use yet.
+**Phase 1-5 Complete** ✅
 
-This repository contains the OpenSpec-based specifications that will guide development. See [`openspec/specs/`](openspec/specs/) for the complete technical design.
+- Tauri + React foundation
+- 2D Pixi.js rendering with grid system
+- Agent CLI integration (Claude, Gemini, OpenAI)
+- Speech-to-text with Whisper
+- Proximity detection system
+
+**In Active Development**
+Working toward stable MVP release with testing and optimization.
 
 ## 🎯 Vision
 
@@ -23,6 +31,7 @@ This repository contains the OpenSpec-based specifications that will guide devel
 ## 📋 Key Features (Planned)
 
 ### Phase 1: MVP (8-12 weeks)
+
 - ✅ 2D grid-based spaces (Pixi.js rendering)
 - ✅ AI agents connected to Claude CLI
 - ✅ Local speech-to-text (Whisper)
@@ -31,6 +40,7 @@ This repository contains the OpenSpec-based specifications that will guide devel
 - ✅ Basic dialog system
 
 ### Phase 2: Multi-Agent (4-6 weeks)
+
 - Multiple CLI support (Gemini, OpenAI, custom)
 - AI positioning engine (Phi-3 small model)
 - Voice Activity Detection
@@ -38,6 +48,7 @@ This repository contains the OpenSpec-based specifications that will guide devel
 - Swarm coordination
 
 ### Phase 3: Marketplace (6-8 weeks)
+
 - Agent templates
 - Space themes
 - Tool plugins
@@ -45,15 +56,15 @@ This repository contains the OpenSpec-based specifications that will guide devel
 
 ## 🏗️ Technical Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Desktop Framework | Tauri v2 (Rust + Web) |
-| Frontend | React 18 + TypeScript 5 |
-| UI Framework | shadcn/ui (Radix + Tailwind) |
-| 2D Rendering | Pixi.js v8 |
-| State Management | Zustand + Jotai |
-| Speech-to-Text | whisper-rs (local) |
-| AI Positioning | Phi-3 Mini (local) |
+| Component         | Technology                   |
+| ----------------- | ---------------------------- |
+| Desktop Framework | Tauri v2 (Rust + Web)        |
+| Frontend          | React 18 + TypeScript 5      |
+| UI Framework      | shadcn/ui (Radix + Tailwind) |
+| 2D Rendering      | Pixi.js v8                   |
+| State Management  | Zustand + Jotai              |
+| Speech-to-Text    | whisper-rs (local)           |
+| AI Positioning    | Phi-3 Mini (local)           |
 
 ## 📚 Documentation
 
@@ -90,6 +101,7 @@ npm run tauri build
 ```
 
 ### Prerequisites (Planned)
+
 - Node.js 18+
 - Rust 1.75+
 - Claude CLI installed and configured (for MVP)
@@ -109,18 +121,21 @@ See `CONTRIBUTING.md` (coming soon) for detailed guidelines.
 ## 📖 Architecture Decisions
 
 ### Why 2D instead of 2.5D/3D?
+
 - **Performance**: 60fps with 50+ agents on Pixi.js
 - **Proven**: Gather-clone model validated in production
 - **Intuitive**: Drag & drop and proximity clearer in 2D
 - **Mobile-ready**: Easier future porting
 
 ### Why User CLIs instead of Platform API Keys?
+
 - **Privacy**: No data leaves device except via user's accounts
 - **Zero Config**: Uses existing subscriptions
 - **No Costs**: Platform doesn't pay for API usage
 - **Flexibility**: Works with any CLI-based AI service
 
 ### Why Tauri over Electron?
+
 - **Size**: ~15MB vs ~150MB binaries
 - **Performance**: Native Rust backend
 - **Security**: Better sandboxing
@@ -143,6 +158,7 @@ Apache 2.0 (planned) - See `LICENSE` file (coming soon)
 ## 🙏 Acknowledgments
 
 Inspired by:
+
 - [Handy](https://github.com/cjpais/handy) - Local STT architecture
 - [Gather-clone](https://github.com/trevorwrightdev/gather-clone) - 2D spaces
 - [Claude-flow](https://github.com/ruvnet/claude-flow) - Agent orchestration
