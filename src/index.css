@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.6%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.6%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 9.8%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --ring: 0 0% 3.6%;
+  }
+
+  .dark {
+    --background: 0 0% 3.6%;
+    --foreground: 0 0% 98.2%;
+    --card: 0 0% 3.6%;
+    --card-foreground: 0 0% 98.2%;
+    --popover: 0 0% 3.6%;
+    --popover-foreground: 0 0% 98.2%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 98.2%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 86% 97.3%;
+    --destructive-foreground: 0 84.2% 60.2%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --primary: 0 0% 98.2%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98.2%;
+    --ring: 0 0% 83.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Canvas and spatial elements */
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.space-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.ui-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.ui-overlay > * {
+  pointer-events: auto;
+}
+
+/* Proximity circle animation */
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.proximity-active {
+  animation: ripple 2s ease-out infinite;
+}
+
+/* Agent animations */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.agent-listening {
+  animation: pulse 1s ease-in-out infinite;
+}

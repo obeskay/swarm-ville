@@ -1,0 +1,63 @@
+{
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "devPath": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "package": {
+    "productName": "SwarmVille",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "execute": true,
+        "open": true
+      },
+      "fs": {
+        "all": true
+      },
+      "path": {
+        "all": true
+      },
+      "process": {
+        "all": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": [
+        "deb",
+        "dmg",
+        "msi",
+        "app"
+      ],
+      "identifier": "com.swarmville.app",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
+    },
+    "security": {
+      "csp": null
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 900,
+        "resizable": true,
+        "title": "SwarmVille",
+        "width": 1200
+      }
+    ]
+  }
+}

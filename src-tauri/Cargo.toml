@@ -1,0 +1,36 @@
+[package]
+name = "swarmville"
+version = "0.1.0"
+description = "AI Agent Collaboration in 2D Spatial Workspaces"
+authors = ["SwarmVille"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "1.5", features = ["shell-open"] }
+tokio = { version = "1", features = ["full"] }
+rusqlite = { version = "0.30", features = ["bundled"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+log = "0.4"
+
+# Audio and Speech-to-Text
+cpal = "0.17"
+hound = "3.5"
+
+# CLI and process management
+std::process = "0.0"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
