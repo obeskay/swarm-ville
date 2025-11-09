@@ -3,7 +3,7 @@
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
     "devPath": "http://localhost:5173",
-    "frontendDist": "../dist"
+    "distDir": "../dist"
   },
   "package": {
     "productName": "SwarmVille",
@@ -29,12 +29,7 @@
     },
     "bundle": {
       "active": true,
-      "targets": [
-        "deb",
-        "dmg",
-        "msi",
-        "app"
-      ],
+      "targets": ["deb", "dmg", "msi", "app"],
       "identifier": "com.swarmville.app",
       "icon": [
         "icons/32x32.png",

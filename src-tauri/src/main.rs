@@ -5,14 +5,14 @@
 )]
 
 mod db;
-mod audio;
+// mod audio; // Temporarily disabled - requires cpal 0.15+ API updates
 mod agents;
 mod cli;
 mod error;
 
-use tauri::Manager;
-use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
+use tauri::Manager;
 
 use crate::db::Database;
 
@@ -31,9 +31,7 @@ async fn init_db(app_handle: tauri::AppHandle) -> Result<String, String> {
 
     std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
 
-    let db = Database::new(&app_dir)
-        .await
-        .map_err(|e| e.to_string())?;
+    let db = Database::new(&app_dir).await.map_err(|e| e.to_string())?;
 
     // Store database in app state
     app_handle.manage(Mutex::new(db));
