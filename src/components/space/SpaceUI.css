@@ -50,13 +50,15 @@
   right: 0;
   top: 60px;
   bottom: 0;
-  width: 250px;
+  width: 280px;
   background: white;
   border-left: 1px solid #e5e7eb;
   padding: 16px;
   overflow-y: auto;
   pointer-events: auto;
   z-index: 50;
+  display: flex;
+  flex-direction: column;
 }
 
 .dark .agents-sidebar {
@@ -65,34 +67,40 @@
 }
 
 .sidebar-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   margin: 0 0 12px 0;
-  color: #6b7280;
+  color: #9ca3af;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .dark .sidebar-title {
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .agents-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex: 1;
 }
 
 .agent-item {
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   border-radius: 6px;
-  background: #f3f4f6;
+  background: #f9fafb;
+  border-left: 3px solid transparent;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s;
 }
 
 .agent-item:hover {
-  background: #e5e7eb;
+  background: #f3f4f6;
 }
 
 .dark .agent-item {
@@ -101,6 +109,55 @@
 
 .dark .agent-item:hover {
   background: #4b5563;
+}
+
+.agent-item-emoji {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.agent-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.agent-item-name {
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .agent-item-name {
+  color: #f3f4f6;
+}
+
+.agent-item-role {
+  font-size: 11px;
+  color: #9ca3af;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .agent-item-role {
+  color: #6b7280;
+}
+
+.agent-item-status {
+  font-size: 10px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.empty-state {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 20px 0;
+  margin-top: 20px;
 }
 
 .btn {

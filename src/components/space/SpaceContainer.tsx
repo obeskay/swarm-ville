@@ -1,9 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import * as PIXI from "pixi.js";
 import { useSpaceStore } from "../../stores/spaceStore";
 import { useAgentStore } from "../../stores/agentStore";
 import { usePixiApp } from "../../hooks/usePixiApp";
+import {
+  GridRenderer,
+  AgentSprite,
+  ProximityCircle,
+} from "../../lib/pixi/GridRenderer";
+import { Pathfinder } from "../../lib/pathfinding";
 import SpaceUI from "./SpaceUI";
 import "./SpaceContainer.css";
 
@@ -11,42 +17,99 @@ interface SpaceContainerProps {
   spaceId: string;
 }
 
+const TILE_SIZE = 32;
+const PROXIMITY_RADIUS = 5;
+
 export default function SpaceContainer({ spaceId }: SpaceContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { spaces, userPosition, setUserPosition } = useSpaceStore();
-  const { selectedAgentId } = useAgentStore();
+  const { spaces, userPosition, setUserPosition, agents } = useSpaceStore();
+  const [isMoving, setIsMoving] = useState(false);
 
   const space = spaces.find((s) => s.id === spaceId);
   const { app, stage, viewport } = usePixiApp(canvasRef);
+  const pathfinderRef = useRef<Pathfinder | null>(null);
+  const userAvatarRef = useRef<AgentSprite | null>(null);
+  const proximityCircleRef = useRef<ProximityCircle | null>(null);
+  const agentSpritesRef = useRef<Map<string, AgentSprite>>(new Map());
 
+  // Initialize grid and pathfinding
   useEffect(() => {
     if (!space || !app || !stage || !viewport) return;
 
+    // Clear stage
+    viewport.removeChildren();
+
     // Create grid
-    const gridSprite = createGrid(
+    const gridRenderer = new GridRenderer(
       space.dimensions.width,
-      space.dimensions.height
+      space.dimensions.height,
     );
-    stage.addChild(gridSprite);
+    viewport.addChild(gridRenderer.getGraphics());
+
+    // Initialize pathfinding
+    pathfinderRef.current = new Pathfinder(
+      space.dimensions.width,
+      space.dimensions.height,
+    );
 
     // Create user avatar
-    const userAvatar = createUserAvatar(userPosition);
+    const userAvatar = new AgentSprite(userPosition, 0x3b82f6, "You", false);
     viewport.addChild(userAvatar);
+    userAvatarRef.current = userAvatar;
 
-    // Handle click to move
+    // Create proximity circle
+    const proximityCircle = new ProximityCircle(userPosition, PROXIMITY_RADIUS);
+    viewport.addChild(proximityCircle);
+    proximityCircleRef.current = proximityCircle;
+
+    // Create agent sprites
+    agents.forEach((agent) => {
+      const sprite = new AgentSprite(
+        agent.position,
+        0xef4444,
+        agent.name,
+        true,
+      );
+      viewport.addChild(sprite);
+      agentSpritesRef.current.set(agent.id, sprite);
+    });
+
+    // Handle canvas click to move
     const handleCanvasClick = (event: MouseEvent) => {
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || !userAvatarRef.current || isMoving) return;
+
       const rect = canvasRef.current.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
       // Convert screen coords to world coords
-      const worldPos = viewport.toWorld(new PIXI.Point(x, y));
-      setUserPosition({
-        x: Math.round(worldPos.x / 32),
-        y: Math.round(worldPos.y / 32),
-      });
+      const point = new PIXI.Point(x, y);
+      const worldPos = viewport?.toWorld(point);
+
+      if (!worldPos) return;
+
+      const targetGridPos = {
+        x: Math.round(worldPos.x / TILE_SIZE),
+        y: Math.round(worldPos.y / TILE_SIZE),
+      };
+
+      // Find path and move
+      const pathfinder = pathfinderRef.current;
+      if (pathfinder && userAvatarRef.current) {
+        const path = pathfinder.findPath(userPosition, targetGridPos);
+
+        // Only use first 3 steps or direct movement if close
+        const moveTo =
+          path.length > 0 ? path[Math.min(1, path.length - 1)] : targetGridPos;
+
+        setIsMoving(true);
+        userAvatarRef.current.animate(moveTo, 200).then(() => {
+          setUserPosition(moveTo);
+          proximityCircleRef.current?.update(moveTo);
+          setIsMoving(false);
+        });
+      }
     };
 
     canvasRef.current?.addEventListener("click", handleCanvasClick);
@@ -54,7 +117,7 @@ export default function SpaceContainer({ spaceId }: SpaceContainerProps) {
     return () => {
       canvasRef.current?.removeEventListener("click", handleCanvasClick);
     };
-  }, [space, app, stage, viewport]);
+  }, [space, app, stage, viewport, userPosition, agents, isMoving]);
 
   return (
     <div ref={containerRef} className="space-container">
@@ -62,42 +125,4 @@ export default function SpaceContainer({ spaceId }: SpaceContainerProps) {
       <SpaceUI spaceId={spaceId} />
     </div>
   );
-}
-
-function createGrid(width: number, height: number): PIXI.Container {
-  const TILE_SIZE = 32;
-  const grid = new PIXI.Container();
-
-  const graphics = new PIXI.Graphics();
-  graphics.stroke({ color: 0xcccccc, width: 1 });
-
-  // Vertical lines
-  for (let x = 0; x <= width; x++) {
-    graphics.moveTo(x * TILE_SIZE, 0);
-    graphics.lineTo(x * TILE_SIZE, height * TILE_SIZE);
-  }
-
-  // Horizontal lines
-  for (let y = 0; y <= height; y++) {
-    graphics.moveTo(0, y * TILE_SIZE);
-    graphics.lineTo(width * TILE_SIZE, y * TILE_SIZE);
-  }
-
-  grid.addChild(graphics);
-  return grid;
-}
-
-function createUserAvatar(position: { x: number; y: number }): PIXI.Container {
-  const TILE_SIZE = 32;
-  const avatar = new PIXI.Container();
-
-  const circle = new PIXI.Graphics();
-  circle.circle(0, 0, TILE_SIZE / 2 - 2);
-  circle.fill({ color: 0x3b82f6 });
-  circle.stroke({ color: 0x1e40af, width: 2 });
-
-  avatar.addChild(circle);
-  avatar.position.set(position.x * TILE_SIZE, position.y * TILE_SIZE);
-
-  return avatar;
 }

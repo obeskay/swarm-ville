@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSpaceStore } from "../../stores/spaceStore";
 import AgentDialog from "../agents/AgentDialog";
+import AgentSpawner from "../agents/AgentSpawner";
 import MicrophoneButton from "../speech/MicrophoneButton";
 import "./SpaceUI.css";
 
@@ -9,7 +10,7 @@ interface SpaceUIProps {
 }
 
 export default function SpaceUI({ spaceId }: SpaceUIProps) {
-  const { spaces } = useSpaceStore();
+  const { spaces, agents } = useSpaceStore();
   const [showAgentSpawner, setShowAgentSpawner] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
@@ -31,6 +32,14 @@ export default function SpaceUI({ spaceId }: SpaceUIProps) {
         </div>
       </div>
 
+      {/* Agent Spawner */}
+      {showAgentSpawner && (
+        <AgentSpawner
+          spaceId={spaceId}
+          onClose={() => setShowAgentSpawner(false)}
+        />
+      )}
+
       {/* Agent Dialog */}
       {selectedAgentId && (
         <AgentDialog
@@ -41,17 +50,26 @@ export default function SpaceUI({ spaceId }: SpaceUIProps) {
 
       {/* Agents List */}
       <div className="agents-sidebar">
-        <h3 className="sidebar-title">Agents</h3>
+        <h3 className="sidebar-title">Agents ({agents.size})</h3>
         <div className="agents-list">
-          {space?.agents.map((agentId) => (
+          {Array.from(agents.values()).map((agent) => (
             <div
-              key={agentId}
-              onClick={() => setSelectedAgentId(agentId)}
+              key={agent.id}
+              onClick={() => setSelectedAgentId(agent.id)}
               className="agent-item"
+              style={{ borderLeftColor: agent.avatar.color }}
             >
-              {agentId}
+              <div className="agent-item-emoji">{agent.avatar.emoji}</div>
+              <div className="agent-item-info">
+                <div className="agent-item-name">{agent.name}</div>
+                <div className="agent-item-role">{agent.role}</div>
+              </div>
+              <div className="agent-item-status">●</div>
             </div>
           ))}
+          {agents.size === 0 && (
+            <div className="empty-state">No agents yet. Create one!</div>
+          )}
         </div>
       </div>
     </div>
