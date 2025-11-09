@@ -52,12 +52,17 @@ function App() {
       addSpace({
         id: crypto.randomUUID(),
         name: "Default Space",
-        width: 1600,
-        height: 1200,
-        theme: "dark",
-        gridSize: 32,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        ownerId: "local-user",
+        dimensions: {
+          width: 1600,
+          height: 1200,
+        },
+        tileset: {
+          tileSize: 32,
+          theme: "dark",
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       });
     };
 
