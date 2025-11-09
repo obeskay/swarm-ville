@@ -47,6 +47,20 @@ function App() {
   }
 
   if (spaces.length === 0) {
+    const handleCreateSpace = () => {
+      const { addSpace } = useSpaceStore.getState();
+      addSpace({
+        id: crypto.randomUUID(),
+        name: "Default Space",
+        width: 1600,
+        height: 1200,
+        theme: "dark",
+        gridSize: 32,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    };
+
     return (
       <div className="flex items-center justify-center w-full h-screen bg-background">
         <div className="text-center">
@@ -54,7 +68,10 @@ function App() {
           <p className="text-muted-foreground mb-6">
             Create your first space to get started
           </p>
-          <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+          <button
+            onClick={handleCreateSpace}
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
             Create Space
           </button>
         </div>
