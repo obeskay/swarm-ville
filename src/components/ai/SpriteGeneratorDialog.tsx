@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -36,6 +36,22 @@ export default function SpriteGeneratorDialog({
 }: SpriteGeneratorDialogProps) {
   const [generatedSprite, setGeneratedSprite] =
     useState<GeneratedSprite | null>(null);
+
+  // Handle ESC key to close dialog
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+      // Prevent WASD keys from propagating to game controls
+      if (["w", "a", "s", "d", "W", "A", "S", "D"].includes(e.key)) {
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [onClose]);
 
   const form = useForm<SpriteGeneratorFormData>({
     resolver: zodResolver(spriteGeneratorSchema),
