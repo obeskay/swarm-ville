@@ -62,8 +62,6 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   const currentTileHighlightRef = useRef<PIXI.Graphics | null>(null);
   const particlesRef = useRef<PIXI.Graphics[]>([]);
   const particlePoolRef = useRef<PIXI.Graphics[]>([]);
-  const keysPressedRef = useRef<Set<string>>(new Set());
-  const moveIntervalIdRef = useRef<number | null>(null);
   const processedRemoteUsersRef = useRef<Set<string>>(new Set());
   const hasJoinedSpaceRef = useRef<boolean>(false);
   const localUserIdRef = useRef<string>("");
@@ -72,6 +70,10 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     y: 0,
     time: 0,
   });
+  const isMouseDownRef = useRef<boolean>(false);
+  const mouseDownTimeRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
+  const lastMouseMoveRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   /**
    * Initialize scene - runs when app is ready or spaceId changes
@@ -271,10 +273,10 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         if (pathQueueRef.current.length > 0 && userAvatarRef.current.getDistanceToTarget() < 4) {
           const nextPos = pathQueueRef.current.shift();
           if (nextPos && gridRendererRef.current) {
-            // CRITICAL: Validate next position is valid AND not blocked
+            // CRITICAL: Validate next position is valid AND not blocked (using area collision for character size)
             if (
               gridRendererRef.current.isValidPosition(nextPos) &&
-              !gridRendererRef.current.isBlocked(nextPos)
+              !gridRendererRef.current.isAreaBlocked(nextPos)
             ) {
               userAvatarRef.current.setTargetGridPosition(nextPos);
               setUserPosition(nextPos);
@@ -436,8 +438,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
     if (!pathfinder || !gridRenderer) return;
 
-    // CRITICAL: Validate target is within bounds AND not blocked
-    if (!gridRenderer.isValidPosition(targetGridPos) || gridRenderer.isBlocked(targetGridPos)) {
+    // CRITICAL: Validate target is within bounds AND not blocked (using area collision for character size)
+    if (!gridRenderer.isValidPosition(targetGridPos) || gridRenderer.isAreaBlocked(targetGridPos)) {
       return;
     }
 
@@ -671,8 +673,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       pathPreviewRef.current = null;
     }
 
-    // Check if target is valid
-    const isBlocked = gridRenderer.isBlocked(targetGridPos);
+    // Check if target is valid (using area collision for character size)
+    const isBlocked = gridRenderer.isAreaBlocked(targetGridPos);
     let actualTarget = targetGridPos;
 
     if (isBlocked) {
@@ -748,55 +750,69 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       const canvas = app?.canvas;
       if (!canvas) return;
 
-      const handleCanvasClick = (event: MouseEvent) => {
+      const handleMouseDown = (event: MouseEvent) => {
+        if (isDialogOpenRef.current) return;
+        if (event.button !== 0) return; // Solo clic izquierdo
+
+        isMouseDownRef.current = true;
+        mouseDownTimeRef.current = Date.now();
+        isDraggingRef.current = false;
+      };
+
+      const handleMouseUp = (event: MouseEvent) => {
         if (isDialogOpenRef.current) return;
         if (event.button !== 0) return;
         if (!containerRef.current || !userAvatarRef.current) return;
 
-        event.preventDefault();
-        window.getSelection()?.removeAllRanges();
+        const clickDuration = Date.now() - mouseDownTimeRef.current;
+        const wasDragging = isDraggingRef.current;
 
-        const rect = containerRef.current.getBoundingClientRect();
-        const screenX = event.clientX - rect.left;
-        const screenY = event.clientY - rect.top;
+        isMouseDownRef.current = false;
+        isDraggingRef.current = false;
 
-        // Convert screen coordinates to world coordinates
-        // Account for camera position (pivot) and scale
-        const worldX = (screenX + cameraPositionRef.current.x) / scaleRef.current;
-        const worldY = (screenY + cameraPositionRef.current.y) / scaleRef.current;
+        // Si fue un clic simple (menos de 200ms y sin arrastre)
+        if (clickDuration < 200 && !wasDragging) {
+          event.preventDefault();
+          window.getSelection()?.removeAllRanges();
 
-        const targetGridPos = {
-          x: Math.floor(worldX / TILE_SIZE),
-          y: Math.floor(worldY / TILE_SIZE),
-        };
+          const rect = containerRef.current.getBoundingClientRect();
+          const screenX = event.clientX - rect.left;
+          const screenY = event.clientY - rect.top;
 
-        // Clear path preview on click
-        clearPathPreview();
+          const worldX = (screenX + cameraPositionRef.current.x) / scaleRef.current;
+          const worldY = (screenY + cameraPositionRef.current.y) / scaleRef.current;
 
-        // ✨ Improvement: Smart click handling with nearest walkable fallback
-        const gridRenderer = gridRendererRef.current;
-        const isBlocked = gridRenderer?.isBlocked(targetGridPos) ?? false;
+          const targetGridPos = {
+            x: Math.floor(worldX / TILE_SIZE),
+            y: Math.floor(worldY / TILE_SIZE),
+          };
 
-        if (isBlocked) {
-          // Try to find nearest walkable position
-          const nearestWalkable = gridRenderer?.getNearestWalkable(targetGridPos, 3);
+          clearPathPreview();
 
-          if (nearestWalkable) {
-            // Found a nearby walkable tile - move there instead
-            createClickRipple(worldX, worldY);
-            movePlayerToTarget(nearestWalkable);
+          const gridRenderer = gridRendererRef.current;
+          const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
+
+          if (isBlocked) {
+            const nearestWalkable = gridRenderer?.getNearestWalkable(targetGridPos, 3);
+            if (nearestWalkable) {
+              createClickRipple(worldX, worldY);
+              movePlayerToTarget(nearestWalkable);
+            } else {
+              createBlockedIndicator(worldX, worldY);
+            }
           } else {
-            // No walkable tile nearby - show blocked indicator
-            createBlockedIndicator(worldX, worldY);
+            createClickRipple(worldX, worldY);
+            movePlayerToTarget(targetGridPos);
           }
-        } else {
-          // Create ripple effect at click position
-          createClickRipple(worldX, worldY);
-          movePlayerToTarget(targetGridPos);
         }
       };
 
-      // ✨ Show path preview on hover
+      const handleCanvasClick = (event: MouseEvent) => {
+        // Manejado por mousedown/mouseup para mejor control
+        event.preventDefault();
+      };
+
+      // ✨ Show path preview on hover + handle click and drag movement
       const handleCanvasMove = (event: MouseEvent) => {
         if (isDialogOpenRef.current) return;
         if (!containerRef.current) return;
@@ -814,6 +830,29 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           y: Math.floor(worldY / TILE_SIZE),
         };
 
+        // Si el mouse está presionado y se mueve, activar arrastre
+        if (isMouseDownRef.current && !userAvatarRef.current) return;
+
+        if (isMouseDownRef.current) {
+          const dx = Math.abs(screenX - lastMouseMoveRef.current.x);
+          const dy = Math.abs(screenY - lastMouseMoveRef.current.y);
+
+          // Si se movió más de 5 pixels, es un arrastre
+          if (dx > 5 || dy > 5) {
+            isDraggingRef.current = true;
+
+            // Mover hacia donde está el cursor continuamente
+            const gridRenderer = gridRendererRef.current;
+            const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
+
+            if (!isBlocked) {
+              // Solo mover si no está bloqueado
+              movePlayerToTarget(targetGridPos);
+            }
+          }
+        }
+
+        lastMouseMoveRef.current = { x: screenX, y: screenY };
         showPathPreview(targetGridPos);
       };
 
@@ -903,6 +942,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       };
 
       const handleContextMenu = (event: MouseEvent) => {
+        // Just prevent the default context menu
         event.preventDefault();
       };
 
@@ -931,7 +971,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         clearPathPreview();
 
         const gridRenderer = gridRendererRef.current;
-        const isBlocked = gridRenderer?.isBlocked(targetGridPos) ?? false;
+        const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
 
         if (isBlocked) {
           const nearestWalkable = gridRenderer?.getNearestWalkable(targetGridPos, 3);
@@ -947,6 +987,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         }
       };
 
+      canvas.addEventListener("mousedown", handleMouseDown);
+      canvas.addEventListener("mouseup", handleMouseUp);
       canvas.addEventListener("click", handleCanvasClick);
       canvas.addEventListener("mousemove", handleCanvasMove);
       canvas.addEventListener("contextmenu", handleContextMenu);
@@ -956,6 +998,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       });
 
       return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mouseup", handleMouseUp);
         canvas.removeEventListener("click", handleCanvasClick);
         canvas.removeEventListener("mousemove", handleCanvasMove);
         canvas.removeEventListener("contextmenu", handleContextMenu);
@@ -1039,66 +1083,24 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   }, [initialized, stage]);
 
   /**
-   * Handle keyboard input for movement - ultra responsive WASD control
+   * Auto-focus container for keyboard input
+   */
+  useEffect(() => {
+    if (!initialized || !containerRef.current) return;
+
+    // Focus the container to receive keyboard events
+    containerRef.current.focus();
+
+    if (import.meta.env.DEV) {
+      console.log("[SpaceContainer] Container focused for keyboard input");
+    }
+  }, [initialized]);
+
+  /**
+   * Handle keyboard input for movement - simple tile-by-tile like Gather.town
    */
   useEffect(() => {
     if (!initialized) return;
-
-    const tryMove = () => {
-      let dx = 0;
-      let dy = 0;
-
-      // Allow simultaneous key presses for diagonal movement
-      if (keysPressedRef.current.has("arrowup") || keysPressedRef.current.has("w")) dy -= 1;
-      if (keysPressedRef.current.has("arrowdown") || keysPressedRef.current.has("s")) dy += 1;
-      if (keysPressedRef.current.has("arrowleft") || keysPressedRef.current.has("a")) dx -= 1;
-      if (keysPressedRef.current.has("arrowright") || keysPressedRef.current.has("d")) dx += 1;
-
-      if (dx !== 0 || dy !== 0) {
-        // Only move if not currently moving or close to destination
-        if (!userAvatarRef.current?.isMoving() || userAvatarRef.current.getDistanceToTarget() < 8) {
-          const currentUserPos = {
-            x: userAvatarRef.current?.gridPosition.x ?? userPosition.x,
-            y: userAvatarRef.current?.gridPosition.y ?? userPosition.y,
-          };
-
-          const targetPos = {
-            x: currentUserPos.x + dx,
-            y: currentUserPos.y + dy,
-          };
-
-          const gridRenderer = gridRendererRef.current;
-          if (!gridRenderer) return;
-
-          // Try direct movement
-          if (gridRenderer.isValidPosition(targetPos) && !gridRenderer.isBlocked(targetPos)) {
-            movePlayerToTarget(targetPos, false);
-            return;
-          }
-
-          // Wall sliding: try horizontal or vertical if diagonal blocked
-          if (dx !== 0 && dy !== 0) {
-            const hPos = { x: currentUserPos.x + dx, y: currentUserPos.y };
-            const vPos = { x: currentUserPos.x, y: currentUserPos.y + dy };
-
-            if (gridRenderer.isValidPosition(hPos) && !gridRenderer.isBlocked(hPos)) {
-              movePlayerToTarget(hPos, false);
-              return;
-            }
-
-            if (gridRenderer.isValidPosition(vPos) && !gridRenderer.isBlocked(vPos)) {
-              movePlayerToTarget(vPos, false);
-              return;
-            }
-          }
-
-          // Blocked - just stop, no bounce
-          if (userAvatarRef.current) {
-            userAvatarRef.current.cancelMovement();
-          }
-        }
-      }
-    };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore keyboard input if dialog is open
@@ -1106,24 +1108,45 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
       const key = event.key.toLowerCase();
 
-      // Arrow keys and WASD for movement
+      // Arrow keys and WASD for movement - ONE tile per keypress
       if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(key)) {
         event.preventDefault();
-        const wasEmpty = keysPressedRef.current.size === 0;
-        keysPressedRef.current.add(key);
 
-        // Start continuous movement when first key pressed
-        if (wasEmpty) {
-          tryMove(); // Immediate first move
-          // ✨ Improved: 50ms interval for ultra-responsive control (was 80ms)
-          moveIntervalIdRef.current = window.setInterval(tryMove, 50);
+        let dx = 0;
+        let dy = 0;
+
+        if (key === "arrowup" || key === "w") dy -= 1;
+        if (key === "arrowdown" || key === "s") dy += 1;
+        if (key === "arrowleft" || key === "a") dx -= 1;
+        if (key === "arrowright" || key === "d") dx += 1;
+
+        // Get current position - use avatar's target if moving, otherwise current position
+        const currentUserPos = {
+          x: userAvatarRef.current?.gridPosition.x ?? userPosition.x,
+          y: userAvatarRef.current?.gridPosition.y ?? userPosition.y,
+        };
+
+        const targetPos = {
+          x: currentUserPos.x + dx,
+          y: currentUserPos.y + dy,
+        };
+
+        const gridRenderer = gridRendererRef.current;
+        if (!gridRenderer) return;
+
+        // Try direct movement - one tile per keypress
+        // Allow movement even if already moving (queue the next move)
+        if (gridRenderer.isValidPosition(targetPos) && !gridRenderer.isAreaBlocked(targetPos)) {
+          movePlayerToTarget(targetPos, false);
         } else {
-          // Key added while already moving - try immediate move for direction change
-          tryMove();
+          // Visual feedback for blocked direction
+          if (import.meta.env.DEV) {
+            console.log("[SpaceContainer] Movement blocked to:", targetPos);
+          }
         }
       }
 
-      // ✨ Space to recenter camera on player (simple solution to common problem)
+      // Space to recenter camera on player
       if (key === " " || key === "space") {
         event.preventDefault();
         if (userAvatarRef.current && stage && app) {
@@ -1159,27 +1182,12 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       }
     };
 
-    const handleKeyUp = (event: KeyboardEvent) => {
-      keysPressedRef.current.delete(event.key.toLowerCase());
-
-      // Stop continuous movement when all keys released
-      if (keysPressedRef.current.size === 0 && moveIntervalIdRef.current !== null) {
-        window.clearInterval(moveIntervalIdRef.current);
-        moveIntervalIdRef.current = null;
-      }
-    };
-
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      if (moveIntervalIdRef.current !== null) {
-        window.clearInterval(moveIntervalIdRef.current);
-      }
     };
-  }, [initialized]);
+  }, [initialized, app, stage, userPosition]);
 
   /**
    * Mouse wheel zoom control - like Gather Clone
@@ -1372,7 +1380,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   return (
     <div
       ref={containerRef}
-      className="w-full h-full relative overflow-hidden bg-background select-none touch-none cursor-default"
+      tabIndex={0}
+      className="w-full h-full relative overflow-hidden bg-background select-none touch-none cursor-default focus:outline-none"
       style={{ touchAction: "none" }}
       onContextMenu={(e) => e.preventDefault()}
       onDoubleClick={(e) => e.preventDefault()}
