@@ -9,9 +9,14 @@ import {
   type UserProgress,
   type LevelInfo,
   type Achievement,
-  type Mission,
+  calculateLevelInfo,
 } from "@/lib/db/achievements";
-import { ACHIEVEMENTS, MISSIONS, getAvailableMissions } from "@/lib/data/achievements";
+import {
+  ACHIEVEMENTS,
+  MISSIONS,
+  getAvailableMissions,
+  type Mission,
+} from "@/lib/data/achievements";
 import { toast } from "sonner";
 
 interface AchievementNotification {
@@ -84,7 +89,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     set({ userId, loading: true, error: null });
     try {
       const progress = await achievementAPI.getUserProgress(userId);
-      const levelInfo = achievementAPI.calculateLevelInfo(progress.xp);
+      const levelInfo = calculateLevelInfo(progress.xp);
       set({ progress, levelInfo, loading: false });
 
       // Check for any achievements that should be unlocked
@@ -102,7 +107,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const progress = await achievementAPI.getUserProgress(userId);
-      const levelInfo = achievementAPI.calculateLevelInfo(progress.xp);
+      const levelInfo = calculateLevelInfo(progress.xp);
       set({ progress, levelInfo, loading: false });
     } catch (error) {
       set({
@@ -120,8 +125,9 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
 
     set({ loading: true });
     try {
-      const newProgress = await achievementAPI.addXP(userId, amount);
-      const levelInfo = achievementAPI.calculateLevelInfo(newProgress.xp);
+      await achievementAPI.addXp(amount, userId);
+      const newProgress = await achievementAPI.getUserProgress(userId);
+      const levelInfo = calculateLevelInfo(newProgress.xp);
       set({ progress: newProgress, levelInfo, loading: false });
 
       // Show XP notification
@@ -174,31 +180,28 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     const { userId } = get();
     set({ loading: true });
     try {
-      const newProgress = await achievementAPI.completeMission(userId, missionId);
-      const levelInfo = achievementAPI.calculateLevelInfo(newProgress.xp);
-      set({ progress: newProgress, levelInfo, loading: false });
-
       const mission = MISSIONS.find((m) => m.id === missionId);
-      if (mission) {
-        const notification: AchievementNotification = {
-          id: `mission_${Date.now()}`,
-          type: "mission_complete",
-          title: "Mission Complete!",
-          description: mission.name,
-          icon: "🎯",
-          timestamp: Date.now(),
-        };
-        set((state) => ({ notifications: [notification, ...state.notifications] }));
+      if (!mission) return;
 
-        toast.success(`Mission Complete: ${mission.name}`, {
-          description: `+${mission.xp_reward} XP`,
-          icon: "🎯",
-          duration: 5000,
-        });
+      const stats = await achievementAPI.addXp(mission.xpReward, userId);
+      const levelInfo = calculateLevelInfo(stats.xp);
+      set({ progress: { ...get().progress!, xp: stats.xp, level: stats.level }, levelInfo, loading: false });
 
-        // Award XP
-        await get().addXP(mission.xp_reward, mission.name);
-      }
+      const notification: AchievementNotification = {
+        id: `mission_${Date.now()}`,
+        type: "mission_complete",
+        title: "Mission Complete!",
+        description: mission.title,
+        icon: "🎯",
+        timestamp: Date.now(),
+      };
+      set((state) => ({ notifications: [notification, ...state.notifications] }));
+
+      toast.success(`Mission Complete: ${mission.title}`, {
+        description: `+${mission.xpReward} XP`,
+        icon: "🎯",
+        duration: 5000,
+      });
 
       // Check for newly unlockable achievements
       await get().checkAndUnlockAchievements();
@@ -220,8 +223,9 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
 
     set({ loading: true });
     try {
-      const newProgress = await achievementAPI.unlockAchievement(userId, achievementId);
-      const levelInfo = achievementAPI.calculateLevelInfo(newProgress.xp);
+      await achievementAPI.unlockAchievement(achievementId, undefined, userId);
+      const newProgress = await achievementAPI.getUserProgress(userId);
+      const levelInfo = calculateLevelInfo(newProgress.xp);
       set({ progress: newProgress, levelInfo, loading: false });
 
       const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
@@ -230,20 +234,20 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
           id: `achievement_${Date.now()}`,
           type: "achievement",
           title: "Achievement Unlocked!",
-          description: achievement.name,
+          description: achievement.id,
           icon: achievement.icon,
           timestamp: Date.now(),
         };
         set((state) => ({ notifications: [notification, ...state.notifications] }));
 
-        toast.success(`Achievement Unlocked: ${achievement.name}`, {
-          description: `${achievement.description} • +${achievement.xp_reward} XP`,
+        toast.success(`Achievement Unlocked: ${achievement.id}`, {
+          description: `${achievement.description} • +${achievement.xpReward} XP`,
           icon: achievement.icon,
           duration: 7000,
         });
 
         // Award XP
-        await get().addXP(achievement.xp_reward, achievement.name);
+        await get().addXP(achievement.xpReward, achievement.id);
       }
     } catch (error) {
       set({
@@ -258,11 +262,11 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     const { progress, stats } = get();
     if (!progress) return;
 
-    const available = achievementAPI.getAvailableAchievements(
-      ACHIEVEMENTS,
-      progress,
-      stats
-    );
+    // Get all achievements and filter for available ones
+    const allAchievements = await achievementAPI.getAllAchievements();
+    const playerProgress = await achievementAPI.getPlayerProgress(get().userId);
+    const unlockedIds = new Set(playerProgress.map(p => p.achievementId));
+    const available = allAchievements.filter(a => !unlockedIds.has(a.id) && !a.hidden);
 
     // Auto-unlock all available achievements
     for (const achievement of available) {
@@ -302,32 +306,32 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
   },
 
   getAvailableAchievements: () => {
-    const { progress, stats } = get();
+    const { progress } = get();
     if (!progress) return [];
-    return achievementAPI.getAvailableAchievements(ACHIEVEMENTS, progress, stats);
+    return achievementAPI.getAvailableAchievements(ACHIEVEMENTS, progress);
   },
 
   getLockedAchievements: () => {
-    const { progress, stats } = get();
+    const { progress } = get();
     if (!progress) return [];
-    return achievementAPI.getLockedAchievements(ACHIEVEMENTS, progress, stats);
+    return achievementAPI.getLockedAchievements(ACHIEVEMENTS, progress);
   },
 
   getAvailableMissions: () => {
-    const { progress } = get();
-    if (!progress) return [];
-    return getAvailableMissions(progress.completed_missions);
+    return getAvailableMissions();
   },
 
   getCompletedMissions: () => {
     const { progress } = get();
     if (!progress) return [];
-    return MISSIONS.filter((m) => progress.completed_missions.includes(m.id));
+    return MISSIONS.filter((m) => progress.completedMissions.includes(m.id));
   },
 
   getCompletionPercentage: () => {
     const { progress } = get();
     if (!progress) return 0;
-    return achievementAPI.getCompletionPercentage(ACHIEVEMENTS, progress);
+    const unlockedCount = progress.achievements.length;
+    const totalCount = ACHIEVEMENTS.length;
+    return (unlockedCount / totalCount) * 100;
   },
 }));

@@ -11,6 +11,7 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "../ui/dial
 import { X, Plus, Trash2, Sparkles, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguageStore } from "@/stores/languageStore";
+import { useAchievementTriggers } from "@/hooks/useAchievementTriggers";
 
 interface TeachingInterfaceProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export function TeachingInterface({
   const [teaching, setTeaching] = useState(false);
 
   const { teachWord } = useLanguageStore();
+  const { trackWordTaught } = useAchievementTriggers();
 
   const handleAddAssociation = () => {
     if (!currentAssociation.trim()) {
@@ -79,6 +81,9 @@ export function TeachingInterface({
 
       // Call the teaching callback
       onTeachWord?.(newWord.trim(), associations);
+
+      // Track achievement
+      await trackWordTaught(1);
 
       toast.success(`Successfully taught "${newWord}" with ${associations.length} associations! 🎉`);
 

@@ -13,18 +13,33 @@ import {
 import { useSpaceStore } from "../../stores/spaceStore";
 import { useUserStore } from "../../stores/userStore";
 import { useUIStore } from "../../stores/uiStore";
+import { useAchievementStore } from "../../stores/achievementStore";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SpriteGeneratorDialog from "../ai/SpriteGeneratorDialog";
 
 export function TopToolbar() {
   const { currentSpaceId, spaces, agents, addSpace } = useSpaceStore();
   const { balance = 0, level, xp, xpToNextLevel, missions } = useUserStore();
   const { leftSidebarCollapsed, rightSidebarCollapsed, toggleLeftSidebar, toggleRightSidebar } = useUIStore();
+  const { progress, levelInfo, setUserId, updateStats } = useAchievementStore();
   const currentSpace = spaces.find((s) => s.id === currentSpaceId);
   const agentCount = agents.size;
   const activeMissionsCount = Object.values(missions).filter((m) => !m.completed).length;
   const [showSpriteGenerator, setShowSpriteGenerator] = useState(false);
+
+  // Initialize achievement system
+  useEffect(() => {
+    setUserId("default_user");
+  }, [setUserId]);
+
+  // Update achievement stats when agents/spaces change
+  useEffect(() => {
+    updateStats({
+      totalAgents: agentCount,
+      totalSpaces: spaces.length,
+    });
+  }, [agentCount, spaces.length, updateStats]);
 
   const handleCreateNewSpace = () => {
     const newSpaceId = crypto.randomUUID();
@@ -72,24 +87,26 @@ export function TopToolbar() {
           )}
 
           {/* Level Badge with XP */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-xs">
-                  {level}
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-[60px]">
-                  <div className="text-xs font-medium text-muted-foreground leading-none">
-                    {xp} / {xpToNextLevel()}
+          {progress && levelInfo && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-bold text-xs shadow-sm">
+                    {progress.level}
                   </div>
-                  <Progress value={(xp / xpToNextLevel()) * 100} className="h-0.5" />
+                  <div className="flex flex-col gap-0.5 min-w-[60px]">
+                    <div className="text-xs font-medium text-foreground/70 leading-none">
+                      {levelInfo.currentXp} / 1000
+                    </div>
+                    <Progress value={levelInfo.progressPercentage} className="h-0.5 bg-background/50" />
+                  </div>
                 </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">Level {level} - {Math.floor((xp / xpToNextLevel()) * 100)}% to next level</p>
-            </TooltipContent>
-          </Tooltip>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Level {progress.level} - {Math.floor(levelInfo.progressPercentage)}% to next level</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           {currentSpace && (
             <>

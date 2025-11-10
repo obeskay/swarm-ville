@@ -1,227 +1,338 @@
 /**
- * Achievement & Progression System TypeScript Bindings
- * Next-level gamification with real-time updates
+ * Achievement System TypeScript Bindings
+ * Connects to Rust backend via Tauri IPC
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import type {
+  Achievement,
+  AchievementProgress,
+  AchievementUnlock,
+  AchievementAnalytics,
+  AchievementRarity,
+  AchievementCategory,
+} from "../../types/achievements";
+
+// Re-export types for convenience
+export type {
+  Achievement,
+  AchievementProgress,
+  AchievementUnlock,
+  AchievementAnalytics,
+  AchievementRarity,
+  AchievementCategory,
+};
 
 // ============================================
-// TYPES
+// REQUEST/RESPONSE TYPES
 // ============================================
 
-export interface UserProgress {
-  user_id: string;
+interface InitAchievementsRequest {
+  achievements_json: string;
+}
+
+interface UpdateProgressRequest {
+  achievement_id: string;
+  progress: number;
+  player_id?: string;
+}
+
+interface UnlockAchievementRequest {
+  achievement_id: string;
+  player_id?: string;
+  context_json?: string;
+}
+
+interface AddXpRequest {
+  amount: number;
+  player_id?: string;
+}
+
+export interface PlayerStats {
+  player_id: string;
+  level: number;
   xp: number;
-  level: number;
-  completed_missions: string[];
-  achievements: string[];
-  last_active: number;
-}
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  rarity: "common" | "rare" | "epic" | "legendary";
-  xp_reward: number;
-  category: "social" | "creation" | "exploration" | "learning" | "mastery";
-  requirements: AchievementRequirement[];
-}
-
-export interface AchievementRequirement {
-  type: "xp" | "level" | "missions" | "agents" | "words" | "spaces";
-  value: number;
-  description: string;
-}
-
-export interface Mission {
-  id: string;
-  name: string;
-  description: string;
-  xp_reward: number;
-  difficulty: "easy" | "medium" | "hard" | "expert";
-  category: "tutorial" | "daily" | "weekly" | "special";
-  steps: MissionStep[];
-  prerequisites: string[]; // Mission IDs that must be completed first
-}
-
-export interface MissionStep {
-  id: string;
-  description: string;
-  completed: boolean;
-}
-
-export interface LevelInfo {
-  level: number;
-  current_xp: number;
-  xp_for_current_level: number;
-  xp_for_next_level: number;
-  progress_percentage: number;
+  total_xp_earned: number;
+  achievements_unlocked: number;
+  current_streak: number;
+  longest_streak: number;
+  last_login?: number;
+  created_at: number;
+  updated_at: number;
 }
 
 // ============================================
-// ACHIEVEMENT API
+// ACHIEVEMENT DATABASE API
 // ============================================
 
-export class AchievementAPI {
+export class AchievementDatabaseAPI {
   /**
-   * Get user progress (auto-creates if doesn't exist)
+   * Initialize achievements in the database
+   * Should be called once on app startup with all achievement definitions
    */
-  async getUserProgress(userId: string): Promise<UserProgress> {
-    return await invoke<UserProgress>("get_user_progress", { userId });
+  async initAchievements(achievements: Achievement[]): Promise<string> {
+    const request: InitAchievementsRequest = {
+      achievements_json: JSON.stringify(achievements),
+    };
+    return await invoke<string>("init_achievements", { request });
   }
 
   /**
-   * Update user progress manually
+   * Get all achievements from database
    */
-  async updateUserProgress(progress: UserProgress): Promise<void> {
-    await invoke("update_user_progress", { progress });
+  async getAllAchievements(): Promise<Achievement[]> {
+    const responseJson = await invoke<string>("get_all_achievements");
+    return JSON.parse(responseJson);
   }
 
   /**
-   * Add XP to user (auto-levels up at 1000 XP per level)
+   * Get specific achievement by ID
    */
-  async addXP(userId: string, xpAmount: number): Promise<UserProgress> {
-    return await invoke<UserProgress>("add_xp", { userId, xpAmount });
+  async getAchievementById(achievementId: string): Promise<Achievement | null> {
+    const responseJson = await invoke<string>("get_achievement_by_id", {
+      achievementId,
+    });
+    return JSON.parse(responseJson);
   }
 
   /**
-   * Complete a mission
+   * Get all progress records for a player
    */
-  async completeMission(userId: string, missionId: string): Promise<UserProgress> {
-    return await invoke<UserProgress>("complete_mission", { userId, missionId });
+  async getPlayerProgress(playerId?: string): Promise<AchievementProgress[]> {
+    const responseJson = await invoke<string>("get_player_progress", {
+      playerId,
+    });
+    return JSON.parse(responseJson);
+  }
+
+  /**
+   * Update achievement progress
+   */
+  async updateProgress(
+    achievementId: string,
+    progress: number,
+    playerId?: string
+  ): Promise<AchievementProgress> {
+    const request: UpdateProgressRequest = {
+      achievement_id: achievementId,
+      progress,
+      player_id: playerId,
+    };
+    const responseJson = await invoke<string>("update_achievement_progress", {
+      request,
+    });
+    return JSON.parse(responseJson);
   }
 
   /**
    * Unlock an achievement
    */
-  async unlockAchievement(userId: string, achievementId: string): Promise<UserProgress> {
-    return await invoke<UserProgress>("unlock_achievement", { userId, achievementId });
+  async unlockAchievement(
+    achievementId: string,
+    context?: Record<string, unknown>,
+    playerId?: string
+  ): Promise<void> {
+    const request: UnlockAchievementRequest = {
+      achievement_id: achievementId,
+      player_id: playerId,
+      context_json: context ? JSON.stringify(context) : undefined,
+    };
+    await invoke<string>("unlock_achievement", { request });
   }
 
   /**
-   * Calculate level info from XP
+   * Get player stats (level, XP, etc.)
    */
-  calculateLevelInfo(xp: number): LevelInfo {
-    const level = Math.floor(xp / 1000) + 1;
-    const xp_for_current_level = (level - 1) * 1000;
-    const xp_for_next_level = level * 1000;
-    const current_xp = xp - xp_for_current_level;
-    const progress_percentage = (current_xp / 1000) * 100;
+  async getPlayerStats(playerId?: string): Promise<PlayerStats> {
+    const responseJson = await invoke<string>("get_player_stats", {
+      playerId,
+    });
+    return JSON.parse(responseJson);
+  }
+
+  /**
+   * Add XP to player
+   */
+  async addXp(amount: number, playerId?: string): Promise<PlayerStats> {
+    const request: AddXpRequest = {
+      amount,
+      player_id: playerId,
+    };
+    const responseJson = await invoke<string>("add_xp", { request });
+    return JSON.parse(responseJson);
+  }
+
+  /**
+   * Get achievement analytics
+   */
+  async getAnalytics(playerId?: string): Promise<AchievementAnalytics> {
+    const responseJson = await invoke<string>("get_achievement_analytics", {
+      playerId,
+    });
+    const data = JSON.parse(responseJson) as {
+      totalCount: number;
+      unlockedCount: number;
+      unlockPercentage: number;
+      rarityDistribution: Record<AchievementRarity, number>;
+    };
+
+    // Transform to match frontend type
+    const rarityUnlockRates: Record<AchievementRarity, number> = {
+      common: 0,
+      rare: 0,
+      epic: 0,
+      legendary: 0,
+    };
+
+    const categoryDistribution: Record<AchievementCategory, number> = {
+      tutorial: 0,
+      creation: 0,
+      collaboration: 0,
+      mastery: 0,
+      discovery: 0,
+      social: 0,
+      speed: 0,
+      collection: 0,
+      hidden: 0,
+    };
+
+    const categoryProgress: Record<AchievementCategory, number> = {
+      tutorial: 0,
+      creation: 0,
+      collaboration: 0,
+      mastery: 0,
+      discovery: 0,
+      social: 0,
+      speed: 0,
+      collection: 0,
+      hidden: 0,
+    };
 
     return {
-      level,
-      current_xp,
-      xp_for_current_level,
-      xp_for_next_level,
-      progress_percentage,
+      totalAchievements: data.totalCount,
+      unlockedAchievements: data.unlockedCount,
+      unlockPercentage: data.unlockPercentage,
+      rarityDistribution: data.rarityDistribution,
+      rarityUnlockRates,
+      categoryDistribution,
+      categoryProgress,
+      engagementScore: 0,
+      averageTimeToUnlock: 0,
+      recentUnlocks: [],
+      currentStreak: 0,
+      longestStreak: 0,
     };
   }
 
   /**
-   * Check if achievement requirements are met
+   * Get unlock history
    */
-  checkAchievementRequirements(
-    achievement: Achievement,
-    progress: UserProgress,
-    stats: {
-      totalAgents?: number;
-      totalWords?: number;
-      totalSpaces?: number;
-    }
-  ): boolean {
-    return achievement.requirements.every((req) => {
-      switch (req.type) {
-        case "xp":
-          return progress.xp >= req.value;
-        case "level":
-          return progress.level >= req.value;
-        case "missions":
-          return progress.completed_missions.length >= req.value;
-        case "agents":
-          return (stats.totalAgents || 0) >= req.value;
-        case "words":
-          return (stats.totalWords || 0) >= req.value;
-        case "spaces":
-          return (stats.totalSpaces || 0) >= req.value;
-        default:
-          return false;
-      }
+  async getUnlockHistory(playerId?: string): Promise<AchievementUnlock[]> {
+    const responseJson = await invoke<string>("get_unlock_history", {
+      playerId,
     });
+    return JSON.parse(responseJson);
   }
 
   /**
-   * Get XP reward for rarity
+   * Get user progress (combines stats and achievements)
    */
-  getXPForRarity(rarity: Achievement["rarity"]): number {
-    const rewards = {
-      common: 100,
-      rare: 250,
-      epic: 500,
-      legendary: 1000,
-    };
-    return rewards[rarity];
+  async getUserProgress(playerId?: string): Promise<UserProgress> {
+    const stats = await this.getPlayerStats(playerId);
+    const unlockedAchievements = await this.getUnlockHistory(playerId);
+    const progress = playerStatsToUserProgress(stats);
+    progress.achievements = unlockedAchievements.map((u) => u.achievementId || "");
+    return progress;
   }
 
   /**
-   * Get available (unlockable but not yet unlocked) achievements
+   * Complete a mission (for store compatibility)
    */
-  getAvailableAchievements(
-    allAchievements: Achievement[],
-    progress: UserProgress,
-    stats: {
-      totalAgents?: number;
-      totalWords?: number;
-      totalSpaces?: number;
-    }
-  ): Achievement[] {
-    return allAchievements.filter(
-      (achievement) =>
-        !progress.achievements.includes(achievement.id) &&
-        this.checkAchievementRequirements(achievement, progress, stats)
-    );
+  async completeMission(playerId: string): Promise<UserProgress> {
+    // Award XP for mission completion
+    const newStats = await this.addXp(1000, playerId); // Default 1000 XP per mission
+    const progress = playerStatsToUserProgress(newStats);
+    const unlockedAchievements = await this.getUnlockHistory(playerId);
+    progress.achievements = unlockedAchievements.map((u) => u.achievementId || "");
+    return progress;
   }
 
   /**
-   * Get locked (not yet unlockable) achievements
+   * Get available achievements (not yet unlocked)
    */
-  getLockedAchievements(
-    allAchievements: Achievement[],
-    progress: UserProgress,
-    stats: {
-      totalAgents?: number;
-      totalWords?: number;
-      totalSpaces?: number;
-    }
-  ): Achievement[] {
-    return allAchievements.filter(
-      (achievement) =>
-        !progress.achievements.includes(achievement.id) &&
-        !this.checkAchievementRequirements(achievement, progress, stats)
-    );
+  getAvailableAchievements(allAchievements: Achievement[], progress: UserProgress): Achievement[] {
+    return allAchievements.filter((a) => !progress.achievements.includes(a.id) && !a.hidden);
   }
 
   /**
    * Get unlocked achievements
    */
-  getUnlockedAchievements(
-    allAchievements: Achievement[],
-    progress: UserProgress
-  ): Achievement[] {
-    return allAchievements.filter((achievement) =>
-      progress.achievements.includes(achievement.id)
-    );
+  getUnlockedAchievements(allAchievements: Achievement[], progress: UserProgress): Achievement[] {
+    return allAchievements.filter((a) => progress.achievements.includes(a.id));
   }
 
   /**
-   * Calculate achievement completion percentage
+   * Get locked achievements
    */
-  getCompletionPercentage(allAchievements: Achievement[], progress: UserProgress): number {
-    if (allAchievements.length === 0) return 0;
-    return (progress.achievements.length / allAchievements.length) * 100;
+  getLockedAchievements(allAchievements: Achievement[], progress: UserProgress): Achievement[] {
+    return allAchievements.filter((a) => !progress.achievements.includes(a.id) && a.hidden);
   }
 }
 
 // Singleton instance
-export const achievementAPI = new AchievementAPI();
+export const achievementDB = new AchievementDatabaseAPI();
+
+// Export the class for type inference
+export const achievementAPI = achievementDB;
+
+// Extended player progress type for UI consumption
+export interface UserProgress {
+  playerId: string;
+  level: number;
+  xp: number;
+  currentXp: number;
+  achievements: string[];
+  completedMissions: string[];
+  totalXpEarned: number;
+  achievementsUnlocked: number;
+  currentStreak: number;
+  longestStreak: number;
+}
+
+export interface LevelInfo {
+  level: number;
+  currentXp: number;
+  nextLevelXp: number;
+  progressPercentage: number;
+}
+
+// Helper function to convert PlayerStats to UserProgress
+export function playerStatsToUserProgress(stats: PlayerStats): UserProgress {
+  return {
+    playerId: stats.player_id,
+    level: stats.level,
+    xp: stats.xp,
+    currentXp: stats.xp % 1000, // XP in current level
+    achievements: [], // Will be populated by store
+    completedMissions: [], // Will be populated by store
+    totalXpEarned: stats.total_xp_earned,
+    achievementsUnlocked: stats.achievements_unlocked,
+    currentStreak: stats.current_streak,
+    longestStreak: stats.longest_streak,
+  };
+}
+
+// Helper function to calculate level info
+export function calculateLevelInfo(xp: number): LevelInfo {
+  const level = Math.floor(xp / 1000) + 1;
+  const currentXp = xp % 1000;
+  const nextLevelXp = 1000;
+  const progressPercentage = (currentXp / nextLevelXp) * 100;
+
+  return {
+    level,
+    currentXp,
+    nextLevelXp,
+    progressPercentage,
+  };
+}

@@ -1372,14 +1372,14 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   return (
     <div
       ref={containerRef}
-      className="w-full h-full relative overflow-hidden bg-[#0f0f0f] select-none touch-none cursor-default"
+      className="w-full h-full relative overflow-hidden bg-background select-none touch-none cursor-default"
       style={{ touchAction: "none" }}
       onContextMenu={(e) => e.preventDefault()}
       onDoubleClick={(e) => e.preventDefault()}
     >
       {/* Loading State */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f0f] z-50">
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-50">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             <p className="text-muted-foreground text-sm">Loading workspace...</p>
@@ -1389,7 +1389,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
       {/* Error State */}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f0f] z-50">
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-50">
           <div className="flex flex-col items-center gap-4 max-w-md p-6">
             <div className="text-4xl">⚠️</div>
             <h3 className="text-xl font-semibold text-destructive">

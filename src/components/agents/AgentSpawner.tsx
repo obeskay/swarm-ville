@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { useSpaceStore } from "../../stores/spaceStore";
 import { useGameStore } from "../../stores/gameStore";
+import { useAchievementTriggers } from "../../hooks/useAchievementTriggers";
 import { Agent, AgentRole } from "../../lib/types";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "../ui/dialog";
 import { Input } from "../ui/input";
@@ -79,6 +80,7 @@ const AGENT_ROLES = [
 export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawnerProps) {
   const { addAgent } = useSpaceStore();
   const { updateMissionProgress } = useGameStore();
+  const { trackAgentSpawn } = useAchievementTriggers();
   const [selectedRole, setSelectedRole] = useState<AgentRole>("coder");
   const [agentName, setAgentName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -124,6 +126,9 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
     // Update missions
     updateMissionProgress("spawn_first_agent", 1);
     updateMissionProgress("build_team", 1);
+
+    // Track achievement
+    await trackAgentSpawn();
 
     // Celebration!
     toast.success(`${agentName} joined your team! 🎉`);

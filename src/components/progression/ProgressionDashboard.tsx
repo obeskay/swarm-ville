@@ -12,16 +12,7 @@ import { AchievementsPanel } from "./AchievementsPanel";
 import { MissionTracker } from "./MissionTracker";
 import { AchievementNotifications } from "./AchievementNotifications";
 import { useAchievementStore } from "@/stores/achievementStore";
-import {
-  Trophy,
-  Target,
-  BarChart3,
-  X,
-  TrendingUp,
-  Zap,
-  Star,
-  Award,
-} from "lucide-react";
+import { Trophy, Target, BarChart3, X, TrendingUp, Zap, Star, Award } from "lucide-react";
 
 type View = "overview" | "achievements" | "missions" | "analytics";
 
@@ -162,7 +153,9 @@ export function ProgressionDashboard() {
                             <Target className="w-6 h-6 text-green-500" />
                           </div>
                           <div>
-                            <div className="text-2xl font-bold">{progress.completed_missions.length}</div>
+                            <div className="text-2xl font-bold">
+                              {progress.completedMissions.length}
+                            </div>
                             <div className="text-sm text-foreground/70">Missions Complete</div>
                           </div>
                         </div>
@@ -196,11 +189,13 @@ export function ProgressionDashboard() {
                             >
                               <div className="text-2xl">{achievement.icon}</div>
                               <div className="flex-1">
-                                <div className="font-semibold text-sm">{achievement.name}</div>
-                                <div className="text-xs text-foreground/70">{achievement.description}</div>
+                                <div className="font-semibold text-sm">{achievement.id}</div>
+                                <div className="text-xs text-foreground/70">
+                                  {achievement.description}
+                                </div>
                               </div>
                               <div className="text-xs font-semibold text-primary">
-                                +{achievement.xp_reward} XP
+                                +{achievement.xpReward} XP
                               </div>
                             </div>
                           ))}
@@ -226,11 +221,13 @@ export function ProgressionDashboard() {
                               className="flex items-center gap-3 p-3 rounded-lg bg-background/30 hover:bg-background/50 transition-colors"
                             >
                               <div className="flex-1">
-                                <div className="font-semibold text-sm">{mission.name}</div>
-                                <div className="text-xs text-foreground/70">{mission.description}</div>
+                                <div className="font-semibold text-sm">{mission.title}</div>
+                                <div className="text-xs text-foreground/70">
+                                  {mission.description}
+                                </div>
                               </div>
                               <div className="text-xs font-semibold text-primary">
-                                +{mission.xp_reward} XP
+                                +{mission.xpReward} XP
                               </div>
                             </div>
                           ))}
@@ -268,15 +265,21 @@ export function ProgressionDashboard() {
                           <div className="text-xs text-foreground/70 mt-1">Current Level</div>
                         </div>
                         <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">{Math.floor(completionPercentage)}%</div>
+                          <div className="text-3xl font-bold text-primary">
+                            {Math.floor(completionPercentage)}%
+                          </div>
                           <div className="text-xs text-foreground/70 mt-1">Completion</div>
                         </div>
                         <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">{unlockedAchievements.length}</div>
+                          <div className="text-3xl font-bold text-primary">
+                            {unlockedAchievements.length}
+                          </div>
                           <div className="text-xs text-foreground/70 mt-1">Achievements</div>
                         </div>
                         <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">{progress.completed_missions.length}</div>
+                          <div className="text-3xl font-bold text-primary">
+                            {progress.completedMissions.length}
+                          </div>
                           <div className="text-xs text-foreground/70 mt-1">Missions</div>
                         </div>
                       </div>
@@ -291,10 +294,10 @@ export function ProgressionDashboard() {
                         <div className="p-4 rounded-lg bg-background/30">
                           <div className="text-sm font-semibold mb-2">XP to Next Level</div>
                           <div className="text-2xl font-bold text-primary">
-                            {1000 - levelInfo.current_xp} XP
+                            {1000 - levelInfo.currentXp} XP
                           </div>
                           <div className="text-xs text-foreground/70 mt-1">
-                            {Math.floor(levelInfo.progress_percentage)}% progress
+                            {Math.floor(levelInfo.progressPercentage)}% progress
                           </div>
                         </div>
                         <div className="p-4 rounded-lg bg-background/30">
@@ -302,7 +305,9 @@ export function ProgressionDashboard() {
                           <div className="text-2xl font-bold text-green-500">
                             {availableMissions.length}
                           </div>
-                          <div className="text-xs text-foreground/70 mt-1">missions ready to complete</div>
+                          <div className="text-xs text-foreground/70 mt-1">
+                            missions ready to complete
+                          </div>
                         </div>
                       </div>
                     </Card>

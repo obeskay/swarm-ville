@@ -64,16 +64,14 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between text-xs font-semibold mb-1">
                 <span>Level {progress.level}</span>
-                <span className="text-foreground/70">
-                  {levelInfo.current_xp} / 1000 XP
-                </span>
+                <span className="text-foreground/70">{levelInfo.currentXp} / 1000 XP</span>
               </div>
 
               {/* Progress Bar */}
               <div className="relative h-2 bg-background/50 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${levelInfo.progress_percentage}%` }}
+                  animate={{ width: `${levelInfo.progressPercentage}%` }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                   className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-full"
                 >
@@ -132,14 +130,14 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
 
               <div>
                 <h3 className="text-lg font-bold">Level {progress.level}</h3>
-                <p className="text-sm text-foreground/70">
-                  {levelInfo.current_xp} / 1,000 XP
-                </p>
+                <p className="text-sm text-foreground/70">{levelInfo.currentXp} / 1,000 XP</p>
               </div>
             </div>
 
             <div className="text-right">
-              <div className="text-2xl font-bold text-primary">{Math.floor(levelInfo.progress_percentage)}%</div>
+              <div className="text-2xl font-bold text-primary">
+                {Math.floor(levelInfo.progressPercentage)}%
+              </div>
               <div className="text-xs text-foreground/70 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
                 Progress
@@ -152,7 +150,7 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
             <div className="relative h-4 bg-background/50 rounded-full overflow-hidden shadow-inner">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${levelInfo.progress_percentage}%` }}
+                animate={{ width: `${levelInfo.progressPercentage}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-full shadow-soft"
               >
@@ -186,7 +184,9 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
               <div className="text-xs text-foreground/70">Achievements</div>
             </div>
             <div className="p-3 rounded-[calc(var(--radius)*0.66)] bg-background/30 text-center">
-              <div className="text-lg font-bold text-primary">{progress.completed_missions.length}</div>
+              <div className="text-lg font-bold text-primary">
+                {progress.completedMissions.length}
+              </div>
               <div className="text-xs text-foreground/70">Missions</div>
             </div>
           </div>
