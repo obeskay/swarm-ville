@@ -70,8 +70,24 @@ interface AchievementStore {
 export const useAchievementStore = create<AchievementStore>((set, get) => ({
   // Initial state
   userId: "default_user", // TODO: Get from auth
-  progress: null,
-  levelInfo: null,
+  progress: {
+    playerId: "default_user",
+    level: 1,
+    xp: 0,
+    currentXp: 0,
+    achievements: [],
+    completedMissions: [],
+    totalXpEarned: 0,
+    achievementsUnlocked: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+  },
+  levelInfo: {
+    level: 1,
+    currentXp: 0,
+    nextLevelXp: 1000,
+    progressPercentage: 0,
+  },
   loading: false,
   error: null,
 
@@ -88,13 +104,26 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
   setUserId: async (userId: string) => {
     set({ userId, loading: true, error: null });
     try {
-      const progress = await achievementAPI.getUserProgress(userId);
-      const levelInfo = calculateLevelInfo(progress.xp);
+      const stats = await achievementAPI.getPlayerStats(userId);
+      const progress: UserProgress = {
+        playerId: stats.player_id,
+        level: stats.level,
+        xp: stats.xp,
+        currentXp: stats.xp % 1000,
+        achievements: [],
+        completedMissions: [],
+        totalXpEarned: stats.total_xp_earned,
+        achievementsUnlocked: stats.achievements_unlocked,
+        currentStreak: stats.current_streak,
+        longestStreak: stats.longest_streak,
+      };
+      const levelInfo = calculateLevelInfo(stats.xp);
       set({ progress, levelInfo, loading: false });
 
       // Check for any achievements that should be unlocked
       await get().checkAndUnlockAchievements();
     } catch (error) {
+      console.error("Error setting user ID:", error);
       set({
         error: error instanceof Error ? error.message : "Failed to load progress",
         loading: false,
@@ -286,9 +315,6 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     set((state) => ({
       stats: { ...state.stats, ...newStats },
     }));
-
-    // Trigger achievement check when stats update
-    get().checkAndUnlockAchievements();
   },
 
   clearNotifications: () => set({ notifications: [] }),

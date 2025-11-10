@@ -4,6 +4,9 @@ import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
+import { Separator } from "../ui/separator";
+import { InfoBadge } from "../ui/info-badge";
+import { StatusIndicator } from "../ui/status-indicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +33,9 @@ export function TopToolbar() {
 
   // Initialize achievement system
   useEffect(() => {
-    setUserId("default_user");
+    setUserId("default_user").catch((err) => {
+      console.warn("Achievement system not available:", err);
+    });
   }, [setUserId]);
 
   // Update achievement stats when agents/spaces change
@@ -39,7 +44,8 @@ export function TopToolbar() {
       totalAgents: agentCount,
       totalSpaces: spaces.length,
     });
-  }, [agentCount, spaces.length, updateStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentCount, spaces.length]);
 
   const handleCreateNewSpace = () => {
     const newSpaceId = crypto.randomUUID();
@@ -124,23 +130,25 @@ export function TopToolbar() {
 
         {/* Right Section: Stats + Actions */}
         <div className="flex items-center gap-2">
-          {/* Agent Count */}
+          {/* Agent Count with status indicator */}
           {currentSpace && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border/40 hover:border-border/60 transition-all">
-                  <div
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full transition-all",
-                      agentCount > 0
-                        ? "bg-emerald-500 dark:bg-emerald-400"
-                        : "bg-muted-foreground/30"
-                    )}
+                <div>
+                  <InfoBadge
+                    variant="default"
+                    size="sm"
+                    icon={
+                      <StatusIndicator
+                        variant={agentCount > 0 ? "online" : "idle"}
+                        size="sm"
+                        showDot={true}
+                        label=""
+                      />
+                    }
+                    label={agentCount === 1 ? "agent" : "agents"}
+                    value={agentCount}
                   />
-                  <span className="text-sm font-medium tabular-nums">{agentCount}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {agentCount === 1 ? "agent" : "agents"}
-                  </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -152,11 +160,13 @@ export function TopToolbar() {
           {/* Balance */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary/30 transition-all">
-                <Wallet className="h-3.5 w-3.5 text-primary" />
-                <span className="text-sm font-semibold tabular-nums text-foreground">
-                  ${balance.toFixed(4)}
-                </span>
+              <div>
+                <InfoBadge
+                  variant="primary"
+                  size="sm"
+                  icon={<Wallet className="h-3.5 w-3.5 text-primary" />}
+                  value={`$${balance.toFixed(2)}`}
+                />
               </div>
             </TooltipTrigger>
             <TooltipContent>
@@ -164,7 +174,7 @@ export function TopToolbar() {
             </TooltipContent>
           </Tooltip>
 
-          <div className="w-px h-4 bg-border/30 mx-1" />
+          <Separator orientation="vertical" className="h-4 mx-1" />
 
           {/* Actions Menu */}
           <DropdownMenu>

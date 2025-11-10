@@ -124,26 +124,29 @@ export function RightSidebar({ spaceId = "default" }: RightSidebarProps) {
               <ScrollArea className="flex-1">
                 <div className="p-4 space-y-3">
                   {agentList.length === 0 ? (
-                    <div className="text-center py-12 px-4">
-                      <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-                        <Bot className="w-6 h-6 text-muted-foreground" />
+                    <div className="text-center py-16 px-4 animate-fade-in-up">
+                      <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 shadow-soft">
+                        <Bot className="w-8 h-8 text-primary" />
                       </div>
-                      <h4 className="font-semibold mb-2">No agents yet</h4>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Agents help automate tasks
+                      <h4 className="font-semibold text-base mb-2">No agents yet</h4>
+                      <p className="text-sm text-muted-foreground mb-6 max-w-[200px] mx-auto leading-relaxed">
+                        Agents help automate tasks and boost productivity
                       </p>
-                      <Button onClick={() => setShowSpawner(true)}>
+                      <Button
+                        onClick={() => setShowSpawner(true)}
+                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-soft-lg"
+                      >
                         <Plus className="w-4 h-4 mr-2" />
                         Add First Agent
                       </Button>
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-2">
+                      <div className="space-y-2 stagger-children">
                         {agentList.map((agent) => (
                           <div
                             key={agent.id}
-                            className="card-minimal hover:shadow-md cursor-pointer group"
+                            className="card-minimal hover-lift hover:shadow-md cursor-pointer group"
                           >
                             <div className="flex items-center gap-3">
                               <div className="relative">
