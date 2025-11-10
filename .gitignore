@@ -5,6 +5,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Package managers (keep only pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
 # Build outputs
 dist/
 dist-ssr/
@@ -13,11 +17,16 @@ dist-ssr/
 # Tauri
 src-tauri/target/
 src-tauri/Cargo.lock
+src-tauri/gen/
 
-# Environment
+# Environment & API Keys (CRITICAL)
 .env
 .env.local
 .env.*.local
+*.key
+*_key.txt
+credentials.json
+api_keys.json
 
 # IDEs
 .vscode/
@@ -63,3 +72,15 @@ temp/
 Thumbs.db
 .Spotlight-V100
 .Trashes
+
+# Claude Code
+.claude/settings.local.json
+.claude/hooks/node_modules/
+.claude/tsc-cache/
+
+# Legacy/Archive (document before deleting)
+*.bak
+*.old
+*_OLD/
+archive/
+legacy/
