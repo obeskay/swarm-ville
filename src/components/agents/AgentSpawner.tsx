@@ -11,8 +11,12 @@ import { Agent, AgentRole } from "../../lib/types";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { X, Sparkles } from "lucide-react";
+import { Badge } from "../ui/badge";
+import { Label } from "../ui/label";
+import { Separator } from "../ui/separator";
+import { X, Sparkles, Check } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface AgentSpawnerProps {
   spaceId: string;
@@ -156,81 +160,78 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
       </DialogHeader>
 
       <DialogContent>
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Agent Name Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Agent Name</label>
+          <div className="space-y-3">
+            <Label htmlFor="agent-name" className="text-sm font-semibold">
+              Agent Name
+            </Label>
             <Input
+              id="agent-name"
               placeholder="e.g. CodeMaster, DesignWiz, BugHunter..."
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
               disabled={creating}
-              className="text-base"
+              className="h-12 text-base"
               autoFocus
             />
           </div>
 
+          <Separator />
+
           {/* Role Selection - Visual Cards */}
-          <div className="space-y-3">
-            <label className="text-sm font-semibold">Choose Role</label>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold">Choose Role</Label>
+            <div className="grid grid-cols-2 gap-3">
               {AGENT_ROLES.map((role) => (
                 <button
                   key={role.id}
                   type="button"
                   onClick={() => setSelectedRole(role.id)}
                   disabled={creating}
-                  className={`
-                      relative p-5 rounded-[calc(var(--radius)*0.75)] text-left
-                      transition-all duration-300 transform
-                      ${
-                        selectedRole === role.id
-                          ? "shadow-soft-lg scale-[1.02] bg-[hsl(var(--card-accent))]"
-                          : "shadow-soft hover:shadow-soft-lg hover:scale-[1.01] bg-card border border-border"
-                      }
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      active:scale-[0.98]
-                    `}
+                  className={cn(
+                    "relative p-6 rounded-xl text-left",
+                    "transition-all duration-200",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                    "active:scale-[0.98]",
+                    "group",
+                    selectedRole === role.id
+                      ? "bg-primary/10 border-2 border-primary shadow-lg ring-2 ring-primary/20"
+                      : "bg-card border-2 border-border hover:border-primary/50 hover:shadow-md"
+                  )}
                 >
                   {/* Emoji Icon */}
-                  <div className="text-4xl mb-3">{role.emoji}</div>
+                  <div className="text-4xl mb-4 transition-transform group-hover:scale-110">
+                    {role.emoji}
+                  </div>
 
                   {/* Role Name */}
-                  <div className="font-bold text-base mb-2">{role.name}</div>
+                  <div className="font-bold text-base mb-2.5 text-foreground">
+                    {role.name}
+                  </div>
 
                   {/* Description */}
-                  <div className="text-sm text-foreground/70 mb-3 leading-relaxed">
+                  <div className="text-sm text-muted-foreground mb-4 leading-relaxed line-clamp-2">
                     {role.description}
                   </div>
 
                   {/* Skills */}
                   <div className="flex flex-wrap gap-1.5">
                     {role.skills.slice(0, 3).map((skill, idx) => (
-                      <span
+                      <Badge
                         key={idx}
-                        className="text-xs px-2.5 py-1 bg-foreground/10 rounded-full font-medium"
+                        variant="secondary"
+                        className="text-xs font-medium"
                       >
                         {skill}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
 
                   {/* Selection Indicator */}
                   {selectedRole === role.id && (
-                    <div className="absolute top-3 right-3 w-6 h-6 bg-foreground rounded-full flex items-center justify-center shadow-soft">
-                      <svg
-                        className="w-3.5 h-3.5 text-background"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
+                    <div className="absolute top-4 right-4 w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-lg animate-in fade-in zoom-in duration-200">
+                      <Check className="w-4 h-4 text-primary-foreground" strokeWidth={3} />
                     </div>
                   )}
                 </button>
@@ -240,31 +241,41 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
 
           {/* Preview */}
           {agentName && selectedRoleData && (
-            <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border-2 border-primary/20">
-              <div className="text-xs text-muted-foreground mb-2">Preview:</div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
-                  style={{ backgroundColor: selectedRoleData.color + "20" }}
-                >
-                  {selectedRoleData.emoji}
+            <>
+              <Separator />
+              <div className="p-5 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                  Preview
                 </div>
-                <div>
-                  <div className="font-bold">{agentName}</div>
-                  <div className="text-sm text-muted-foreground">{selectedRoleData.name}</div>
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shadow-lg ring-2 ring-primary/20"
+                    style={{ backgroundColor: selectedRoleData.color + "20" }}
+                  >
+                    {selectedRoleData.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-lg mb-1">{agentName}</div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      {selectedRoleData.name}
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedRoleData.id}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={creating}
-              className="flex-1"
+              className="flex-1 h-12"
             >
               Cancel
             </Button>
@@ -272,7 +283,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
               type="button"
               onClick={handleCreate}
               disabled={creating || !agentName.trim()}
-              className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
             >
               {creating ? (
                 <>
