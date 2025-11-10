@@ -53,7 +53,7 @@ export function AchievementsPanel() {
     const query = searchQuery.toLowerCase();
     displayAchievements = displayAchievements.filter(
       ({ achievement }) =>
-        achievement.name.toLowerCase().includes(query) ||
+        achievement.id.toLowerCase().includes(query) ||
         achievement.description.toLowerCase().includes(query)
     );
   }

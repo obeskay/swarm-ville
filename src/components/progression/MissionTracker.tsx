@@ -8,30 +8,14 @@ import { motion } from "framer-motion";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { useAchievementStore } from "@/stores/achievementStore";
-import type { Mission } from "@/lib/db/achievements";
-import {
-  Target,
-  CheckCircle2,
-  Circle,
-  Trophy,
-  Clock,
-  Zap,
-  Star,
-  Flame,
-} from "lucide-react";
-
-const difficultyIcons = {
-  easy: { icon: Zap, color: "text-green-500", bg: "bg-green-500/20" },
-  medium: { icon: Star, color: "text-blue-500", bg: "bg-blue-500/20" },
-  hard: { icon: Flame, color: "text-orange-500", bg: "bg-orange-500/20" },
-  expert: { icon: Trophy, color: "text-purple-500", bg: "bg-purple-500/20" },
-};
+import type { Mission } from "@/lib/data/achievements";
+import { Target, CheckCircle2, Trophy, Clock } from "lucide-react";
 
 const categoryColors = {
   tutorial: "from-blue-500 to-blue-600",
-  daily: "from-green-500 to-green-600",
-  weekly: "from-purple-500 to-purple-600",
-  special: "from-amber-500 to-amber-600",
+  creation: "from-purple-500 to-purple-600",
+  collaboration: "from-pink-500 to-pink-600",
+  mastery: "from-orange-500 to-orange-600",
 };
 
 interface MissionCardProps {
@@ -41,17 +25,10 @@ interface MissionCardProps {
 }
 
 function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
-  const difficulty = difficultyIcons[mission.difficulty];
-  const DifficultyIcon = difficulty.icon;
-
-  const completedSteps = mission.steps.filter((s) => s.completed).length;
-  const progress = (completedSteps / mission.steps.length) * 100;
+  const progress = mission.progress > 0 ? (mission.progress / mission.maxProgress) * 100 : 0;
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="relative"
-    >
+    <motion.div whileHover={{ y: -2 }} className="relative">
       <Card
         variant={completed ? "elevated" : "default"}
         spacing="generous"
@@ -61,7 +38,7 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
       >
         {/* Category gradient header */}
         <div
-          className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${categoryColors[mission.category]}`}
+          className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${categoryColors[mission.category as keyof typeof categoryColors] || "from-gray-500 to-gray-600"}`}
         />
 
         <div className="space-y-4">
@@ -69,14 +46,13 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r ${categoryColors[mission.category]} text-white`}>
-                  {mission.category.toUpperCase()}
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r ${categoryColors[mission.category as keyof typeof categoryColors] || "from-gray-500 to-gray-600"} text-white`}
+                >
+                  {(mission.category as string).toUpperCase()}
                 </span>
-                <div className={`p-1 rounded-full ${difficulty.bg}`}>
-                  <DifficultyIcon className={`w-3 h-3 ${difficulty.color}`} />
-                </div>
               </div>
-              <h4 className="font-bold text-sm mb-1">{mission.name}</h4>
+              <h4 className="font-bold text-sm mb-1">{mission.title}</h4>
               <p className="text-xs text-foreground/70 line-clamp-2">{mission.description}</p>
             </div>
 
@@ -85,19 +61,17 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
               </div>
             ) : (
-              <div className="shrink-0 text-lg font-bold text-primary">
-                +{mission.xp_reward} XP
-              </div>
+              <div className="shrink-0 text-lg font-bold text-primary">+{mission.xpReward} XP</div>
             )}
           </div>
 
-          {/* Steps */}
-          {!completed && (
+          {/* Progress */}
+          {!completed && mission.maxProgress > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-foreground/70 mb-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-foreground/70">
                 <span>Progress</span>
                 <span>
-                  {completedSteps} / {mission.steps.length} steps
+                  {mission.progress} / {mission.maxProgress}
                 </span>
               </div>
 
@@ -107,33 +81,14 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className={`absolute inset-y-0 left-0 bg-gradient-to-r ${categoryColors[mission.category]} rounded-full`}
+                  className={`absolute inset-y-0 left-0 bg-gradient-to-r ${categoryColors[mission.category as keyof typeof categoryColors] || "from-gray-500 to-gray-600"} rounded-full`}
                 />
-              </div>
-
-              {/* Step List */}
-              <div className="space-y-1.5 mt-3">
-                {mission.steps.map((step, idx) => (
-                  <div
-                    key={step.id}
-                    className="flex items-center gap-2 text-xs"
-                  >
-                    {step.completed ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-foreground/30 shrink-0" />
-                    )}
-                    <span className={step.completed ? "text-foreground/50 line-through" : ""}>
-                      {step.description}
-                    </span>
-                  </div>
-                ))}
               </div>
             </div>
           )}
 
           {/* Complete Button */}
-          {!completed && completedSteps === mission.steps.length && (
+          {!completed && progress >= 100 && (
             <Button
               onClick={onComplete}
               className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
@@ -141,14 +96,6 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
               <Trophy className="w-4 h-4 mr-2" />
               Complete Mission
             </Button>
-          )}
-
-          {/* Prerequisites */}
-          {mission.prerequisites.length > 0 && (
-            <div className="text-xs text-foreground/60 pt-2 border-t border-foreground/10">
-              <span className="font-semibold">Requires:</span>{" "}
-              {mission.prerequisites.length} prerequisite mission{mission.prerequisites.length > 1 ? "s" : ""}
-            </div>
           )}
         </div>
       </Card>
@@ -159,11 +106,7 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
 export function MissionTracker() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const {
-    getAvailableMissions,
-    getCompletedMissions,
-    completeMission,
-  } = useAchievementStore();
+  const { getAvailableMissions, getCompletedMissions, completeMission } = useAchievementStore();
 
   const availableMissions = getAvailableMissions();
   const completedMissions = getCompletedMissions();

@@ -28,7 +28,7 @@ const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
         <div
           ref={ref}
           className={cn(
-            "bg-card rounded-lg shadow-lg mx-4 transition-all flex flex-col max-h-[90vh] w-full",
+            "bg-card rounded-2xl shadow-lg mx-4 transition-all flex flex-col max-h-[90vh] w-full",
             sizeClasses[size],
             className
           )}

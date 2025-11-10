@@ -7,4 +7,4 @@ pub mod types;
 
 pub use connector::CLIConnector;
 pub use detector::detect_installed_clis;
-pub use types::{CLICommand, CLIError, CLIResponse, CLIType, CommandOptions};
+pub use types::{CLICommand, CLIType, CommandOptions};

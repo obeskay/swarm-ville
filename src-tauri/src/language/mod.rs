@@ -2,8 +2,7 @@
  * Thronglet Language Learning System
  * Backend implementation for vocabulary, associations, and learning
  */
-
-use crate::db::{Database, DbResult};
+use crate::db::Database;
 use crate::error::Result;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
@@ -126,7 +125,8 @@ impl<'a> LanguageSystem<'a> {
                     now,
                     now
                 ],
-            ).map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+            )
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
             word_id
         };
 
@@ -149,7 +149,8 @@ impl<'a> LanguageSystem<'a> {
                     agent_id, word_id, times_used, mastery_level, confidence, learned_at
                 ) VALUES (?, ?, 0, 0.0, 0.5, ?)"#,
                 params![&request.agent_id, &final_word_id, now],
-            ).map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+            )
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
 
             // Update agent language state
             conn.execute(
@@ -159,7 +160,8 @@ impl<'a> LanguageSystem<'a> {
                        updated_at = ?
                    WHERE agent_id = ?"#,
                 params![now, &request.agent_id],
-            ).map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+            )
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
         }
 
         // 3. Add associations
@@ -205,7 +207,8 @@ impl<'a> LanguageSystem<'a> {
                 id, agent_id, word_id, event_type, teacher_id, created_at
             ) VALUES (?, ?, ?, 'taught', 'user', ?)"#,
             params![&event_id, &request.agent_id, &final_word_id, now],
-        ).ok();
+        )
+        .ok();
 
         // 5. Return the word
         self.get_word_by_id(&final_word_id)

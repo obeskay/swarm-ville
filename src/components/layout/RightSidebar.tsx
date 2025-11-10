@@ -125,7 +125,7 @@ export function RightSidebar({ spaceId = "default" }: RightSidebarProps) {
                 <div className="p-4 space-y-3">
                   {agentList.length === 0 ? (
                     <div className="text-center py-16 px-4 animate-fade-in-up">
-                      <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 shadow-soft">
+                      <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 shadow-soft">
                         <Bot className="w-8 h-8 text-primary" />
                       </div>
                       <h4 className="font-semibold text-base mb-2">No agents yet</h4>

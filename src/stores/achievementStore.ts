@@ -136,7 +136,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const progress = await achievementAPI.getUserProgress(userId);
-      const levelInfo = calculateLevelInfo(progress.xp);
+      const levelInfo = calculateLevelInfo(progress.currentXp);
       set({ progress, levelInfo, loading: false });
     } catch (error) {
       set({
@@ -148,15 +148,35 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
 
   addXP: async (amount: number, reason?: string) => {
     const { userId, progress } = get();
-    if (!progress) return;
+    if (!progress) {
+      console.error("Cannot add XP: No progress found");
+      toast.error("Achievement system not initialized");
+      return;
+    }
 
     const oldLevel = progress.level;
 
     set({ loading: true });
     try {
-      await achievementAPI.addXp(amount, userId);
-      const newProgress = await achievementAPI.getUserProgress(userId);
-      const levelInfo = calculateLevelInfo(newProgress.xp);
+      console.log(
+        `[Achievement] Adding ${amount} XP for user ${userId}, reason: ${reason || "none"}`
+      );
+      const stats = await achievementAPI.addXp(amount, userId);
+
+      // Update progress from returned stats
+      const newProgress: UserProgress = {
+        playerId: stats.player_id,
+        level: stats.level,
+        xp: stats.xp,
+        currentXp: stats.xp,
+        achievements: progress.achievements,
+        completedMissions: progress.completedMissions,
+        totalXpEarned: stats.total_xp_earned,
+        achievementsUnlocked: stats.achievements_unlocked,
+        currentStreak: stats.current_streak,
+        longestStreak: stats.longest_streak,
+      };
+      const levelInfo = calculateLevelInfo(stats.xp);
       set({ progress: newProgress, levelInfo, loading: false });
 
       // Show XP notification
@@ -197,16 +217,29 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
       // Check for newly unlockable achievements
       await get().checkAndUnlockAchievements();
     } catch (error) {
+      console.error("[Achievement] Failed to add XP - Detailed Error:", {
+        error,
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        userId,
+        amount,
+        reason,
+      });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       set({
-        error: error instanceof Error ? error.message : "Failed to add XP",
+        error: errorMessage,
         loading: false,
       });
-      toast.error("Failed to add XP");
+      toast.error(`Failed to add XP: ${errorMessage}`, {
+        description: "Check console for details",
+      });
     }
   },
 
   completeMission: async (missionId: string) => {
-    const { userId } = get();
+    const { userId, progress } = get();
+    if (!progress) return;
+
     set({ loading: true });
     try {
       const mission = MISSIONS.find((m) => m.id === missionId);
@@ -214,7 +247,11 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
 
       const stats = await achievementAPI.addXp(mission.xpReward, userId);
       const levelInfo = calculateLevelInfo(stats.xp);
-      set({ progress: { ...get().progress!, xp: stats.xp, level: stats.level }, levelInfo, loading: false });
+      set({
+        progress: { ...progress, xp: stats.xp, currentXp: stats.xp, level: stats.level },
+        levelInfo,
+        loading: false,
+      });
 
       const notification: AchievementNotification = {
         id: `mission_${Date.now()}`,
@@ -254,7 +291,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     try {
       await achievementAPI.unlockAchievement(achievementId, undefined, userId);
       const newProgress = await achievementAPI.getUserProgress(userId);
-      const levelInfo = calculateLevelInfo(newProgress.xp);
+      const levelInfo = calculateLevelInfo(newProgress.currentXp);
       set({ progress: newProgress, levelInfo, loading: false });
 
       const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
@@ -294,8 +331,8 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     // Get all achievements and filter for available ones
     const allAchievements = await achievementAPI.getAllAchievements();
     const playerProgress = await achievementAPI.getPlayerProgress(get().userId);
-    const unlockedIds = new Set(playerProgress.map(p => p.achievementId));
-    const available = allAchievements.filter(a => !unlockedIds.has(a.id) && !a.hidden);
+    const unlockedIds = new Set(playerProgress.map((p) => p.achievementId));
+    const available = allAchievements.filter((a) => !unlockedIds.has(a.id) && !a.hidden);
 
     // Auto-unlock all available achievements
     for (const achievement of available) {

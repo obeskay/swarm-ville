@@ -1,12 +1,14 @@
 /**
  * Main game HUD showing level, XP, and active missions
+ * Enhanced with smooth animations and better visual hierarchy
  */
 
 import { useEffect, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { ChevronDown, ChevronUp, Trophy, Zap } from "lucide-react";
+import { ChevronDown, ChevronUp, Trophy, Zap, Target } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function GameHUD() {
   const { level, xp, xpToNextLevel, missions } = useGameStore();
@@ -23,9 +25,7 @@ export function GameHUD() {
           <div className="flex items-center gap-4">
             {/* Level Badge */}
             <div className="w-14 h-14 rounded-full bg-foreground flex items-center justify-center shadow-soft relative">
-              <span className="text-xl font-bold text-background">
-                {level}
-              </span>
+              <span className="text-xl font-bold text-background">{level}</span>
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-foreground rounded-full flex items-center justify-center ring-2 ring-[hsl(var(--card-accent))]">
                 <Zap className="w-3 h-3 text-background" fill="currentColor" />
               </div>
@@ -33,9 +33,7 @@ export function GameHUD() {
 
             {/* XP Progress */}
             <div className="flex-1">
-              <div className="text-sm font-medium mb-2">
-                Level {level}
-              </div>
+              <div className="text-sm font-medium mb-2">Level {level}</div>
               <div className="relative h-2.5 bg-foreground/10 rounded-full overflow-hidden">
                 <div
                   className="absolute inset-y-0 left-0 bg-foreground transition-all duration-500 ease-out rounded-full"
@@ -64,11 +62,7 @@ export function GameHUD() {
                 <Trophy className="w-5 h-5 text-foreground" />
                 <h3 className="text-base font-semibold">Active Missions</h3>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowMissions(!showMissions)}
-              >
+              <Button size="sm" variant="ghost" onClick={() => setShowMissions(!showMissions)}>
                 {showMissions ? (
                   <ChevronUp className="w-4 h-4" />
                 ) : (
@@ -87,12 +81,8 @@ export function GameHUD() {
                     <div className="flex items-start gap-3 mb-3">
                       <span className="text-2xl">{mission.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold mb-1">
-                          {mission.title}
-                        </div>
-                        <div className="text-xs text-foreground/70">
-                          {mission.description}
-                        </div>
+                        <div className="text-sm font-semibold mb-1">{mission.title}</div>
+                        <div className="text-xs text-foreground/70">{mission.description}</div>
                       </div>
                     </div>
 

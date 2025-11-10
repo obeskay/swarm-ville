@@ -1,9 +1,8 @@
-import { Wallet, Plus, Sparkles, Zap, Bot, ChevronRight, ChevronLeft } from "lucide-react";
+import { Wallet, Plus, Sparkles, Zap, Bot } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Badge } from "../ui/badge";
-import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
 import { InfoBadge } from "../ui/info-badge";
 import { StatusIndicator } from "../ui/status-indicator";
@@ -17,19 +16,21 @@ import { useSpaceStore } from "../../stores/spaceStore";
 import { useUserStore } from "../../stores/userStore";
 import { useUIStore } from "../../stores/uiStore";
 import { useAchievementStore } from "../../stores/achievementStore";
-import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import SpriteGeneratorDialog from "../ai/SpriteGeneratorDialog";
+import { SpaceCreationDialog } from "../space/SpaceCreationDialog";
 
 export function TopToolbar() {
-  const { currentSpaceId, spaces, agents, addSpace } = useSpaceStore();
-  const { balance = 0, level, xp, xpToNextLevel, missions } = useUserStore();
-  const { leftSidebarCollapsed, rightSidebarCollapsed, toggleLeftSidebar, toggleRightSidebar } = useUIStore();
-  const { progress, levelInfo, setUserId, updateStats } = useAchievementStore();
+  const { currentSpaceId, spaces, agents } = useSpaceStore();
+  const { balance = 0, missions } = useUserStore();
+  const { leftSidebarCollapsed, rightSidebarCollapsed, toggleLeftSidebar, toggleRightSidebar } =
+    useUIStore();
+  const { setUserId, updateStats } = useAchievementStore();
   const currentSpace = spaces.find((s) => s.id === currentSpaceId);
   const agentCount = agents.size;
   const activeMissionsCount = Object.values(missions).filter((m) => !m.completed).length;
   const [showSpriteGenerator, setShowSpriteGenerator] = useState(false);
+  const [showSpaceCreation, setShowSpaceCreation] = useState(false);
 
   // Initialize achievement system
   useEffect(() => {
@@ -48,25 +49,13 @@ export function TopToolbar() {
   }, [agentCount, spaces.length]);
 
   const handleCreateNewSpace = () => {
-    const newSpaceId = crypto.randomUUID();
-    addSpace({
-      id: newSpaceId,
-      name: `Space ${new Date().toLocaleTimeString()}`,
-      ownerId: "local-user",
-      dimensions: { width: 80, height: 80 },
-      tileset: { floor: "grass", theme: "modern" },
-      tilemap: undefined,
-      agents: [],
-      settings: { proximityRadius: 5, maxAgents: 10, snapToGrid: true },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
+    setShowSpaceCreation(true);
   };
 
   return (
     <TooltipProvider>
       <div className="h-12 px-4 flex items-center justify-between bg-card">
-        {/* Left Section: Level, Space Info, Missions Toggle */}
+        {/* Left Section: Space Info + Missions Toggle */}
         <div className="flex items-center gap-3">
           {/* Missions Toggle (when collapsed) */}
           {leftSidebarCollapsed && (
@@ -92,39 +81,12 @@ export function TopToolbar() {
             </Tooltip>
           )}
 
-          {/* Level Badge with XP */}
-          {progress && levelInfo && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-bold text-xs shadow-sm">
-                    {progress.level}
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-[60px]">
-                    <div className="text-xs font-medium text-foreground/70 leading-none">
-                      {levelInfo.currentXp} / 1000
-                    </div>
-                    <Progress value={levelInfo.progressPercentage} className="h-0.5 bg-background/50" />
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Level {progress.level} - {Math.floor(levelInfo.progressPercentage)}% to next level</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
           {currentSpace && (
-            <>
-              <div className="w-px h-4 bg-border/30" />
-              <div className="flex items-center gap-2">
-                <h1 className="font-semibold text-sm tracking-tight">SwarmVille</h1>
-                <span className="text-xs text-muted-foreground">•</span>
-                <span className="text-xs font-medium text-muted-foreground">
-                  {currentSpace.name}
-                </span>
-              </div>
-            </>
+            <div className="flex items-center gap-2">
+              <h1 className="font-semibold text-sm tracking-tight">SwarmVille</h1>
+              <span className="text-xs text-muted-foreground">•</span>
+              <span className="text-xs font-medium text-muted-foreground">{currentSpace.name}</span>
+            </div>
           )}
         </div>
 
@@ -223,6 +185,14 @@ export function TopToolbar() {
           )}
         </div>
       </div>
+
+      {/* Space Creation Dialog */}
+      {showSpaceCreation && (
+        <SpaceCreationDialog
+          open={showSpaceCreation}
+          onClose={() => setShowSpaceCreation(false)}
+        />
+      )}
 
       {/* Sprite Generator Dialog */}
       {showSpriteGenerator && (

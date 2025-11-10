@@ -352,12 +352,22 @@ impl<'a> AchievementDb<'a> {
     pub fn update_player_stats(&self, stats: &PlayerStats) -> SqliteResult<()> {
         self.conn.execute(
             r#"
-            UPDATE player_stats
-            SET level = ?1, xp = ?2, total_xp_earned = ?3, achievements_unlocked = ?4,
-                current_streak = ?5, longest_streak = ?6, last_login = ?7, updated_at = ?8
-            WHERE player_id = ?9
+            INSERT INTO player_stats (
+                player_id, level, xp, total_xp_earned, achievements_unlocked,
+                current_streak, longest_streak, last_login, created_at, updated_at
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+            ON CONFLICT(player_id) DO UPDATE SET
+                level = excluded.level,
+                xp = excluded.xp,
+                total_xp_earned = excluded.total_xp_earned,
+                achievements_unlocked = excluded.achievements_unlocked,
+                current_streak = excluded.current_streak,
+                longest_streak = excluded.longest_streak,
+                last_login = excluded.last_login,
+                updated_at = excluded.updated_at
             "#,
             params![
+                stats.player_id,
                 stats.level,
                 stats.xp,
                 stats.total_xp_earned,
@@ -365,8 +375,8 @@ impl<'a> AchievementDb<'a> {
                 stats.current_streak,
                 stats.longest_streak,
                 stats.last_login,
+                stats.created_at,
                 stats.updated_at,
-                stats.player_id,
             ],
         )?;
         Ok(())

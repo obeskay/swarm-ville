@@ -91,7 +91,7 @@ export function AchievementCard({
 
           {/* Title and Description */}
           <div>
-            <h4 className="font-bold text-sm mb-1">{achievement.name}</h4>
+            <h4 className="font-bold text-sm mb-1">{achievement.id}</h4>
             <p className="text-xs text-foreground/70 line-clamp-2">{achievement.description}</p>
           </div>
 
@@ -108,24 +108,8 @@ export function AchievementCard({
                 {achievement.rarity.toUpperCase()}
               </span>
             </div>
-            <div className="text-xs font-semibold text-primary">
-              +{achievement.xp_reward} XP
-            </div>
+            <div className="text-xs font-semibold text-primary">+{achievement.xpReward} XP</div>
           </div>
-
-          {/* Requirements (if locked) */}
-          {!unlocked && achievement.requirements.length > 0 && (
-            <div className="pt-2 border-t border-foreground/10">
-              <div className="text-xs text-foreground/60 space-y-1">
-                {achievement.requirements.map((req, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="w-1 h-1 rounded-full bg-foreground/40" />
-                    <span>{req.description}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Unlock button (if available) */}
           {available && !unlocked && (

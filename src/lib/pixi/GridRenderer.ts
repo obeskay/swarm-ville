@@ -92,12 +92,7 @@ export class GridRenderer {
       }
 
       if (tileData.object) {
-        const hasColliders = await this.placeTile(
-          x,
-          y,
-          "object",
-          tileData.object,
-        );
+        const hasColliders = await this.placeTile(x, y, "object", tileData.object);
 
         // Mark tiles with colliders as impassable
         if (hasColliders) {
@@ -121,18 +116,12 @@ export class GridRenderer {
    * Place a tile sprite at grid coordinates
    * Usa el patrón de gather-clone: getSpriteForTileJSON() retorna sprites listos para usar
    */
-  private async placeTile(
-    x: number,
-    y: number,
-    layer: Layer,
-    tileName: string,
-  ): Promise<boolean> {
+  private async placeTile(x: number, y: number, layer: Layer, tileName: string): Promise<boolean> {
     try {
       const screenCoordinates = this.convertTileToScreenCoordinates(x, y);
 
       // Get sprite ready-to-use usando el patrón probado de gather-clone
-      const { sprite: newSprite, data: spriteData } =
-        await sprites.getSpriteForTileJSON(tileName);
+      const { sprite: newSprite, data: spriteData } = await sprites.getSpriteForTileJSON(tileName);
 
       if (!newSprite || !newSprite.texture) {
         // Silent fail - tile not found
@@ -150,16 +139,11 @@ export class GridRenderer {
       this.layers[layer].addChild(newSprite);
 
       // Check if sprite has colliders
-      const hasColliders = !!(
-        spriteData?.colliders && spriteData.colliders.length > 0
-      );
+      const hasColliders = !!(spriteData?.colliders && spriteData.colliders.length > 0);
 
       return hasColliders;
     } catch (error) {
-      console.warn(
-        `[GridRenderer] Failed to place tile ${tileName} at ${x},${y}:`,
-        error,
-      );
+      console.warn(`[GridRenderer] Failed to place tile ${tileName} at ${x},${y}:`, error);
       return false;
     }
   }
@@ -230,10 +214,7 @@ export class GridRenderer {
   /**
    * Convert tile coordinates to screen coordinates
    */
-  public convertTileToScreenCoordinates(
-    x: number,
-    y: number,
-  ): { x: number; y: number } {
+  public convertTileToScreenCoordinates(x: number, y: number): { x: number; y: number } {
     return {
       x: x * TILE_SIZE,
       y: y * TILE_SIZE,
@@ -243,10 +224,7 @@ export class GridRenderer {
   /**
    * Convert screen coordinates to tile coordinates
    */
-  public convertScreenToTileCoordinates(
-    x: number,
-    y: number,
-  ): { x: number; y: number } {
+  public convertScreenToTileCoordinates(x: number, y: number): { x: number; y: number } {
     return {
       x: Math.floor(x / TILE_SIZE),
       y: Math.floor(y / TILE_SIZE),
@@ -257,9 +235,7 @@ export class GridRenderer {
    * Check if position is valid
    */
   public isValidPosition(pos: Position): boolean {
-    return (
-      pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height
-    );
+    return pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height;
   }
 
   /**
@@ -272,12 +248,15 @@ export class GridRenderer {
   /**
    * ✨ Improved: Check if a rectangular area is blocked (for better collision detection)
    * This allows for sub-tile precision hitboxes
+   *
+   * Character sprite is 96x96 pixels (48x48 scaled 2x) with anchor (0.5, 1)
+   * - Extends ~1.5 tiles UP from center (head position)
+   * - Extends ~1.5 tiles DOWN from center (feet position)
+   * - Width ~3 tiles total (96/32)
+   *
+   * Default: width=3.0, height=3.0 matches visual character size exactly
    */
-  public isAreaBlocked(
-    centerPos: Position,
-    width: number = 0.8,
-    height: number = 0.8,
-  ): boolean {
+  public isAreaBlocked(centerPos: Position, width: number = 3.0, height: number = 3.0): boolean {
     // Check center tile
     if (this.isBlocked(centerPos)) return true;
 
@@ -285,7 +264,7 @@ export class GridRenderer {
     const halfW = width / 2;
     const halfH = height / 2;
 
-    // Check corners
+    // Check all corners of the collision box
     const corners = [
       {
         x: Math.floor(centerPos.x + halfW),
@@ -316,10 +295,7 @@ export class GridRenderer {
    * ✨ Improved: Get nearest walkable position to a target
    * Useful when pathfinding to blocked tiles
    */
-  public getNearestWalkable(
-    target: Position,
-    maxRadius: number = 3,
-  ): Position | null {
+  public getNearestWalkable(target: Position, maxRadius: number = 3): Position | null {
     // If target is already walkable, return it
     if (!this.isBlocked(target)) return target;
 
@@ -375,7 +351,7 @@ const agentGraphicsPool = new ObjectPool<PIXI.Graphics>(
     graphics.visible = true;
     graphics.alpha = 1;
   },
-  50,
+  50
 );
 
 /**
@@ -396,12 +372,7 @@ export class AgentSprite extends PIXI.Container {
   private targetPixelPosition: { x: number; y: number } | null = null;
   private movementSpeed: number = 6; // pixels per frame at 60fps (smooth and natural like Gather Clone)
 
-  constructor(
-    gridPosition: Position,
-    color: number,
-    name: string,
-    interactive: boolean = false,
-  ) {
+  constructor(gridPosition: Position, color: number, name: string, interactive: boolean = false) {
     super();
     this.gridPosition = gridPosition;
     this.eventMode = interactive ? "static" : "auto";
@@ -530,10 +501,7 @@ export class AgentSprite extends PIXI.Container {
    * Legacy animate method - now uses smooth movement
    * @deprecated Use setTargetGridPosition + update loop instead
    */
-  public animate(
-    targetGridPos: Position,
-    duration: number = 300,
-  ): Promise<void> {
+  public animate(targetGridPos: Position, duration: number = 300): Promise<void> {
     this.setTargetGridPosition(targetGridPos);
 
     return new Promise((resolve) => {

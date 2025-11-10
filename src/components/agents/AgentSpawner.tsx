@@ -94,14 +94,22 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
   const [selectedRole, setSelectedRole] = useState<AgentRole>("coder");
   const [agentName, setAgentName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const selectedRoleData = AGENT_ROLES.find((r) => r.id === selectedRole);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 150);
+  };
 
   // Handle ESC key and prevent WASD propagation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        handleClose();
       }
       // Prevent WASD keys from propagating to game controls
       if (["w", "a", "s", "d", "W", "A", "S", "D"].includes(e.key)) {
@@ -111,7 +119,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [onClose]);
+  }, []);
 
   const handleCreate = async () => {
     if (!agentName.trim()) {
@@ -160,13 +168,13 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
     toast.success(`${agentName} joined your team! 🎉`);
 
     setCreating(false);
-    onClose();
+    handleClose();
   };
 
   return (
-    <Dialog open={true} onClose={onClose} size="lg">
+    <Dialog open={!isClosing} onClose={handleClose} size="lg">
       <button
-        onClick={onClose}
+        onClick={handleClose}
         className="absolute top-4 right-4 p-1 rounded-md opacity-60 hover:opacity-100 transition-opacity z-10"
       >
         <X className="h-4 w-4" />

@@ -1,3 +1,6 @@
-pub mod persistence;
+pub mod achievements;
 
-pub use persistence::*;
+// State for persistence commands
+pub struct AppState {
+    pub db: std::sync::Arc<crate::db::PersistenceLayer>,
+}

@@ -4,15 +4,15 @@
     windows_subsystem = "windows"
 )]
 
-mod db;
-// mod audio; // Temporarily disabled - requires cpal 0.15+ API updates
 mod agents;
 mod cli;
 mod commands;
+mod db;
 mod error;
 mod language; // Thronglet language learning system
 mod sprite_generator;
 mod ws;
+// mod audio; // Temporarily disabled - requires cpal 0.15+ API updates
 
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -154,9 +154,9 @@ async fn stop_stt() -> Result<(), String> {
 #[tauri::command]
 async fn create_space(
     name: String,
-    width: u32,
-    height: u32,
-    theme: String,
+    _width: u32,
+    _height: u32,
+    _theme: String,
 ) -> Result<String, String> {
     // TODO: Create space in database
     Ok(format!("Space created: {}", name))
@@ -164,10 +164,10 @@ async fn create_space(
 
 #[tauri::command]
 async fn spawn_agent(
-    space_id: String,
+    _space_id: String,
     name: String,
-    role: String,
-    cli_type: String,
+    _role: String,
+    _cli_type: String,
 ) -> Result<String, String> {
     // TODO: Create agent in database
     Ok(format!("Agent spawned: {}", name))
@@ -327,10 +327,7 @@ async fn list_generated_maps(app_handle: tauri::AppHandle) -> Result<String, Str
 // ============================================
 
 #[tauri::command]
-async fn teach_word(
-    app_handle: tauri::AppHandle,
-    request_json: String,
-) -> Result<String, String> {
+async fn teach_word(app_handle: tauri::AppHandle, request_json: String) -> Result<String, String> {
     let db_state = app_handle.state::<Mutex<Database>>();
     let db = db_state.lock().unwrap();
     let language_system = language::LanguageSystem::new(&db);
@@ -457,21 +454,17 @@ fn main() {
             get_agent_vocabulary,
             get_agent_language_state,
             get_word_associations,
-            // Persistence commands
-            commands::save_space,
-            commands::get_space,
-            commands::list_spaces,
-            commands::update_space,
-            commands::delete_space,
-            commands::save_agent,
-            commands::get_agents_by_space,
-            commands::update_agent_position,
-            commands::delete_agent,
-            commands::get_user_progress,
-            commands::update_user_progress,
-            commands::add_xp,
-            commands::complete_mission,
-            commands::unlock_achievement,
+            // Achievement System commands
+            commands::achievements::init_achievements,
+            commands::achievements::get_all_achievements,
+            commands::achievements::get_achievement_by_id,
+            commands::achievements::get_player_progress,
+            commands::achievements::update_achievement_progress,
+            commands::achievements::unlock_achievement,
+            commands::achievements::get_player_stats,
+            commands::achievements::add_xp,
+            commands::achievements::get_achievement_analytics,
+            commands::achievements::get_unlock_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

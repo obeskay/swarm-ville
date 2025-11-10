@@ -1,6 +1,6 @@
 use super::handlers::{handle_client_message, Clients};
 use super::types::{ClientMessage, ConnectionInfo, SharedConnectionInfo};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;

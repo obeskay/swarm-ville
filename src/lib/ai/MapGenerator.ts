@@ -103,13 +103,14 @@ Rules:
 
   /**
    * Convert AI response to our tilemap format
+   * Uses positive coordinates starting from (0,0) for consistent visual alignment
    */
   private convertToTilemap(aiMap: any, width: number, height: number, style: string): GeneratedMap {
     const tilemap: TileMap = {};
 
-    // Generate base floor
-    for (let x = -Math.floor(width / 2); x < Math.ceil(width / 2); x++) {
-      for (let y = -Math.floor(height / 2); y < Math.ceil(height / 2); y++) {
+    // Generate base floor using positive coordinates (0,0) to (width-1, height-1)
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
         const key = `${x}, ${y}`;
         tilemap[key] = {
           floor: this.getFloorTile(style),
@@ -152,30 +153,30 @@ Rules:
   }
 
   /**
-   * Generate office room layouts
+   * Generate office room layouts using positive coordinates (0,0) start
    */
   private generateOfficeRooms(tilemap: TileMap, width: number, height: number): void {
-    // Create perimeter walls (map boundaries)
-    for (let x = -Math.floor(width / 2); x < Math.ceil(width / 2); x++) {
-      const topKey = `${x}, ${-Math.floor(height / 2)}`;
-      const bottomKey = `${x}, ${Math.ceil(height / 2) - 1}`;
+    // Create perimeter walls (map boundaries) using positive coordinates
+    for (let x = 0; x < width; x++) {
+      const topKey = `${x}, 0`;
+      const bottomKey = `${x}, ${height - 1}`;
       if (tilemap[topKey]) tilemap[topKey].object = "grasslands-stone_wall_top";
       if (tilemap[bottomKey]) tilemap[bottomKey].object = "grasslands-stone_wall_bottom";
     }
 
-    for (let y = -Math.floor(height / 2); y < Math.ceil(height / 2); y++) {
-      const leftKey = `${-Math.floor(width / 2)}, ${y}`;
-      const rightKey = `${Math.ceil(width / 2) - 1}, ${y}`;
+    for (let y = 0; y < height; y++) {
+      const leftKey = `0, ${y}`;
+      const rightKey = `${width - 1}, ${y}`;
       if (tilemap[leftKey]) tilemap[leftKey].object = "grasslands-stone_wall_left";
       if (tilemap[rightKey]) tilemap[rightKey].object = "grasslands-stone_wall_right";
     }
 
-    // Generate meeting rooms in corners
+    // Generate meeting rooms in corners (using positive coords)
     const roomConfigs = [
-      { x: -Math.floor(width / 2) + 2, y: -Math.floor(height / 2) + 2, w: 8, h: 6 },
-      { x: Math.ceil(width / 2) - 10, y: -Math.floor(height / 2) + 2, w: 8, h: 6 },
-      { x: -Math.floor(width / 2) + 2, y: Math.ceil(height / 2) - 8, w: 8, h: 6 },
-      { x: Math.ceil(width / 2) - 10, y: Math.ceil(height / 2) - 8, w: 8, h: 6 },
+      { x: 2, y: 2, w: 8, h: 6 },
+      { x: width - 10, y: 2, w: 8, h: 6 },
+      { x: 2, y: height - 8, w: 8, h: 6 },
+      { x: width - 10, y: height - 8, w: 8, h: 6 },
     ];
 
     for (const room of roomConfigs) {
@@ -206,12 +207,12 @@ Rules:
       if (tilemap[tableKey]) tilemap[tableKey].object = "grasslands-stone_inverted_2";
     }
 
-    // Add desk clusters in open areas
+    // Add desk clusters in open areas (using positive coordinates)
     const deskClusters = [
-      { x: 0, y: -5 },
-      { x: -10, y: 5 },
-      { x: 10, y: 5 },
-      { x: 0, y: 15 },
+      { x: Math.floor(width / 2), y: Math.floor(height / 3) },
+      { x: Math.floor(width / 4), y: Math.floor(height / 2) },
+      { x: Math.floor((width * 3) / 4), y: Math.floor(height / 2) },
+      { x: Math.floor(width / 2), y: Math.floor((height * 2) / 3) },
     ];
 
     for (const cluster of deskClusters) {
@@ -268,8 +269,8 @@ Rules:
     const spacing = Math.floor(width / count);
 
     for (let i = 0; i < count; i++) {
-      const x = -Math.floor(width / 2) + 2 + i * spacing;
-      const y = -Math.floor(height / 2) + 2;
+      const x = 2 + i * spacing;
+      const y = 2;
       spots.push({ x, y, type });
     }
 
@@ -286,8 +287,8 @@ Rules:
     const spots = [];
     for (let i = 0; i < count; i++) {
       spots.push({
-        x: i === 0 ? -5 : 5,
-        y: 0,
+        x: i === 0 ? Math.floor(width / 4) : Math.floor((width * 3) / 4),
+        y: Math.floor(height / 2),
         type,
       });
     }
@@ -303,10 +304,10 @@ Rules:
   ): Array<{ x: number; y: number; type: string }> {
     const spots = [];
     const roomPositions = [
-      { x: -Math.floor(width / 2) + 10, y: -Math.floor(height / 2) + 4 },
-      { x: Math.ceil(width / 2) - 12, y: -Math.floor(height / 2) + 4 },
-      { x: -Math.floor(width / 2) + 10, y: Math.ceil(height / 2) - 10 },
-      { x: Math.ceil(width / 2) - 12, y: Math.ceil(height / 2) - 10 },
+      { x: 10, y: 4 },
+      { x: width - 12, y: 4 },
+      { x: 10, y: height - 10 },
+      { x: width - 12, y: height - 10 },
     ];
 
     for (let i = 0; i < Math.min(count, roomPositions.length); i++) {
@@ -332,14 +333,14 @@ Rules:
   }
 
   /**
-   * Generate fallback map without AI (procedural)
+   * Generate fallback map without AI (procedural) using positive coordinates (0,0) start
    */
   private generateFallbackMap(width: number, height: number, style: string): GeneratedMap {
     const tilemap: TileMap = {};
 
-    // Generate base floor
-    for (let x = -Math.floor(width / 2); x < Math.ceil(width / 2); x++) {
-      for (let y = -Math.floor(height / 2); y < Math.ceil(height / 2); y++) {
+    // Generate base floor using positive coordinates (0,0) to (width-1, height-1)
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
         const key = `${x}, ${y}`;
         tilemap[key] = {
           floor: this.getFloorTile(style),

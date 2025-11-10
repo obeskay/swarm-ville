@@ -1,7 +1,8 @@
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { Rocket, Gamepad2, Users, Zap } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Rocket, Gamepad2, Users, Zap, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { SpaceCreationDialog } from "../space/SpaceCreationDialog";
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -10,15 +11,16 @@ interface OnboardingWizardProps {
 export default function OnboardingWizard({
   onComplete,
 }: OnboardingWizardProps) {
-  const [step, setStep] = useState(1);
+  const [showSpaceCreation, setShowSpaceCreation] = useState(false);
 
-  useEffect(() => {
-    // Quick splash screen, then interactive tutorial takes over
-    const timer = setTimeout(() => {
-      onComplete();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+  const handleGetStarted = () => {
+    setShowSpaceCreation(true);
+  };
+
+  const handleSpaceCreated = () => {
+    setShowSpaceCreation(false);
+    onComplete();
+  };
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-background to-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-hidden">
@@ -31,12 +33,8 @@ export default function OnboardingWizard({
           <div className="flex flex-col items-center text-center space-y-8">
             {/* Header */}
             <div className="flex flex-col items-center space-y-3">
-              <div
-                className={`w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center transition-all duration-700 ${
-                  step >= 1 ? "scale-100 opacity-100" : "scale-75 opacity-0"
-                }`}
-              >
-                <Rocket className="w-10 h-10 text-primary" />
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-lg">
+                <Rocket className="w-10 h-10 text-primary animate-pulse" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
@@ -49,8 +47,7 @@ export default function OnboardingWizard({
             </div>
 
             {/* Feature Grid */}
-            {step >= 1 && (
-              <div className="grid grid-cols-3 gap-4 w-full opacity-0 animate-fadeIn">
+            <div className="grid grid-cols-3 gap-4 w-full">
                 <div className="flex flex-col items-center space-y-2 p-4 rounded-lg bg-muted/50">
                   <Gamepad2 className="w-6 h-6 text-primary" />
                   <span className="text-xs font-medium">WASD Control</span>
@@ -64,11 +61,9 @@ export default function OnboardingWizard({
                   <span className="text-xs font-medium">AI Agents</span>
                 </div>
               </div>
-            )}
 
             {/* Description */}
-            {step >= 1 && (
-              <div className="space-y-3 opacity-0 animate-fadeIn">
+            <div className="space-y-3">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Navigate with{" "}
                   <span className="font-semibold text-foreground">WASD</span>,
@@ -76,24 +71,27 @@ export default function OnboardingWizard({
                   other users and AI agents.
                 </p>
               </div>
-            )}
 
             {/* CTA Button */}
             <Button
-              onClick={onComplete}
+              onClick={handleGetStarted}
               size="lg"
-              className="w-full bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 transition-all text-white font-semibold"
+              className="w-full bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 transition-all text-white font-semibold shadow-lg"
             >
-              {step >= 1 ? "Enter Workspace" : "Loading..."}
+              <Sparkles className="w-5 h-5 mr-2" />
+              Create Your First Space
             </Button>
 
             {/* Footer */}
             <p className="text-xs text-muted-foreground">
-              💡 Space automatically created for you
+              Choose from beautiful templates
             </p>
           </div>
         </CardContent>
       </Card>
+
+      {/* Space Creation Dialog */}
+      <SpaceCreationDialog open={showSpaceCreation} onClose={handleSpaceCreated} />
 
       <style>{`
         @keyframes fadeIn {

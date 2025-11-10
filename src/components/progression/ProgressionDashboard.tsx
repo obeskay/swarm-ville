@@ -11,10 +11,13 @@ import { XPBar } from "./XPBar";
 import { AchievementsPanel } from "./AchievementsPanel";
 import { MissionTracker } from "./MissionTracker";
 import { AchievementNotifications } from "./AchievementNotifications";
+import { AnalyticsDashboard } from "./AnalyticsDashboard";
+import { StreakDisplay } from "./StreakDisplay";
 import { useAchievementStore } from "@/stores/achievementStore";
-import { Trophy, Target, BarChart3, X, TrendingUp, Zap, Star, Award } from "lucide-react";
+import { useAchievementSystem } from "@/hooks/useAchievementSystem";
+import { Trophy, Target, BarChart3, X, TrendingUp, Zap, Star, Award, Flame } from "lucide-react";
 
-type View = "overview" | "achievements" | "missions" | "analytics";
+type View = "overview" | "achievements" | "missions" | "analytics" | "streaks";
 
 export function ProgressionDashboard() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,9 +32,16 @@ export function ProgressionDashboard() {
     getCompletionPercentage,
   } = useAchievementStore();
 
+  const achievementSystem = useAchievementSystem();
+
   useEffect(() => {
     setUserId("default_user"); // TODO: Get from auth
   }, [setUserId]);
+
+  // Track daily login once on mount
+  useEffect(() => {
+    achievementSystem.trackDailyLogin();
+  }, []);
 
   const unlockedAchievements = getUnlockedAchievements();
   const availableMissions = getAvailableMissions();
@@ -110,6 +120,14 @@ export function ProgressionDashboard() {
                 >
                   <Target className="w-4 h-4 mr-2" />
                   Missions
+                </Button>
+                <Button
+                  variant={activeView === "streaks" ? "default" : "outline"}
+                  onClick={() => setActiveView("streaks")}
+                  className="shrink-0"
+                >
+                  <Flame className="w-4 h-4 mr-2" />
+                  Streaks
                 </Button>
                 <Button
                   variant={activeView === "analytics" ? "default" : "outline"}
@@ -255,64 +273,9 @@ export function ProgressionDashboard() {
 
                 {activeView === "missions" && <MissionTracker />}
 
-                {activeView === "analytics" && (
-                  <div className="space-y-6">
-                    <Card variant="elevated" spacing="generous">
-                      <h3 className="text-lg font-bold mb-4">Progress Analytics</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">{progress.level}</div>
-                          <div className="text-xs text-foreground/70 mt-1">Current Level</div>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">
-                            {Math.floor(completionPercentage)}%
-                          </div>
-                          <div className="text-xs text-foreground/70 mt-1">Completion</div>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">
-                            {unlockedAchievements.length}
-                          </div>
-                          <div className="text-xs text-foreground/70 mt-1">Achievements</div>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-background/30">
-                          <div className="text-3xl font-bold text-primary">
-                            {progress.completedMissions.length}
-                          </div>
-                          <div className="text-xs text-foreground/70 mt-1">Missions</div>
-                        </div>
-                      </div>
-                    </Card>
+                {activeView === "streaks" && <StreakDisplay />}
 
-                    <Card variant="yellow" spacing="generous">
-                      <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        <Award className="w-5 h-5" />
-                        Progression Insights
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="p-4 rounded-lg bg-background/30">
-                          <div className="text-sm font-semibold mb-2">XP to Next Level</div>
-                          <div className="text-2xl font-bold text-primary">
-                            {1000 - levelInfo.currentXp} XP
-                          </div>
-                          <div className="text-xs text-foreground/70 mt-1">
-                            {Math.floor(levelInfo.progressPercentage)}% progress
-                          </div>
-                        </div>
-                        <div className="p-4 rounded-lg bg-background/30">
-                          <div className="text-sm font-semibold mb-2">Available to Unlock</div>
-                          <div className="text-2xl font-bold text-green-500">
-                            {availableMissions.length}
-                          </div>
-                          <div className="text-xs text-foreground/70 mt-1">
-                            missions ready to complete
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                )}
+                {activeView === "analytics" && <AnalyticsDashboard />}
               </motion.div>
             </div>
           </div>

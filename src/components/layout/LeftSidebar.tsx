@@ -6,7 +6,6 @@ import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
-import { cn } from "@/lib/utils";
 
 export function LeftSidebar() {
   const leftSidebarCollapsed = useUIStore((state) => state.leftSidebarCollapsed);
@@ -25,34 +24,30 @@ export function LeftSidebar() {
     <TooltipProvider>
       <div className="h-full flex flex-col bg-card">
         {/* Compact Header with Level */}
-        <div className="h-12 px-4 flex items-center justify-between border-b border-border/50">
+        <div className="h-14 px-4 py-3 flex items-center justify-between border-b border-border/50">
           {!leftSidebarCollapsed ? (
-            <div className="flex items-center gap-3 flex-1">
-              <div className="relative">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-sm">
+            <div className="flex flex-col gap-2 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-xs">
                   {level}
                 </div>
+                <span className="text-sm font-semibold text-foreground">Level {level}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Level {level}
-                  </span>
-                  <Badge variant="secondary" className="h-4 text-xs px-1.5">
-                    {xp} / {xpToNextLevel()}
-                  </Badge>
-                </div>
-                <Progress value={(xp / xpToNextLevel()) * 100} className="h-1 mt-1" />
+              <div className="flex items-center gap-2 px-1">
+                <Progress value={(xp / xpToNextLevel()) * 100} className="h-1.5 flex-1" />
+                <span className="text-xs text-muted-foreground font-medium min-w-[28px] text-right">
+                  {Math.round((xp / xpToNextLevel()) * 100)}%
+                </span>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center flex-1">
               <div className="relative">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-sm">
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-xs">
                   {level}
                 </div>
                 {activeMissions.length > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
                     {activeMissions.length}
                   </Badge>
                 )}

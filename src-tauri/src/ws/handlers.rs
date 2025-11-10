@@ -102,7 +102,7 @@ pub async fn handle_client_message(
 
         ClientMessage::AgentAction {
             action,
-            target,
+            target: _,
             data,
         } => {
             let info = conn_info.lock().await;

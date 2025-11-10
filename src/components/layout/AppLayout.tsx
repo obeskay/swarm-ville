@@ -26,26 +26,38 @@ export function AppLayout({
   return (
     <div className="h-screen w-screen overflow-hidden grid grid-rows-[auto_1fr_auto] bg-background">
       {/* Top Toolbar */}
-      <div className="border-b border-border">{toolbar}</div>
+      <div className="border-b border-border/50">{toolbar}</div>
 
       {/* Main Content Area */}
       <div className="grid grid-cols-[auto_1fr_auto] overflow-hidden">
-        {/* Left Sidebar */}
-        {!leftSidebarCollapsed && (
-          <div className="w-[200px] border-r border-border">{leftSidebar}</div>
-        )}
+        {/* Left Sidebar - smooth slide transition */}
+        <div
+          className="transition-all duration-300 border-r border-border/50 overflow-hidden"
+          style={{
+            width: leftSidebarCollapsed ? "0px" : "200px",
+            opacity: leftSidebarCollapsed ? 0 : 1,
+          }}
+        >
+          {leftSidebar}
+        </div>
 
         {/* Main Content */}
         <div className="overflow-hidden relative bg-muted/30 flex-1">{children}</div>
 
-        {/* Right Sidebar */}
-        {!rightSidebarCollapsed && (
-          <div className="w-[240px] border-l border-border">{rightSidebar}</div>
-        )}
+        {/* Right Sidebar - smooth slide transition */}
+        <div
+          className="transition-all duration-300 border-l border-border/50 overflow-hidden"
+          style={{
+            width: rightSidebarCollapsed ? "0px" : "240px",
+            opacity: rightSidebarCollapsed ? 0 : 1,
+          }}
+        >
+          {rightSidebar}
+        </div>
       </div>
 
       {/* Bottom Status Bar */}
-      <div className="border-t border-border">{statusBar}</div>
+      <div>{statusBar}</div>
     </div>
   );
 }

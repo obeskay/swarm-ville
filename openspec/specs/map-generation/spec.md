@@ -1,7 +1,8 @@
-# Map Generation Specification
+# map-generation Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change improve-realistic-map-generation. Update Purpose after archive.
+## Requirements
 ### Requirement: Map Boundary Collision
 The system SHALL prevent players from moving beyond map boundaries.
 
@@ -86,3 +87,4 @@ The system SHALL provide visual variety in generated maps with different styles 
 - **WHEN** map is rendered
 - **THEN** different areas have appropriate styling
 - **AND** office feels like a real startup workspace
+

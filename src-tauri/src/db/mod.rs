@@ -11,7 +11,7 @@ pub mod sprites;
 pub use achievements::{
     Achievement, AchievementDb, AchievementProgress, AchievementUnlock, PlayerStats,
 };
-pub use errors::{DbError, DbResult};
+pub use errors::DbResult;
 pub use persistence::{Agent, PersistenceLayer, Space, UserProgress};
 
 pub struct Database {
