@@ -1,7 +1,8 @@
-# Agent Flows Specification
+# agent-flows Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-swarm-intelligence-system. Update Purpose after archive.
+## Requirements
 ### Requirement: Flow Execution Engine
 
 The system SHALL provide a FlowExecutor that manages execution of multi-agent workflow patterns with state management and error handling.
@@ -278,3 +279,4 @@ The system SHALL provide real-time monitoring and observability for flow executi
 - **THEN** system triggers alert to user
 - **AND** alert includes flow ID, current progress, and suspected cause
 - **AND** user can intervene (cancel, add resources, adjust configuration)
+

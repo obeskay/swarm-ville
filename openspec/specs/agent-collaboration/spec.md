@@ -1,7 +1,8 @@
-# Agent Collaboration Specification
+# agent-collaboration Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-realtime-collaboration. Update Purpose after archive.
+## Requirements
 ### Requirement: AI Agent Synchronization
 The system SHALL synchronize AI agent states across all clients in real-time.
 
@@ -27,3 +28,4 @@ The system SHALL enable real-time interactions between humans and AI agents.
 - **WHEN** multiple AI agents are active in a space
 - **THEN** agents can coordinate behaviors
 - **AND** coordination is visible to all users
+

@@ -105,13 +105,16 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
     }, 150);
   };
 
-  // Handle ESC key and prevent WASD propagation
+  // Handle ESC key and prevent WASD propagation (only when dialog is visible)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Only intercept keys if dialog is actually open
+      if (isClosing) return;
+
       if (e.key === "Escape") {
         handleClose();
       }
-      // Prevent WASD keys from propagating to game controls
+      // Prevent WASD keys from propagating to game controls when dialog is open
       if (["w", "a", "s", "d", "W", "A", "S", "D"].includes(e.key)) {
         e.stopPropagation();
       }
@@ -119,7 +122,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, []);
+  }, [isClosing]);
 
   const handleCreate = async () => {
     if (!agentName.trim()) {
@@ -268,7 +271,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
       </DialogContent>
 
       <DialogFooter className="gap-2">
-        <Button type="button" variant="outline" onClick={onClose} disabled={creating}>
+        <Button type="button" variant="outline" onClick={handleClose} disabled={creating}>
           Cancel
         </Button>
         <Button type="button" onClick={handleCreate} disabled={creating || !agentName.trim()}>

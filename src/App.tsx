@@ -14,6 +14,7 @@ import { BottomStatusBar } from "./components/layout/BottomStatusBar";
 import { LeftSidebar } from "./components/layout/LeftSidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
 import { ProgressionDashboard } from "./components/progression/ProgressionDashboard";
+import { generateDefaultSpaceConfig } from "./lib/spaceGenerator";
 
 function App() {
   const { spaces, addSpace } = useSpaceStore();
@@ -62,27 +63,22 @@ function App() {
   const handleCreateSpace = useCallback(async () => {
     if (loading) return; // Prevent double creation
 
-    // Create space directly - no MapGenerator
+    // Generate dynamic space configuration instead of hardcoded values
+    const spaceConfig = generateDefaultSpaceConfig();
     const spaceId = crypto.randomUUID();
+
     addSpace({
       id: spaceId,
-      name: "Default Space",
+      name: spaceConfig.name,
       ownerId: "local-user",
-      dimensions: {
-        width: 1600,
-        height: 1200,
-      },
+      dimensions: spaceConfig.dimensions,
       tileset: {
-        floor: "grass",
-        theme: "modern",
+        floor: spaceConfig.floor,
+        theme: spaceConfig.theme,
       },
       tilemap: undefined, // Will load from defaultmap.json
       agents: [],
-      settings: {
-        proximityRadius: 5,
-        maxAgents: 10,
-        snapToGrid: true,
-      },
+      settings: spaceConfig.settings,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });

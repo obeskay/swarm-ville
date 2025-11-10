@@ -20,7 +20,7 @@ const graphicsPool = new ObjectPool<PIXI.Graphics>(
     graphics.visible = true;
     graphics.alpha = 1;
   },
-  20, // Max 20 proximity indicators
+  20 // Max 20 proximity indicators
 );
 
 export enum Direction {
@@ -54,7 +54,7 @@ export class CharacterSprite extends PIXI.Container {
 
   // Movement state
   private targetPixelPosition: { x: number; y: number } | null = null;
-  private movementSpeed: number = 4; // pixels per frame at 60fps (faster movement)
+  private movementSpeed: number = 8; // pixels per frame (32px tile takes ~4 frames = 65ms at 60fps)
   private currentDirection: Direction = Direction.DOWN;
   private currentFrame: number = 0;
   private animationSpeed: number = 0.15; // Frames per tick
@@ -75,19 +75,14 @@ export class CharacterSprite extends PIXI.Container {
     // Load and parse spritesheet
     await PIXI.Assets.load(src);
 
-    const spriteSheetData = JSON.parse(
-      JSON.stringify(characterSpriteSheetData),
-    );
+    const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData));
     spriteSheetData.meta.image = src;
 
     // Get texture and configure for pixel-perfect rendering
     const baseTexture = PIXI.Texture.from(src);
     baseTexture.source.scaleMode = "nearest"; // Pixel-perfect, no antialiasing
-    
-    this.spritesheet = new PIXI.Spritesheet(
-      baseTexture,
-      spriteSheetData,
-    );
+
+    this.spritesheet = new PIXI.Spritesheet(baseTexture, spriteSheetData);
     await this.spritesheet.parse();
 
     // Clean up old sprite completely
@@ -99,9 +94,7 @@ export class CharacterSprite extends PIXI.Container {
     oldSprite.destroy({ texture: false });
 
     // Create new animated sprite
-    const animatedSprite = new PIXI.AnimatedSprite(
-      this.spritesheet.animations["idle_down"],
-    );
+    const animatedSprite = new PIXI.AnimatedSprite(this.spritesheet.animations["idle_down"]);
     animatedSprite.anchor.set(0.5, 1);
     animatedSprite.scale.set(SPRITE_SCALE);
     animatedSprite.animationSpeed = this.animationSpeed;
@@ -123,7 +116,7 @@ export class CharacterSprite extends PIXI.Container {
     characterId: number,
     name: string,
     interactive: boolean = false,
-    agentId?: string,
+    agentId?: string
   ) {
     super();
     this.gridPosition = gridPosition;
@@ -135,12 +128,7 @@ export class CharacterSprite extends PIXI.Container {
     this.sortableChildren = true;
     this.cursor = interactive ? "pointer" : "default";
     // Use Rectangle for hit area (more reliable than Circle)
-    this.hitArea = new PIXI.Rectangle(
-      -TILE_SIZE / 2,
-      -TILE_SIZE / 2,
-      TILE_SIZE,
-      TILE_SIZE,
-    );
+    this.hitArea = new PIXI.Rectangle(-TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
 
     // Initialize pixel position from grid
     this.pixelPosition = this.gridToPixel(gridPosition);
@@ -154,15 +142,13 @@ export class CharacterSprite extends PIXI.Container {
 
     if (!texture) {
       console.warn(
-        `[CharacterSprite] Character ${clampedId} not found in preloaded cache, using fallback`,
+        `[CharacterSprite] Character ${clampedId} not found in preloaded cache, using fallback`
       );
       // Use fallback (Character_001)
       texture = CharacterTextureLoader.getFallbackTexture();
 
       if (!texture) {
-        console.error(
-          `[CharacterSprite] Fallback texture also not available, using EMPTY texture`,
-        );
+        console.error(`[CharacterSprite] Fallback texture also not available, using EMPTY texture`);
         this.baseTexture = PIXI.Texture.EMPTY;
       } else {
         this.baseTexture = texture;
@@ -515,9 +501,7 @@ export class CharacterSprite extends PIXI.Container {
   public update(deltaTime: number): void {
     // Guard: Ensure sprite exists and has scale before updating
     if (!this.sprite || !this.sprite.scale) {
-      console.error(
-        "[CharacterSprite] update() called but sprite or sprite.scale is null",
-      );
+      console.error("[CharacterSprite] update() called but sprite or sprite.scale is null");
       return;
     }
 
@@ -530,7 +514,9 @@ export class CharacterSprite extends PIXI.Container {
       const dy = this.targetPixelPosition.y - this.pixelPosition.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      const actualSpeed = this.movementSpeed * deltaTime;
+      // movementSpeed is already in pixels per frame (deltaTime is frame count at 60fps)
+      // No need to multiply by deltaTime - it's already accounted for
+      const actualSpeed = this.movementSpeed;
 
       if (distance < actualSpeed) {
         // Snap to target
@@ -549,20 +535,17 @@ export class CharacterSprite extends PIXI.Container {
         // ✨ Squash/stretch effect during movement (simple juice)
         // Slightly stretch in movement direction, squash perpendicular
         const stretchAmount = 0.08; // Subtle effect
-        if (
-          this.currentDirection === Direction.LEFT ||
-          this.currentDirection === Direction.RIGHT
-        ) {
+        if (this.currentDirection === Direction.LEFT || this.currentDirection === Direction.RIGHT) {
           // Horizontal movement: stretch horizontally, squash vertically
           this.sprite.scale.set(
             SPRITE_SCALE * (1 + stretchAmount),
-            SPRITE_SCALE * (1 - stretchAmount * 0.5),
+            SPRITE_SCALE * (1 - stretchAmount * 0.5)
           );
         } else {
           // Vertical movement: squash horizontally, stretch vertically
           this.sprite.scale.set(
             SPRITE_SCALE * (1 - stretchAmount * 0.5),
-            SPRITE_SCALE * (1 + stretchAmount),
+            SPRITE_SCALE * (1 + stretchAmount)
           );
         }
       }
@@ -664,15 +647,13 @@ export class CharacterSprite extends PIXI.Container {
 
     if (!texture) {
       console.warn(
-        `[CharacterSprite] Character ${clampedId} not found in preloaded cache, using fallback`,
+        `[CharacterSprite] Character ${clampedId} not found in preloaded cache, using fallback`
       );
       // Use fallback (Character_001)
       texture = CharacterTextureLoader.getFallbackTexture();
 
       if (!texture) {
-        console.error(
-          `[CharacterSprite] Fallback texture also not available, using EMPTY texture`,
-        );
+        console.error(`[CharacterSprite] Fallback texture also not available, using EMPTY texture`);
         this.baseTexture = PIXI.Texture.EMPTY;
       } else {
         this.baseTexture = texture;
@@ -681,10 +662,7 @@ export class CharacterSprite extends PIXI.Container {
       this.baseTexture = texture;
     }
 
-    this.sprite.texture = this.getFrameTexture(
-      this.currentDirection,
-      this.currentFrame,
-    );
+    this.sprite.texture = this.getFrameTexture(this.currentDirection, this.currentFrame);
   }
 
   /**

@@ -1,7 +1,8 @@
-# Agent Orchestration Specification
+# agent-orchestration Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-swarm-intelligence-system. Update Purpose after archive.
+## Requirements
 ### Requirement: Queen Agent Coordinator
 
 The system SHALL provide a Queen Agent that coordinates multiple worker agents in a hierarchical swarm architecture.
@@ -163,3 +164,4 @@ The system SHALL provide visual indicators in the Pixi.js viewport showing agent
 - **THEN** Pixi.js renders semi-transparent circle around swarm
 - **AND** circle encompasses all workers
 - **AND** circle fades out on mouse leave
+

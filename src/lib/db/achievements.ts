@@ -1,9 +1,9 @@
 /**
  * Achievement System TypeScript Bindings
  * Connects to Rust backend via Tauri IPC
+ * Falls back to in-memory storage when Tauri is unavailable
  */
 
-import { invoke } from "@tauri-apps/api/core";
 import type {
   Achievement,
   AchievementProgress,
@@ -13,6 +13,19 @@ import type {
   AchievementCategory,
 } from "../../types/achievements";
 
+// Safely import invoke, handle case where Tauri is not available
+let invoke: ((command: string, args?: any) => Promise<any>) | null = null;
+let isTauriAvailable = false;
+
+try {
+  const tauriModule = require("@tauri-apps/api/core");
+  invoke = tauriModule.invoke;
+  isTauriAvailable = true;
+} catch (e) {
+  console.debug("Tauri not available, using in-memory achievement storage");
+  invoke = null;
+}
+
 // Re-export types for convenience
 export type {
   Achievement,
@@ -21,6 +34,18 @@ export type {
   AchievementAnalytics,
   AchievementRarity,
   AchievementCategory,
+};
+
+// ============================================
+// FALLBACK IN-MEMORY STORAGE
+// ============================================
+
+// When Tauri is not available, we use in-memory storage
+const fallbackStorage = {
+  achievements: new Map<string, Achievement>(),
+  playerStats: new Map<string, PlayerStats>(),
+  progress: new Map<string, AchievementProgress[]>(),
+  unlocks: new Map<string, AchievementUnlock[]>(),
 };
 
 // ============================================
@@ -62,6 +87,17 @@ export interface PlayerStats {
 }
 
 // ============================================
+// HELPER FUNCTION FOR SAFE INVOKE
+// ============================================
+
+async function safeInvoke<T>(command: string, args?: any): Promise<T> {
+  if (!invoke) {
+    throw new Error(`Cannot execute Tauri command "${command}" - Tauri is not available`);
+  }
+  return (invoke as (command: string, args?: any) => Promise<T>)(command, args);
+}
+
+// ============================================
 // ACHIEVEMENT DATABASE API
 // ============================================
 
@@ -71,17 +107,30 @@ export class AchievementDatabaseAPI {
    * Should be called once on app startup with all achievement definitions
    */
   async initAchievements(achievements: Achievement[]): Promise<string> {
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      for (const achievement of achievements) {
+        fallbackStorage.achievements.set(achievement.id, achievement);
+      }
+      return "OK";
+    }
+
     const request: InitAchievementsRequest = {
       achievements_json: JSON.stringify(achievements),
     };
-    return await invoke<string>("init_achievements", { request });
+    return await safeInvoke<string>("init_achievements", { request });
   }
 
   /**
    * Get all achievements from database
    */
   async getAllAchievements(): Promise<Achievement[]> {
-    const responseJson = await invoke<string>("get_all_achievements");
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      return Array.from(fallbackStorage.achievements.values());
+    }
+
+    const responseJson = await safeInvoke<string>("get_all_achievements");
     return JSON.parse(responseJson);
   }
 
@@ -89,7 +138,12 @@ export class AchievementDatabaseAPI {
    * Get specific achievement by ID
    */
   async getAchievementById(achievementId: string): Promise<Achievement | null> {
-    const responseJson = await invoke<string>("get_achievement_by_id", {
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      return fallbackStorage.achievements.get(achievementId) || null;
+    }
+
+    const responseJson = await safeInvoke<string>("get_achievement_by_id", {
       achievementId,
     });
     return JSON.parse(responseJson);
@@ -99,7 +153,13 @@ export class AchievementDatabaseAPI {
    * Get all progress records for a player
    */
   async getPlayerProgress(playerId?: string): Promise<AchievementProgress[]> {
-    const responseJson = await invoke<string>("get_player_progress", {
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      return fallbackStorage.progress.get(defaultPlayerId) || [];
+    }
+
+    const responseJson = await safeInvoke<string>("get_player_progress", {
       playerId,
     });
     return JSON.parse(responseJson);
@@ -118,7 +178,34 @@ export class AchievementDatabaseAPI {
       progress,
       player_id: playerId,
     };
-    const responseJson = await invoke<string>("update_achievement_progress", {
+
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      const now = Date.now();
+      const progressRecord: AchievementProgress = {
+        id: `${achievementId}_${defaultPlayerId}`,
+        achievementId,
+        playerId: defaultPlayerId,
+        progress,
+        maxProgress: 100,
+        unlocked: progress >= 100,
+        unlockedAt: progress >= 100 ? now : undefined,
+        startedAt: now,
+        lastUpdatedAt: now,
+      };
+      let playerProgress = fallbackStorage.progress.get(defaultPlayerId) || [];
+      const index = playerProgress.findIndex((p) => p.achievementId === achievementId);
+      if (index >= 0) {
+        playerProgress[index] = progressRecord;
+      } else {
+        playerProgress.push(progressRecord);
+      }
+      fallbackStorage.progress.set(defaultPlayerId, playerProgress);
+      return progressRecord;
+    }
+
+    const responseJson = await safeInvoke<string>("update_achievement_progress", {
       request,
     });
     return JSON.parse(responseJson);
@@ -137,14 +224,54 @@ export class AchievementDatabaseAPI {
       player_id: playerId,
       context_json: context ? JSON.stringify(context) : undefined,
     };
-    await invoke<string>("unlock_achievement", { request });
+
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      const unlock: AchievementUnlock = {
+        id: `${achievementId}_${defaultPlayerId}_${Date.now()}`,
+        achievementId,
+        playerId: defaultPlayerId,
+        unlockedAt: Date.now(),
+        context: context,
+      };
+      let unlocks = fallbackStorage.unlocks.get(defaultPlayerId) || [];
+      unlocks.push(unlock);
+      fallbackStorage.unlocks.set(defaultPlayerId, unlocks);
+      return;
+    }
+
+    await safeInvoke<string>("unlock_achievement", { request });
   }
 
   /**
    * Get player stats (level, XP, etc.)
    */
   async getPlayerStats(playerId?: string): Promise<PlayerStats> {
-    const responseJson = await invoke<string>("get_player_stats", {
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      let stats = fallbackStorage.playerStats.get(defaultPlayerId);
+
+      if (!stats) {
+        stats = {
+          player_id: defaultPlayerId,
+          level: 1,
+          xp: 0,
+          total_xp_earned: 0,
+          achievements_unlocked: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        };
+        fallbackStorage.playerStats.set(defaultPlayerId, stats);
+      }
+
+      return stats;
+    }
+
+    const responseJson = await safeInvoke<string>("get_player_stats", {
       playerId,
     });
     return JSON.parse(responseJson);
@@ -158,7 +285,36 @@ export class AchievementDatabaseAPI {
       amount,
       player_id: playerId,
     };
-    const responseJson = await invoke<string>("add_xp", { request });
+
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      let stats = fallbackStorage.playerStats.get(defaultPlayerId);
+
+      if (!stats) {
+        stats = {
+          player_id: defaultPlayerId,
+          level: 1,
+          xp: 0,
+          total_xp_earned: 0,
+          achievements_unlocked: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        };
+      }
+
+      stats.xp += amount;
+      stats.total_xp_earned += amount;
+      stats.level = Math.floor(stats.total_xp_earned / 1000) + 1;
+      stats.updated_at = Date.now();
+
+      fallbackStorage.playerStats.set(defaultPlayerId, stats);
+      return stats;
+    }
+
+    const responseJson = await safeInvoke<string>("add_xp", { request });
     return JSON.parse(responseJson);
   }
 
@@ -166,7 +322,49 @@ export class AchievementDatabaseAPI {
    * Get achievement analytics
    */
   async getAnalytics(playerId?: string): Promise<AchievementAnalytics> {
-    const responseJson = await invoke<string>("get_achievement_analytics", {
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      const unlocks = fallbackStorage.unlocks.get(defaultPlayerId) || [];
+      const totalCount = fallbackStorage.achievements.size;
+      const unlockedCount = unlocks.length;
+
+      const rarityDistribution: Record<AchievementRarity, number> = {
+        common: 0,
+        rare: 0,
+        epic: 0,
+        legendary: 0,
+      };
+
+      const categoryDistribution: Record<AchievementCategory, number> = {
+        tutorial: 0,
+        creation: 0,
+        collaboration: 0,
+        mastery: 0,
+        discovery: 0,
+        social: 0,
+        speed: 0,
+        collection: 0,
+        hidden: 0,
+      };
+
+      return {
+        totalAchievements: totalCount,
+        unlockedAchievements: unlockedCount,
+        unlockPercentage: totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0,
+        rarityDistribution,
+        rarityUnlockRates: { common: 0, rare: 0, epic: 0, legendary: 0 },
+        categoryDistribution,
+        categoryProgress: categoryDistribution,
+        engagementScore: 0,
+        averageTimeToUnlock: 0,
+        recentUnlocks: [],
+        currentStreak: 0,
+        longestStreak: 0,
+      };
+    }
+
+    const responseJson = await safeInvoke<string>("get_achievement_analytics", {
       playerId,
     });
     const data = JSON.parse(responseJson) as {
@@ -228,7 +426,13 @@ export class AchievementDatabaseAPI {
    * Get unlock history
    */
   async getUnlockHistory(playerId?: string): Promise<AchievementUnlock[]> {
-    const responseJson = await invoke<string>("get_unlock_history", {
+    // If Tauri is not available, use fallback
+    if (!invoke) {
+      const defaultPlayerId = playerId || "default_user";
+      return fallbackStorage.unlocks.get(defaultPlayerId) || [];
+    }
+
+    const responseJson = await safeInvoke<string>("get_unlock_history", {
       playerId,
     });
     return JSON.parse(responseJson);

@@ -81,7 +81,14 @@ export class GridRenderer {
 
     // Load tiles from tilemap data
     for (const [tilePoint, tileData] of Object.entries(tilemapData)) {
-      const [x, y] = tilePoint.split(",").map(Number);
+      const [x, y] = tilePoint.split(", ").map(Number);
+
+      // CRITICAL FIX: Filter out-of-bounds tiles
+      // Map files may contain border tiles with negative coords or coords >= dimensions
+      // Only process tiles within valid grid bounds
+      if (!this.isValidPosition({ x, y })) {
+        continue;
+      }
 
       if (tileData.floor) {
         await this.placeTile(x, y, "floor", tileData.floor);
@@ -257,8 +264,8 @@ export class GridRenderer {
    * Default: width=3.0, height=3.0 matches visual character size exactly
    */
   public isAreaBlocked(centerPos: Position, width: number = 3.0, height: number = 3.0): boolean {
-    // Check center tile
-    if (this.isBlocked(centerPos)) return true;
+    // Check center tile - only if it's within valid bounds
+    if (this.isValidPosition(centerPos) && this.hasCollider(centerPos)) return true;
 
     // Calculate bounds of the area
     const halfW = width / 2;
@@ -285,7 +292,9 @@ export class GridRenderer {
     ];
 
     for (const corner of corners) {
-      if (this.isBlocked(corner)) return true;
+      // CRITICAL FIX: Only check if corner is within valid bounds
+      // Out-of-bounds corners should not block movement at map edges
+      if (this.isValidPosition(corner) && this.hasCollider(corner)) return true;
     }
 
     return false;

@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { generateSpaceConfigWithName } from "@/lib/spaceGenerator";
 import {
   Dialog,
   DialogContent,
@@ -118,29 +119,28 @@ export function SpaceCreationDialog({ open, onClose }: SpaceCreationDialogProps)
     setCreating(true);
 
     try {
+      // Generate dynamic space configuration instead of hardcoded settings
+      const spaceConfig = generateSpaceConfigWithName(spaceName.trim());
       const spaceId = crypto.randomUUID();
+
       addSpace({
         id: spaceId,
-        name: spaceName.trim(),
+        name: spaceConfig.name,
         ownerId: "local-user",
-        dimensions: selectedTemplate.dimensions,
+        dimensions: spaceConfig.dimensions,
         tileset: {
-          floor: "grass",
-          theme: selectedTemplate.theme as any,
+          floor: spaceConfig.floor,
+          theme: spaceConfig.theme,
         },
         tilemap: undefined,
         agents: [],
-        settings: {
-          proximityRadius: 5,
-          maxAgents: 20,
-          snapToGrid: true,
-        },
+        settings: spaceConfig.settings,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
 
       toast.success(`${spaceName} created! 🎉`, {
-        description: "Your new space is ready to explore",
+        description: `${spaceConfig.dimensions.width}×${spaceConfig.dimensions.height} ${spaceConfig.theme} workspace`,
       });
 
       setCreating(false);

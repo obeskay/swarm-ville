@@ -1,7 +1,8 @@
-# Space Synchronization Specification
+# space-sync Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-realtime-collaboration. Update Purpose after archive.
+## Requirements
 ### Requirement: Real-time Position Sync
 The system SHALL synchronize player and agent positions in real-time across all connected clients.
 
@@ -40,3 +41,4 @@ The system SHALL apply local updates immediately and reconcile with server state
 - **WHEN** server rejects a position update
 - **THEN** client rolls back to server-authoritative state
 - **AND** user sees smooth correction without jarring jumps
+

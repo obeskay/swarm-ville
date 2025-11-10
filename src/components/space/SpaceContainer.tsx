@@ -90,18 +90,18 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       try {
         stage.removeChildren();
 
-        const gridRenderer = new GridRenderer(space.dimensions.width, space.dimensions.height);
+        let gridRenderer = new GridRenderer(space.dimensions.width, space.dimensions.height);
         await gridRenderer.init();
         gridRendererRef.current = gridRenderer;
 
         // Add layers to stage
-        const layers = gridRenderer.getLayers();
+        let layers = gridRenderer.getLayers();
         stage.addChild(layers.floor);
         stage.addChild(layers.above_floor);
         stage.addChild(layers.object);
 
         // Initialize pathfinding
-        const pathfinder = new Pathfinder(space.dimensions.width, space.dimensions.height);
+        let pathfinder = new Pathfinder(space.dimensions.width, space.dimensions.height);
         pathfinderRef.current = pathfinder;
 
         // Load map from space tilemap or external file
@@ -121,6 +121,43 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
           if (mapData && mapData.rooms && mapData.rooms[0] && mapData.rooms[0].tilemap) {
             loadedTilemap = mapData.rooms[0].tilemap;
+
+            // CRITICAL FIX: Detect actual map dimensions from tilemap and recreate renderer if needed
+            const tileKeys = Object.keys(loadedTilemap);
+            if (tileKeys.length > 0) {
+              const coords = tileKeys.map((k) => k.split(", ").map(Number));
+              const actualMaxX = Math.max(...coords.map((c) => c[0])) + 1;
+              const actualMaxY = Math.max(...coords.map((c) => c[1])) + 1;
+
+              // If actual map dimensions differ from space dimensions, recreate renderer
+              if (actualMaxX !== space.dimensions.width || actualMaxY !== space.dimensions.height) {
+                console.warn(
+                  `[SpaceContainer] Map dimensions mismatch: Space expects ${space.dimensions.width}x${space.dimensions.height}, but map is ${actualMaxX}x${actualMaxY}. Recreating renderer...`
+                );
+
+                // Remove old layers
+                stage.removeChildren();
+
+                // Create new gridRenderer with correct dimensions
+                const newGridRenderer = new GridRenderer(actualMaxX, actualMaxY);
+                await newGridRenderer.init();
+                gridRendererRef.current = newGridRenderer;
+
+                // Create new pathfinder with correct dimensions
+                const newPathfinder = new Pathfinder(actualMaxX, actualMaxY);
+                pathfinderRef.current = newPathfinder;
+
+                // Add new layers to stage
+                const newLayers = newGridRenderer.getLayers();
+                stage.addChild(newLayers.floor);
+                stage.addChild(newLayers.above_floor);
+                stage.addChild(newLayers.object);
+
+                // Update references
+                gridRenderer = newGridRenderer;
+                pathfinder = newPathfinder;
+              }
+            }
           }
 
           // Load the tilemap (empty object is acceptable default)
@@ -269,23 +306,29 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
         userAvatarRef.current.update(deltaTime);
 
-        // Follow path automatically when close to next waypoint
-        if (pathQueueRef.current.length > 0 && userAvatarRef.current.getDistanceToTarget() < 4) {
-          const nextPos = pathQueueRef.current.shift();
-          if (nextPos && gridRendererRef.current) {
-            // CRITICAL: Validate next position is valid AND not blocked (using area collision for character size)
-            if (
-              gridRendererRef.current.isValidPosition(nextPos) &&
-              !gridRendererRef.current.isAreaBlocked(nextPos)
-            ) {
-              userAvatarRef.current.setTargetGridPosition(nextPos);
-              setUserPosition(nextPos);
-              proximityCircleRef.current?.update(nextPos);
-            } else {
-              // Path blocked or invalid, clear queue and stop movement
-              pathQueueRef.current = [];
-              if (import.meta.env.DEV) {
-                console.warn("[SpaceContainer] Path blocked at", nextPos, "- stopping movement");
+        // Follow path automatically when close to next waypoint (smooth Gather-clone movement)
+        if (pathQueueRef.current.length > 0) {
+          // Use a generous threshold for smooth transitions (allow pre-loading next tile)
+          const distanceToTarget = userAvatarRef.current.getDistanceToTarget();
+          const hasReachedWaypoint = distanceToTarget <= 6; // ~75% of tile distance (32px tile = 8 pixels threshold)
+
+          if (hasReachedWaypoint) {
+            const nextPos = pathQueueRef.current.shift();
+            if (nextPos && gridRendererRef.current) {
+              // CRITICAL: Validate next position is valid AND not blocked (using area collision for character size)
+              if (
+                gridRendererRef.current.isValidPosition(nextPos) &&
+                !gridRendererRef.current.isAreaBlocked(nextPos)
+              ) {
+                userAvatarRef.current.setTargetGridPosition(nextPos);
+                setUserPosition(nextPos);
+                proximityCircleRef.current?.update(nextPos);
+              } else {
+                // Path blocked or invalid, clear queue and stop movement
+                pathQueueRef.current = [];
+                if (import.meta.env.DEV) {
+                  console.warn("[SpaceContainer] Path blocked at", nextPos, "- stopping movement");
+                }
               }
             }
           }
@@ -1093,6 +1136,20 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
     if (import.meta.env.DEV) {
       console.log("[SpaceContainer] Container focused for keyboard input");
+    }
+  }, [initialized]);
+
+  /**
+   * DEBUG: Expose gridRenderer and pathfinder in window for console testing
+   */
+  useEffect(() => {
+    if (gridRendererRef.current && import.meta.env.DEV) {
+      (window as any).__debugGridRenderer = gridRendererRef.current;
+      (window as any).__debugPathfinder = pathfinderRef.current;
+      (window as any).__debugUserAvatar = userAvatarRef.current;
+      console.log(
+        "[SpaceContainer DEBUG] Exposed __debugGridRenderer, __debugPathfinder, __debugUserAvatar"
+      );
     }
   }, [initialized]);
 
