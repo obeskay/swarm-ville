@@ -17,7 +17,12 @@ import { ProgressionDashboard } from "./components/progression/ProgressionDashbo
 
 function App() {
   const { spaces, addSpace } = useSpaceStore();
-  const { hasCompletedOnboarding, setOnboardingComplete } = useUserStore();
+  const {
+    hasCompletedOnboarding,
+    setOnboardingComplete,
+    initializePlayerStats,
+    isInitialized: playerStatsInitialized,
+  } = useUserStore();
   const [loading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
@@ -46,6 +51,13 @@ function App() {
       initializeApp();
     }
   }, [initialized]);
+
+  // Initialize player stats after Tauri initialization
+  useEffect(() => {
+    if (initialized && !playerStatsInitialized) {
+      initializePlayerStats();
+    }
+  }, [initialized, playerStatsInitialized, initializePlayerStats]);
 
   const handleCreateSpace = useCallback(async () => {
     if (loading) return; // Prevent double creation
@@ -78,10 +90,10 @@ function App() {
 
   // Auto-create space if needed
   useEffect(() => {
-    if (initialized && spaces.length === 0 && !loading) {
+    if (initialized && playerStatsInitialized && spaces.length === 0 && !loading) {
       handleCreateSpace();
     }
-  }, [initialized, spaces.length, loading, handleCreateSpace]);
+  }, [initialized, playerStatsInitialized, spaces.length, loading, handleCreateSpace]);
 
   // Initialize selectedSpaceId when spaces are available
   useEffect(() => {
@@ -95,7 +107,7 @@ function App() {
       <Toaster />
       {/* Note: activeAchievements are mission progress displays, not achievements */}
       <ProgressionDashboard />
-      {loading ? (
+      {!initialized || !playerStatsInitialized || loading ? (
         <div className="flex items-center justify-center w-full h-screen bg-background">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
         </div>
@@ -111,8 +123,17 @@ function App() {
           <SpaceContainer spaceId={selectedSpaceId} onSpaceChange={setSelectedSpaceId} />
         </AppLayout>
       ) : (
-        <div className="flex items-center justify-center w-full h-screen bg-background">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center justify-center w-full h-screen bg-background gap-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-foreground mb-2">No Spaces Yet</h2>
+            <p className="text-muted-foreground mb-6">Create your first workspace to get started</p>
+            <button
+              onClick={handleCreateSpace}
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              Create Space
+            </button>
+          </div>
         </div>
       )}
     </ThemeProvider>
