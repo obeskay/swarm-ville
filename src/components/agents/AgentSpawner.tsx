@@ -1,20 +1,26 @@
 /**
- * Visual and intuitive agent spawner
+ * Clean, intuitive agent spawner using shadcn/ui
  * Gamified interface for creating AI teammates
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSpaceStore } from "../../stores/spaceStore";
 import { useGameStore } from "../../stores/gameStore";
 import { useAchievementTriggers } from "../../hooks/useAchievementTriggers";
 import { Agent, AgentRole } from "../../lib/types";
-import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "../ui/dialog";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogContent,
+  DialogFooter,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
-import { Separator } from "../ui/separator";
-import { X, Sparkles, Check } from "lucide-react";
+import { X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +35,7 @@ const AGENT_ROLES = [
     id: "coder" as AgentRole,
     name: "Coder",
     emoji: "💻",
-    color: "#ec4899",
+    color: "#3b82f6",
     description: "Writes code, fixes bugs, builds features",
     descriptionEs: "Escribe código, arregla bugs, construye funcionalidades",
     skills: ["React", "TypeScript", "Python", "APIs"],
@@ -38,7 +44,7 @@ const AGENT_ROLES = [
     id: "designer" as AgentRole,
     name: "Designer",
     emoji: "🎨",
-    color: "#f59e0b",
+    color: "#ec4899",
     description: "Creates beautiful UIs, designs interfaces",
     descriptionEs: "Crea interfaces hermosas, diseña experiencias",
     skills: ["UI/UX", "Figma", "CSS", "Tailwind"],
@@ -56,7 +62,7 @@ const AGENT_ROLES = [
     id: "pm" as AgentRole,
     name: "Project Manager",
     emoji: "📊",
-    color: "#10b981",
+    color: "#06b6d4",
     description: "Plans tasks, organizes work, tracks progress",
     descriptionEs: "Planea tareas, organiza trabajo, trackea progreso",
     skills: ["Planning", "Organization", "Strategy"],
@@ -65,7 +71,7 @@ const AGENT_ROLES = [
     id: "qa" as AgentRole,
     name: "QA Tester",
     emoji: "✅",
-    color: "#ef4444",
+    color: "#10b981",
     description: "Tests everything, finds bugs, ensures quality",
     descriptionEs: "Prueba todo, encuentra bugs, asegura calidad",
     skills: ["Testing", "Debugging", "Quality"],
@@ -74,7 +80,7 @@ const AGENT_ROLES = [
     id: "devops" as AgentRole,
     name: "DevOps",
     emoji: "⚙️",
-    color: "#06b6d4",
+    color: "#f59e0b",
     description: "Deploys apps, manages infrastructure",
     descriptionEs: "Despliega apps, maneja infraestructura",
     skills: ["Docker", "CI/CD", "Cloud", "Deploy"],
@@ -90,6 +96,22 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
   const [creating, setCreating] = useState(false);
 
   const selectedRoleData = AGENT_ROLES.find((r) => r.id === selectedRole);
+
+  // Handle ESC key and prevent WASD propagation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+      // Prevent WASD keys from propagating to game controls
+      if (["w", "a", "s", "d", "W", "A", "S", "D"].includes(e.key)) {
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [onClose]);
 
   const handleCreate = async () => {
     if (!agentName.trim()) {
@@ -117,7 +139,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
       },
       avatar: {
         icon: "●",
-        color: selectedRoleData?.color || "#6b7280",
+        color: selectedRoleData?.color || "#3b82f6",
         emoji: selectedRoleData?.emoji || "🤖",
         spriteId: finalSpriteId,
       },
@@ -145,14 +167,14 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
     <Dialog open={true} onClose={onClose} size="lg">
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 rounded-sm opacity-70 transition-all duration-200 hover:opacity-100 hover:scale-110 active:scale-95 z-10 text-card-foreground"
+        className="absolute top-4 right-4 p-1 rounded-md opacity-60 hover:opacity-100 transition-opacity z-10"
       >
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </button>
 
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+        <DialogTitle className="flex items-center gap-2 text-xl">
           <Sparkles className="w-5 h-5 text-primary" />
           Create AI Teammate
         </DialogTitle>
@@ -160,10 +182,10 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
       </DialogHeader>
 
       <DialogContent>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Agent Name Input */}
-          <div className="space-y-3">
-            <Label htmlFor="agent-name" className="text-sm font-semibold">
+          <div className="space-y-2">
+            <Label htmlFor="agent-name" className="text-sm font-medium">
               Agent Name
             </Label>
             <Input
@@ -172,17 +194,15 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
               disabled={creating}
-              className="h-12 text-base"
+              className="h-10"
               autoFocus
             />
           </div>
 
-          <Separator />
-
-          {/* Role Selection - Visual Cards */}
-          <div className="space-y-4">
-            <Label className="text-sm font-semibold">Choose Role</Label>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Role Selection */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Choose Role</Label>
+            <div className="grid grid-cols-2 gap-2">
               {AGENT_ROLES.map((role) => (
                 <button
                   key={role.id}
@@ -190,116 +210,73 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
                   onClick={() => setSelectedRole(role.id)}
                   disabled={creating}
                   className={cn(
-                    "relative p-6 rounded-xl text-left",
-                    "transition-all duration-200",
+                    "p-4 rounded-lg text-left transition-colors",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
-                    "active:scale-[0.98]",
-                    "group",
                     selectedRole === role.id
-                      ? "bg-primary/10 border-2 border-primary shadow-lg ring-2 ring-primary/20"
-                      : "bg-card border-2 border-border hover:border-primary/50 hover:shadow-md"
+                      ? "bg-primary text-primary-foreground border-2 border-primary"
+                      : "bg-secondary text-secondary-foreground border-2 border-transparent hover:bg-secondary/80"
                   )}
                 >
-                  {/* Emoji Icon */}
-                  <div className="text-4xl mb-4 transition-transform group-hover:scale-110">
-                    {role.emoji}
-                  </div>
-
-                  {/* Role Name */}
-                  <div className="font-bold text-base mb-2.5 text-foreground">
-                    {role.name}
-                  </div>
-
-                  {/* Description */}
-                  <div className="text-sm text-muted-foreground mb-4 leading-relaxed line-clamp-2">
-                    {role.description}
-                  </div>
-
-                  {/* Skills */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {role.skills.slice(0, 3).map((skill, idx) => (
-                      <Badge
-                        key={idx}
-                        variant="secondary"
-                        className="text-xs font-medium"
-                      >
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  {/* Selection Indicator */}
-                  {selectedRole === role.id && (
-                    <div className="absolute top-4 right-4 w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-lg animate-in fade-in zoom-in duration-200">
-                      <Check className="w-4 h-4 text-primary-foreground" strokeWidth={3} />
-                    </div>
-                  )}
+                  <div className="text-3xl mb-2">{role.emoji}</div>
+                  <div className="font-semibold text-sm">{role.name}</div>
+                  <div className="text-xs opacity-75 mt-1 line-clamp-1">{role.description}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Preview */}
-          {agentName && selectedRoleData && (
-            <>
-              <Separator />
-              <div className="p-5 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                  Preview
-                </div>
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shadow-lg ring-2 ring-primary/20"
-                    style={{ backgroundColor: selectedRoleData.color + "20" }}
-                  >
-                    {selectedRoleData.emoji}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-lg mb-1">{agentName}</div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      {selectedRoleData.name}
-                      <Badge variant="secondary" className="text-xs">
-                        {selectedRoleData.id}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+          {/* Skills Display */}
+          {selectedRoleData && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Skills
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedRoleData.skills.map((skill, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
               </div>
-            </>
+            </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={creating}
-              className="flex-1 h-12"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreate}
-              disabled={creating || !agentName.trim()}
-              className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
-            >
-              {creating ? (
-                <>
-                  <span className="inline-block animate-spin mr-2">⚙️</span>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create Agent
-                </>
-              )}
-            </Button>
-          </div>
+          {/* Preview */}
+          {agentName && selectedRoleData && (
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Preview
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">{selectedRoleData.emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm">{agentName}</div>
+                  <div className="text-xs text-muted-foreground">{selectedRoleData.name}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
+
+      <DialogFooter className="gap-2">
+        <Button type="button" variant="outline" onClick={onClose} disabled={creating}>
+          Cancel
+        </Button>
+        <Button type="button" onClick={handleCreate} disabled={creating || !agentName.trim()}>
+          {creating ? (
+            <>
+              <span className="inline-block animate-spin mr-2">⚙️</span>
+              Creating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Create Agent
+            </>
+          )}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
