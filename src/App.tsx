@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import SpaceContainer from "./components/space/SpaceContainer";
 import { useSpaceStore } from "./stores/spaceStore";
-import { useUserStore } from "./stores/userStore";
+import { useUserStore, Mission } from "./stores/userStore";
 import OnboardingWizard from "./components/onboarding/OnboardingWizard";
 import { Button } from "./components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -16,13 +16,18 @@ import { TopToolbar } from "./components/layout/TopToolbar";
 import { BottomStatusBar } from "./components/layout/BottomStatusBar";
 import { LeftSidebar } from "./components/layout/LeftSidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
+import { AchievementToastContainer } from "./components/game/AchievementToast";
+import { ProgressionDashboard } from "./components/progression/ProgressionDashboard";
 
 function App() {
   const { spaces, addSpace } = useSpaceStore();
-  const { hasCompletedOnboarding, setOnboardingComplete } = useUserStore();
+  const { hasCompletedOnboarding, setOnboardingComplete, missions } = useUserStore();
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [activeAchievements, setActiveAchievements] = useState<
+    Array<{ id: string; title: string; description: string; progress: number; total: number; xpReward: number; icon?: string }>
+  >([]);
 
   // Enable auto-save and load persisted data
   useAutoSave({ enabled: true, interval: 30000, debounce: 2000 });
@@ -92,9 +97,44 @@ function App() {
     }
   }, [spaces, selectedSpaceId]);
 
+  // Watch for mission progress changes and show achievement toasts
+  useEffect(() => {
+    const activeMissions = Object.values(missions).filter((m) => !m.completed);
+
+    // Show toast for missions with recent progress
+    activeMissions.forEach((mission) => {
+      if (mission.progress > 0) {
+        const achievementExists = activeAchievements.some((a) => a.id === mission.id);
+
+        if (!achievementExists) {
+          const newAchievement = {
+            id: mission.id,
+            title: mission.title,
+            description: mission.description,
+            progress: mission.progress,
+            total: mission.total,
+            xpReward: 100, // Default XP
+            icon: mission.id.includes("first") ? "🎯" : mission.id.includes("create") ? "🤖" : "💬",
+          };
+
+          setActiveAchievements((prev) => [...prev, newAchievement]);
+        }
+      }
+    });
+  }, [missions, activeAchievements]);
+
+  const handleDismissAchievement = (id: string) => {
+    setActiveAchievements((prev) => prev.filter((a) => a.id !== id));
+  };
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <Toaster />
+      <AchievementToastContainer
+        achievements={activeAchievements}
+        onDismiss={handleDismissAchievement}
+      />
+      <ProgressionDashboard />
       {loading ? (
         <div className="flex items-center justify-center w-full h-screen bg-background">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />

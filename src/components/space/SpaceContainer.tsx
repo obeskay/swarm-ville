@@ -1416,14 +1416,14 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       {/* Dialogue Bubbles */}
       <DialogueBubbles scale={scaleState} cameraPosition={cameraPosition} />
 
-      {/* Game Systems */}
-      <GameHUD />
+      {/* Game Systems - Disabled for minimalist UI */}
+      {/* <GameHUD />
       <GameNotifications />
-      <InteractiveTutorial />
+      <InteractiveTutorial /> */}
 
-      {/* Panels */}
-      <AgentPanel spaceId={spaceId} />
-      <AgentMetricsPanel />
+      {/* Panels - Disabled for minimalist UI */}
+      {/* <AgentPanel spaceId={spaceId} />
+      <AgentMetricsPanel /> */}
     </div>
   );
 }

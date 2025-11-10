@@ -1,8 +1,9 @@
-import { Wallet, Plus, Sparkles } from "lucide-react";
+import { Wallet, Plus, Sparkles, Zap, Bot, ChevronRight, ChevronLeft } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Badge } from "../ui/badge";
+import { Progress } from "../ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,15 +12,18 @@ import {
 } from "../ui/dropdown-menu";
 import { useSpaceStore } from "../../stores/spaceStore";
 import { useUserStore } from "../../stores/userStore";
+import { useUIStore } from "../../stores/uiStore";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import SpriteGeneratorDialog from "../ai/SpriteGeneratorDialog";
 
 export function TopToolbar() {
   const { currentSpaceId, spaces, agents, addSpace } = useSpaceStore();
-  const { balance = 0 } = useUserStore();
+  const { balance = 0, level, xp, xpToNextLevel, missions } = useUserStore();
+  const { leftSidebarCollapsed, rightSidebarCollapsed, toggleLeftSidebar, toggleRightSidebar } = useUIStore();
   const currentSpace = spaces.find((s) => s.id === currentSpaceId);
   const agentCount = agents.size;
+  const activeMissionsCount = Object.values(missions).filter((m) => !m.completed).length;
   const [showSpriteGenerator, setShowSpriteGenerator] = useState(false);
 
   const handleCreateNewSpace = () => {
@@ -41,17 +45,59 @@ export function TopToolbar() {
   return (
     <TooltipProvider>
       <div className="h-12 px-4 flex items-center justify-between bg-card">
-        {/* Left Section: Space Info */}
+        {/* Left Section: Level, Space Info, Missions Toggle */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <h1 className="font-semibold text-base tracking-tight">SwarmVille</h1>
-          </div>
+          {/* Missions Toggle (when collapsed) */}
+          {leftSidebarCollapsed && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleLeftSidebar}
+                  className="h-8 w-8 relative"
+                >
+                  <Zap className="h-4 w-4 text-primary" />
+                  {activeMissionsCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                      {activeMissionsCount}
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Missions (⌘B)</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {/* Level Badge with XP */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold text-xs">
+                  {level}
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-[60px]">
+                  <div className="text-xs font-medium text-muted-foreground leading-none">
+                    {xp} / {xpToNextLevel()}
+                  </div>
+                  <Progress value={(xp / xpToNextLevel()) * 100} className="h-0.5" />
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Level {level} - {Math.floor((xp / xpToNextLevel()) * 100)}% to next level</p>
+            </TooltipContent>
+          </Tooltip>
 
           {currentSpace && (
             <>
               <div className="w-px h-4 bg-border/30" />
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">
+                <h1 className="font-semibold text-sm tracking-tight">SwarmVille</h1>
+                <span className="text-xs text-muted-foreground">•</span>
+                <span className="text-xs font-medium text-muted-foreground">
                   {currentSpace.name}
                 </span>
               </div>
@@ -124,6 +170,30 @@ export function TopToolbar() {
 
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Right Sidebar Toggle (when collapsed) */}
+          {rightSidebarCollapsed && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleRightSidebar}
+                  className="h-8 w-8 relative"
+                >
+                  <Bot className="h-4 w-4" />
+                  {agentCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                      {agentCount}
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Agents (⌘.)</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
 

@@ -7,13 +7,7 @@ import { useState, useEffect } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { BookOpen, Brain, Sparkles, MessageSquare } from "lucide-react";
-
-interface LanguageStats {
-  vocabularySize: number;
-  totalWordsTaught: number;
-  recentWords: string[];
-  isAutoTeachEnabled: boolean;
-}
+import { useLanguageStore } from "@/stores/languageStore";
 
 interface LanguagePanelProps {
   agentId: string;
@@ -26,29 +20,29 @@ export function LanguagePanel({
   onTeachWord,
   onToggleAutoTeach
 }: LanguagePanelProps) {
-  const [stats, setStats] = useState<LanguageStats>({
-    vocabularySize: 0,
-    totalWordsTaught: 0,
-    recentWords: [],
-    isAutoTeachEnabled: false,
-  });
-
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Mock data for now - will integrate with actual language system
+  const {
+    languageState,
+    vocabulary,
+    loading,
+    setCurrentAgent,
+    getRecentlyLearned,
+  } = useLanguageStore();
+
+  // Load agent data when component mounts or agentId changes
   useEffect(() => {
-    // Simulate loading language stats
-    setStats({
-      vocabularySize: 42,
-      totalWordsTaught: 156,
-      recentWords: ["hello", "friend", "world", "learn", "grow"],
-      isAutoTeachEnabled: true,
-    });
-  }, [agentId]);
+    if (agentId) {
+      setCurrentAgent(agentId);
+    }
+  }, [agentId, setCurrentAgent]);
+
+  const recentWords = getRecentlyLearned(7).map(word => word.word);
 
   const handleToggleAutoTeach = () => {
-    const newState = !stats.isAutoTeachEnabled;
-    setStats(prev => ({ ...prev, isAutoTeachEnabled: newState }));
+    if (!languageState) return;
+    const newState = !languageState.auto_teach_enabled;
+    // TODO: Implement backend update for auto_teach_enabled
     onToggleAutoTeach?.(newState);
   };
 
@@ -71,7 +65,7 @@ export function LanguagePanel({
             <div>
               <div className="text-sm font-semibold">Thronglet Language</div>
               <div className="text-xs text-foreground/70">
-                {stats.vocabularySize} words learned
+                {loading ? "Loading..." : `${languageState?.vocabulary_size || 0} words learned`}
               </div>
             </div>
           </div>
@@ -98,7 +92,7 @@ export function LanguagePanel({
                   <BookOpen className="w-4 h-4 text-foreground/70" />
                   <span className="text-xs text-foreground/70">Vocabulary</span>
                 </div>
-                <div className="text-2xl font-bold">{stats.vocabularySize}</div>
+                <div className="text-2xl font-bold">{languageState?.vocabulary_size || 0}</div>
               </div>
 
               <div className="p-4 rounded-[calc(var(--radius)*0.66)] bg-background/50 shadow-soft">
@@ -106,7 +100,7 @@ export function LanguagePanel({
                   <MessageSquare className="w-4 h-4 text-foreground/70" />
                   <span className="text-xs text-foreground/70">Total Taught</span>
                 </div>
-                <div className="text-2xl font-bold">{stats.totalWordsTaught}</div>
+                <div className="text-2xl font-bold">{languageState?.total_words_taught || 0}</div>
               </div>
             </div>
 
@@ -116,14 +110,20 @@ export function LanguagePanel({
                 Recent Words
               </div>
               <div className="flex flex-wrap gap-2">
-                {stats.recentWords.map((word, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 bg-foreground/10 rounded-full text-xs font-medium hover:bg-foreground/20 transition-colors cursor-pointer"
-                  >
-                    {word}
-                  </span>
-                ))}
+                {recentWords.length > 0 ? (
+                  recentWords.map((word, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1.5 bg-foreground/10 rounded-full text-xs font-medium hover:bg-foreground/20 transition-colors cursor-pointer"
+                    >
+                      {word}
+                    </span>
+                  ))
+                ) : (
+                  <div className="text-xs text-foreground/50 w-full text-center py-2">
+                    No words learned yet
+                  </div>
+                )}
               </div>
             </div>
 
@@ -135,10 +135,10 @@ export function LanguagePanel({
               </div>
               <Button
                 size="sm"
-                variant={stats.isAutoTeachEnabled ? "default" : "outline"}
+                variant={languageState?.auto_teach_enabled ? "default" : "outline"}
                 onClick={handleToggleAutoTeach}
               >
-                {stats.isAutoTeachEnabled ? "ON" : "OFF"}
+                {languageState?.auto_teach_enabled ? "ON" : "OFF"}
               </Button>
             </div>
 

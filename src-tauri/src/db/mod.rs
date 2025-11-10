@@ -2,11 +2,15 @@ use crate::error::Result;
 use rusqlite::Connection;
 use std::path::Path;
 
+pub mod achievements;
 pub mod errors;
 pub mod maps;
 pub mod persistence;
 pub mod sprites;
 
+pub use achievements::{
+    Achievement, AchievementDb, AchievementProgress, AchievementUnlock, PlayerStats,
+};
 pub use errors::{DbError, DbResult};
 pub use persistence::{Agent, PersistenceLayer, Space, UserProgress};
 
@@ -31,6 +35,7 @@ impl Database {
         self.run_migration_003()?;
         self.run_migration_004()?;
         self.run_migration_005()?; // Language system
+        self.run_migration_006()?; // Achievement system
         Ok(())
     }
 
@@ -123,6 +128,16 @@ impl Database {
     fn run_migration_005(&self) -> Result<()> {
         // Read and execute language system migration
         let migration_sql = include_str!("migrations/005_language_system.sql");
+        self.conn
+            .execute_batch(migration_sql)
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
+    fn run_migration_006(&self) -> Result<()> {
+        // Read and execute achievement system migration
+        let migration_sql = include_str!("migrations/006_achievement_system.sql");
         self.conn
             .execute_batch(migration_sql)
             .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;

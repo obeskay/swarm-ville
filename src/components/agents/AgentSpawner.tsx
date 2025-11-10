@@ -134,49 +134,48 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
 
   return (
     <Dialog open={true} onClose={onClose} size="lg">
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 rounded-sm opacity-70 transition-all duration-200 hover:opacity-100 hover:scale-110 active:scale-95 z-10 text-card-foreground"
+      >
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </button>
+
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          Create AI Teammate
+        </DialogTitle>
+        <DialogDescription>Choose a role and give your agent a name</DialogDescription>
+      </DialogHeader>
+
       <DialogContent>
-        <div className="relative">
-          <button
-            onClick={onClose}
-            className="absolute -right-2 -top-2 rounded-sm opacity-70 ring-offset-background transition-all duration-200 hover:opacity-100 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 select-none touch-manipulation z-10"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </button>
+        <div className="space-y-6">
+          {/* Agent Name Input */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Agent Name</label>
+            <Input
+              placeholder="e.g. CodeMaster, DesignWiz, BugHunter..."
+              value={agentName}
+              onChange={(e) => setAgentName(e.target.value)}
+              disabled={creating}
+              className="text-base"
+              autoFocus
+            />
+          </div>
 
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              Create AI Teammate
-            </DialogTitle>
-            <DialogDescription>Choose a role and give your agent a name</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 mt-6">
-            {/* Agent Name Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Agent Name</label>
-              <Input
-                placeholder="e.g. CodeMaster, DesignWiz, BugHunter..."
-                value={agentName}
-                onChange={(e) => setAgentName(e.target.value)}
-                disabled={creating}
-                className="text-base"
-                autoFocus
-              />
-            </div>
-
-            {/* Role Selection - Visual Cards */}
-            <div className="space-y-3">
-              <label className="text-sm font-semibold">Choose Role</label>
-              <div className="grid grid-cols-2 gap-4">
-                {AGENT_ROLES.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => setSelectedRole(role.id)}
-                    disabled={creating}
-                    className={`
+          {/* Role Selection - Visual Cards */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold">Choose Role</label>
+            <div className="grid grid-cols-2 gap-4">
+              {AGENT_ROLES.map((role) => (
+                <button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setSelectedRole(role.id)}
+                  disabled={creating}
+                  className={`
                       relative p-5 rounded-[calc(var(--radius)*0.75)] text-left
                       transition-all duration-300 transform
                       ${
@@ -187,102 +186,101 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
                       disabled:opacity-50 disabled:cursor-not-allowed
                       active:scale-[0.98]
                     `}
-                  >
-                    {/* Emoji Icon */}
-                    <div className="text-4xl mb-3">{role.emoji}</div>
+                >
+                  {/* Emoji Icon */}
+                  <div className="text-4xl mb-3">{role.emoji}</div>
 
-                    {/* Role Name */}
-                    <div className="font-bold text-base mb-2">{role.name}</div>
+                  {/* Role Name */}
+                  <div className="font-bold text-base mb-2">{role.name}</div>
 
-                    {/* Description */}
-                    <div className="text-sm text-foreground/70 mb-3 leading-relaxed">
-                      {role.description}
+                  {/* Description */}
+                  <div className="text-sm text-foreground/70 mb-3 leading-relaxed">
+                    {role.description}
+                  </div>
+
+                  {/* Skills */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {role.skills.slice(0, 3).map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs px-2.5 py-1 bg-foreground/10 rounded-full font-medium"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Selection Indicator */}
+                  {selectedRole === role.id && (
+                    <div className="absolute top-3 right-3 w-6 h-6 bg-foreground rounded-full flex items-center justify-center shadow-soft">
+                      <svg
+                        className="w-3.5 h-3.5 text-background"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
                     </div>
-
-                    {/* Skills */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {role.skills.slice(0, 3).map((skill, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs px-2.5 py-1 bg-foreground/10 rounded-full font-medium"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Selection Indicator */}
-                    {selectedRole === role.id && (
-                      <div className="absolute top-3 right-3 w-6 h-6 bg-foreground rounded-full flex items-center justify-center shadow-soft">
-                        <svg
-                          className="w-3.5 h-3.5 text-background"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+                  )}
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* Preview */}
-            {agentName && selectedRoleData && (
-              <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border-2 border-primary/20">
-                <div className="text-xs text-muted-foreground mb-2">Preview:</div>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
-                    style={{ backgroundColor: selectedRoleData.color + "20" }}
-                  >
-                    {selectedRoleData.emoji}
-                  </div>
-                  <div>
-                    <div className="font-bold">{agentName}</div>
-                    <div className="text-sm text-muted-foreground">{selectedRoleData.name}</div>
-                  </div>
+          {/* Preview */}
+          {agentName && selectedRoleData && (
+            <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border-2 border-primary/20">
+              <div className="text-xs text-muted-foreground mb-2">Preview:</div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                  style={{ backgroundColor: selectedRoleData.color + "20" }}
+                >
+                  {selectedRoleData.emoji}
+                </div>
+                <div>
+                  <div className="font-bold">{agentName}</div>
+                  <div className="text-sm text-muted-foreground">{selectedRoleData.name}</div>
                 </div>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={creating}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleCreate}
-                disabled={creating || !agentName.trim()}
-                className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              >
-                {creating ? (
-                  <>
-                    <span className="inline-block animate-spin mr-2">⚙️</span>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Create Agent
-                  </>
-                )}
-              </Button>
             </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={creating}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreate}
+              disabled={creating || !agentName.trim()}
+              className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            >
+              {creating ? (
+                <>
+                  <span className="inline-block animate-spin mr-2">⚙️</span>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Create Agent
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -32,7 +32,7 @@ export function AppLayout({
       <div className="grid grid-cols-[auto_1fr_auto] overflow-hidden">
         {/* Left Sidebar */}
         {!leftSidebarCollapsed && (
-          <div className="w-[280px] border-r border-border">{leftSidebar}</div>
+          <div className="w-[200px] border-r border-border">{leftSidebar}</div>
         )}
 
         {/* Main Content */}
@@ -40,7 +40,7 @@ export function AppLayout({
 
         {/* Right Sidebar */}
         {!rightSidebarCollapsed && (
-          <div className="w-[320px] border-l border-border">{rightSidebar}</div>
+          <div className="w-[240px] border-l border-border">{rightSidebar}</div>
         )}
       </div>
 

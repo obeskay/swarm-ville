@@ -10,11 +10,7 @@ import { Input } from "../ui/input";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { X, Plus, Trash2, Sparkles, Link2 } from "lucide-react";
 import { toast } from "sonner";
-
-interface WordAssociation {
-  word: string;
-  association: string;
-}
+import { useLanguageStore } from "@/stores/languageStore";
 
 interface TeachingInterfaceProps {
   isOpen: boolean;
@@ -30,9 +26,13 @@ export function TeachingInterface({
   onTeachWord
 }: TeachingInterfaceProps) {
   const [newWord, setNewWord] = useState("");
+  const [definition, setDefinition] = useState("");
+  const [example, setExample] = useState("");
   const [associations, setAssociations] = useState<string[]>([]);
   const [currentAssociation, setCurrentAssociation] = useState("");
   const [teaching, setTeaching] = useState(false);
+
+  const { teachWord } = useLanguageStore();
 
   const handleAddAssociation = () => {
     if (!currentAssociation.trim()) {
@@ -67,23 +67,38 @@ export function TeachingInterface({
 
     setTeaching(true);
 
-    // Simulate teaching process
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Call real backend API
+      await teachWord({
+        agent_id: agentId,
+        word: newWord.trim(),
+        associations,
+        definition: definition.trim() || undefined,
+        example: example.trim() || undefined,
+      });
 
-    // Call the teaching callback
-    onTeachWord?.(newWord.trim(), associations);
+      // Call the teaching callback
+      onTeachWord?.(newWord.trim(), associations);
 
-    toast.success(`Successfully taught "${newWord}" with ${associations.length} associations! 🎉`);
+      toast.success(`Successfully taught "${newWord}" with ${associations.length} associations! 🎉`);
 
-    // Reset form
-    setNewWord("");
-    setAssociations([]);
-    setTeaching(false);
-    onClose();
+      // Reset form
+      setNewWord("");
+      setDefinition("");
+      setExample("");
+      setAssociations([]);
+      setTeaching(false);
+      onClose();
+    } catch (error) {
+      toast.error(`Failed to teach word: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setTeaching(false);
+    }
   };
 
   const handleReset = () => {
     setNewWord("");
+    setDefinition("");
+    setExample("");
     setAssociations([]);
     setCurrentAssociation("");
   };
@@ -122,6 +137,30 @@ export function TeachingInterface({
             className="text-base"
             autoFocus
           />
+        </div>
+
+        {/* Optional: Definition and Example */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <label className="text-xs text-foreground/70">Definition (optional)</label>
+            <Input
+              placeholder="What does it mean?"
+              value={definition}
+              onChange={(e) => setDefinition(e.target.value)}
+              disabled={teaching}
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-foreground/70">Example (optional)</label>
+            <Input
+              placeholder="Usage example"
+              value={example}
+              onChange={(e) => setExample(e.target.value)}
+              disabled={teaching}
+              className="text-sm"
+            />
+          </div>
         </div>
 
         {/* Associations Section */}
