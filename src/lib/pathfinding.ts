@@ -1,157 +1,210 @@
 import { Position } from "./types";
 
-interface Node {
-  x: number;
-  y: number;
-  g: number; // Cost from start
-  h: number; // Heuristic cost to goal
-  f: number; // g + h
-  parent?: Node;
-}
-
+/**
+ * Pathfinder class wrapper for grid-based pathfinding
+ * Provides BFS pathfinding for agent movement
+ */
 export class Pathfinder {
   private width: number;
   private height: number;
-  private obstacles: Set<string>;
+  private blocked: Set<string> = new Set();
 
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
-    this.obstacles = new Set();
   }
 
-  public addObstacle(pos: Position): void {
-    this.obstacles.add(`${pos.x},${pos.y}`);
+  /**
+   * Set blocked tiles (colliders)
+   */
+  public setBlocked(positions: Position[]): void {
+    this.blocked.clear();
+    positions.forEach((pos) => {
+      this.blocked.add(`${pos.x},${pos.y}`);
+    });
   }
 
-  public removeObstacle(pos: Position): void {
-    this.obstacles.delete(`${pos.x},${pos.y}`);
+  /**
+   * Add a blocked tile
+   */
+  public addBlocked(pos: Position): void {
+    this.blocked.add(`${pos.x},${pos.y}`);
   }
 
+  /**
+   * Remove a blocked tile
+   */
+  public removeBlocked(pos: Position): void {
+    this.blocked.delete(`${pos.x},${pos.y}`);
+  }
+
+  /**
+   * Find path between two positions using BFS
+   */
   public findPath(start: Position, goal: Position): Position[] {
-    const openSet = new Set<string>();
-    const cameFrom = new Map<string, Position>();
-    const gScore = new Map<string, number>();
-    const fScore = new Map<string, number>();
-
-    const key = (pos: Position) => `${pos.x},${pos.y}`;
-    const heuristic = (pos: Position) => {
-      const dx = Math.abs(pos.x - goal.x);
-      const dy = Math.abs(pos.y - goal.y);
-      return dx + dy; // Manhattan distance
-    };
-
-    const startKey = key(start);
-    openSet.add(startKey);
-    gScore.set(startKey, 0);
-    fScore.set(startKey, heuristic(start));
-
-    while (openSet.size > 0) {
-      // Find node in openSet with lowest fScore
-      let current = start;
-      let currentKey = startKey;
-      let lowestF = Infinity;
-
-      openSet.forEach((k) => {
-        const f = fScore.get(k) || Infinity;
-        if (f < lowestF) {
-          lowestF = f;
-          currentKey = k;
-          const [x, y] = k.split(",").map(Number);
-          current = { x, y };
-        }
-      });
-
-      if (current.x === goal.x && current.y === goal.y) {
-        return this.reconstructPath(cameFrom, current);
-      }
-
-      openSet.delete(currentKey);
-
-      const neighbors = this.getNeighbors(current);
-      for (const neighbor of neighbors) {
-        if (this.obstacles.has(key(neighbor))) continue;
-
-        const tentativeG = (gScore.get(currentKey) || 0) + 1;
-        const neighborKey = key(neighbor);
-        const currentG = gScore.get(neighborKey) || Infinity;
-
-        if (tentativeG < currentG) {
-          cameFrom.set(neighborKey, current);
-          gScore.set(neighborKey, tentativeG);
-          fScore.set(
-            neighborKey,
-            tentativeG + heuristic(neighbor)
-          );
-
-          if (!openSet.has(neighborKey)) {
-            openSet.add(neighborKey);
-          }
-        }
-      }
-    }
-
-    // No path found, return direct line
-    return this.getDirectPath(start, goal);
+    return findPath(start, goal, this.width, this.height, this.blocked);
   }
 
-  private getNeighbors(pos: Position): Position[] {
-    const neighbors: Position[] = [];
-    const directions = [
-      { x: 0, y: -1 },
-      { x: 1, y: 0 },
-      { x: 0, y: 1 },
-      { x: -1, y: 0 },
-      // Diagonals
-      { x: 1, y: -1 },
-      { x: 1, y: 1 },
-      { x: -1, y: -1 },
-      { x: -1, y: 1 },
-    ];
+  /**
+   * Check if a position is blocked
+   */
+  public isBlocked(pos: Position): boolean {
+    return this.blocked.has(`${pos.x},${pos.y}`);
+  }
 
+  /**
+   * Check if position is valid (within bounds)
+   */
+  public isValid(pos: Position): boolean {
+    return (
+      pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height
+    );
+  }
+}
+
+/**
+ * Breadth-First Search pathfinding (from Gather Clone)
+ * Finds shortest path between two points on the grid
+ * Avoids colliders and boundaries
+ */
+export function findPath(
+  start: Position,
+  goal: Position,
+  width: number,
+  height: number,
+  blocked: Set<string> = new Set(),
+): Position[] {
+  // Check if goal is blocked
+  if (blocked.has(`${goal.x},${goal.y}`)) {
+    return [];
+  }
+
+  // If start equals goal, return empty path
+  if (start.x === goal.x && start.y === goal.y) {
+    return [];
+  }
+
+  // BFS queue: [position, path]
+  const queue: [Position, Position[]][] = [[start, [start]]];
+  const visited = new Set<string>(blocked);
+  visited.add(`${start.x},${start.y}`);
+
+  // 4-directional movement (up, down, left, right)
+  const directions: Position[] = [
+    { x: 0, y: -1 }, // up
+    { x: 0, y: 1 }, // down
+    { x: -1, y: 0 }, // left
+    { x: 1, y: 0 }, // right
+  ];
+
+  while (queue.length > 0) {
+    const [currentPos, path] = queue.shift()!;
+
+    // Check if we reached the goal
+    if (currentPos.x === goal.x && currentPos.y === goal.y) {
+      // Return path excluding the starting position
+      return path.slice(1);
+    }
+
+    // Explore neighbors
     for (const dir of directions) {
-      const newPos = { x: pos.x + dir.x, y: pos.y + dir.y };
+      const nextPos: Position = {
+        x: currentPos.x + dir.x,
+        y: currentPos.y + dir.y,
+      };
+
+      const key = `${nextPos.x},${nextPos.y}`;
+
+      // Skip if already visited
+      if (visited.has(key)) continue;
+
+      // Skip if out of bounds
       if (
-        newPos.x >= 0 &&
-        newPos.x < this.width &&
-        newPos.y >= 0 &&
-        newPos.y < this.height
+        nextPos.x < 0 ||
+        nextPos.x >= width ||
+        nextPos.y < 0 ||
+        nextPos.y >= height
       ) {
-        neighbors.push(newPos);
+        continue;
+      }
+
+      visited.add(key);
+      queue.push([nextPos, path.concat([nextPos])]);
+    }
+  }
+
+  // No path found
+  return [];
+}
+
+/**
+ * Check if a tile position has line of sight to another
+ * Useful for proximity-based actions
+ */
+export function hasLineOfSight(
+  from: Position,
+  to: Position,
+  width: number,
+  height: number,
+  blocked: Set<string> = new Set(),
+): boolean {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+  if (steps === 0) return true;
+
+  for (let i = 0; i <= steps; i++) {
+    const x = Math.round(from.x + (dx * i) / steps);
+    const y = Math.round(from.y + (dy * i) / steps);
+
+    // Check bounds
+    if (x < 0 || x >= width || y < 0 || y >= height) {
+      return false;
+    }
+
+    // Check if blocked
+    if (blocked.has(`${x},${y}`)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Calculate Manhattan distance between two points
+ */
+export function manhattanDistance(from: Position, to: Position): number {
+  return Math.abs(from.x - to.x) + Math.abs(from.y - to.y);
+}
+
+/**
+ * Get all tiles in a circular radius (for proximity checks)
+ */
+export function getTilesInRadius(center: Position, radius: number): Position[] {
+  const tiles: Position[] = [];
+
+  for (let x = center.x - radius; x <= center.x + radius; x++) {
+    for (let y = center.y - radius; y <= center.y + radius; y++) {
+      const dist = manhattanDistance(center, { x, y });
+      if (dist <= radius) {
+        tiles.push({ x, y });
       }
     }
-
-    return neighbors;
   }
 
-  private reconstructPath(
-    cameFrom: Map<string, Position>,
-    current: Position
-  ): Position[] {
-    const path: Position[] = [current];
+  return tiles;
+}
 
-    while (cameFrom.has(`${current.x},${current.y}`)) {
-      current = cameFrom.get(`${current.x},${current.y}`)!;
-      path.unshift(current);
-    }
-
-    return path;
-  }
-
-  private getDirectPath(start: Position, goal: Position): Position[] {
-    const path: Position[] = [start];
-    let current = { ...start };
-
-    while (current.x !== goal.x || current.y !== goal.y) {
-      if (current.x < goal.x) current.x++;
-      else if (current.x > goal.x) current.x--;
-
-      if (current.y < goal.y) current.y++;
-      else if (current.y > goal.y) current.y--;
-
-      path.push({ ...current });
-    }
-
-    return path;
-  }
+/**
+ * Get all adjacent tiles (4-directional)
+ */
+export function getAdjacentTiles(pos: Position): Position[] {
+  return [
+    { x: pos.x, y: pos.y - 1 }, // up
+    { x: pos.x, y: pos.y + 1 }, // down
+    { x: pos.x - 1, y: pos.y }, // left
+    { x: pos.x + 1, y: pos.y }, // right
+  ];
 }

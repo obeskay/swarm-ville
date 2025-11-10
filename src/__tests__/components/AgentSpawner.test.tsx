@@ -1,37 +1,33 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AgentSpawner } from '../../components/agents/AgentSpawner'
+import AgentSpawner from '../../components/agents/AgentSpawner'
 
 describe('AgentSpawner Component', () => {
   const mockOnClose = vi.fn()
-  const mockOnSpawn = vi.fn()
 
   beforeEach(() => {
     mockOnClose.mockClear()
-    mockOnSpawn.mockClear()
   })
 
   it('should render spawner dialog', () => {
-    render(
+    const { container } = render(
       <AgentSpawner
-        isOpen={true}
+        spaceId="test-space"
         onClose={mockOnClose}
-        onSpawn={mockOnSpawn}
       />
     )
 
     // Check for key elements (adjust based on actual component structure)
-    expect(screen.getByText(/agent/i) || screen.getByRole('dialog')).toBeDefined()
+    expect(container.querySelector('[role="dialog"]')).toBeDefined()
   })
 
   it('should call onClose when dialog is closed', async () => {
     const user = userEvent.setup()
     const { container } = render(
       <AgentSpawner
-        isOpen={true}
+        spaceId="test-space"
         onClose={mockOnClose}
-        onSpawn={mockOnSpawn}
       />
     )
 
@@ -43,34 +39,19 @@ describe('AgentSpawner Component', () => {
     }
   })
 
-  it('should not render when isOpen is false', () => {
-    const { container } = render(
-      <AgentSpawner
-        isOpen={false}
-        onClose={mockOnClose}
-        onSpawn={mockOnSpawn}
-      />
-    )
-
-    // Dialog should not be visible
-    const dialog = container.querySelector('[role="dialog"]')
-    expect(dialog).toBeNull()
-  })
-
   it('should handle agent name input', async () => {
     const user = userEvent.setup()
-    render(
+    const { container } = render(
       <AgentSpawner
-        isOpen={true}
+        spaceId="test-space"
         onClose={mockOnClose}
-        onSpawn={mockOnSpawn}
       />
     )
 
-    const nameInput = screen.queryByPlaceholderText(/name/i)
+    const nameInput = container.querySelector('input[name="name"]') as HTMLInputElement
     if (nameInput) {
       await user.type(nameInput, 'TestAgent')
-      expect(nameInput).toHaveValue('TestAgent')
+      expect(nameInput.value).toBe('TestAgent')
     }
   })
 })

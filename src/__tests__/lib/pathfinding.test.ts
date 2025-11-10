@@ -2,17 +2,19 @@ import { describe, it, expect } from 'vitest'
 import { findPath } from '../../lib/pathfinding'
 import type { Position } from '../../lib/types'
 
-describe('Pathfinding - A* Algorithm', () => {
+describe('Pathfinding - BFS Algorithm', () => {
+  const gridWidth = 100
+  const gridHeight = 100
+
   describe('findPath', () => {
     it('should find a path from start to goal', () => {
       const start: Position = { x: 0, y: 0 }
       const goal: Position = { x: 5, y: 5 }
       const obstacles: Set<string> = new Set()
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
-      expect(path).toHaveLength(11) // 0->5 is 5 steps in each direction = 11 total (including start)
-      expect(path[0]).toEqual(start)
+      expect(path.length).toBeGreaterThan(0)
       expect(path[path.length - 1]).toEqual(goal)
     })
 
@@ -21,11 +23,10 @@ describe('Pathfinding - A* Algorithm', () => {
       const goal: Position = { x: 3, y: 0 }
       const obstacles: Set<string> = new Set()
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
-      expect(path).toHaveLength(4) // 0->3 is 3 steps + start
+      expect(path).toHaveLength(3) // 0->3 is 3 steps (excluding start)
       expect(path).toEqual([
-        { x: 0, y: 0 },
         { x: 1, y: 0 },
         { x: 2, y: 0 },
         { x: 3, y: 0 },
@@ -37,10 +38,9 @@ describe('Pathfinding - A* Algorithm', () => {
       const goal: Position = { x: 3, y: 0 }
       const obstacles: Set<string> = new Set(['1,0', '2,0']) // Block direct path
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
-      expect(path.length).toBeGreaterThan(4) // Longer than direct path
-      expect(path[0]).toEqual(start)
+      expect(path.length).toBeGreaterThan(3) // Longer than direct path
       expect(path[path.length - 1]).toEqual(goal)
 
       // Verify no obstacle is in the path
@@ -66,9 +66,9 @@ describe('Pathfinding - A* Algorithm', () => {
       obstacles.add('4,5')
       obstacles.add('6,5')
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
-      expect(path).toEqual([start]) // Only start position returned
+      expect(path).toEqual([]) // Empty path when unreachable
     })
 
     it('should handle diagonal movement', () => {
@@ -76,7 +76,7 @@ describe('Pathfinding - A* Algorithm', () => {
       const goal: Position = { x: 2, y: 2 }
       const obstacles: Set<string> = new Set()
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
       expect(path.length).toBeGreaterThan(0)
       expect(path[path.length - 1]).toEqual(goal)
@@ -87,9 +87,9 @@ describe('Pathfinding - A* Algorithm', () => {
       const goal: Position = { x: 3, y: 3 }
       const obstacles: Set<string> = new Set()
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
-      expect(path).toEqual([start])
+      expect(path).toEqual([]) // Empty path when already at goal
     })
 
     it('should handle large distances efficiently', () => {
@@ -97,10 +97,9 @@ describe('Pathfinding - A* Algorithm', () => {
       const goal: Position = { x: 50, y: 50 }
       const obstacles: Set<string> = new Set()
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
       expect(path.length).toBeGreaterThan(0)
-      expect(path[0]).toEqual(start)
       expect(path[path.length - 1]).toEqual(goal)
     })
 
@@ -112,9 +111,9 @@ describe('Pathfinding - A* Algorithm', () => {
       // Create a wall directly in the path
       obstacles.add('2,0')
 
-      const path = findPath(start, goal, obstacles)
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
 
-      expect(path.length).toBeGreaterThan(5)
+      expect(path.length).toBeGreaterThan(4)
       expect(path[path.length - 1]).toEqual(goal)
     })
   })

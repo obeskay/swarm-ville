@@ -5,6 +5,8 @@ export interface Position {
   y: number;
 }
 
+export type TileMap = number[][];
+
 export interface Space {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ export interface Space {
     floor: string;
     theme: "modern" | "cozy" | "minimal";
   };
+  tilemap?: TileMap;
   agents: string[];
   settings: {
     proximityRadius: number;
@@ -27,14 +30,7 @@ export interface Space {
   };
 }
 
-export type AgentRole =
-  | "researcher"
-  | "coder"
-  | "designer"
-  | "pm"
-  | "qa"
-  | "devops"
-  | "custom";
+export type AgentRole = "researcher" | "coder" | "designer" | "pm" | "qa" | "devops" | "custom";
 
 export type AgentState = "idle" | "listening" | "thinking" | "speaking" | "error";
 
@@ -55,6 +51,7 @@ export interface Agent {
     icon: string;
     color: string;
     emoji?: string;
+    spriteId?: number;
   };
   state: AgentState;
 }

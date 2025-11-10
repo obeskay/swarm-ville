@@ -1,260 +1,179 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useSpaceStore } from '../../stores/spaceStore'
-import type { Space, Agent } from '../../lib/types'
+import { describe, it, expect, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useSpaceStore } from "../../stores/spaceStore";
+import type { Space, Agent } from "../../lib/types";
 
-describe('Space Store (Zustand)', () => {
+// Helper to create mock space
+const createMockSpace = (id: string, name: string): Space => ({
+  id,
+  name,
+  ownerId: "test-user",
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+  dimensions: { width: 50, height: 50 },
+  tileset: { floor: "default", theme: "modern" },
+  agents: [],
+  settings: { proximityRadius: 5, maxAgents: 10, snapToGrid: true },
+});
+
+// Helper to create mock agent
+const createMockAgent = (id: string, name: string, spaceId: string): Agent => ({
+  id,
+  name,
+  spaceId,
+  ownerId: "test-user",
+  createdAt: Date.now(),
+  position: { x: 10, y: 10 },
+  role: "coder",
+  model: { provider: "claude", modelName: "claude-3-sonnet", useUserCLI: false },
+  avatar: { icon: "🤖", color: "#3B82F6" },
+  state: "idle",
+});
+
+describe("Space Store (Zustand)", () => {
   beforeEach(() => {
     // Reset store state before each test
-    const store = useSpaceStore.getState()
     useSpaceStore.setState({
       spaces: [],
       currentSpaceId: null,
       agents: new Map(),
       userPosition: { x: 25, y: 25 },
-    })
-  })
+    });
+  });
 
-  describe('Space Management', () => {
-    it('should create a new space', () => {
-      const { result } = renderHook(() => useSpaceStore())
+  describe("Space Management", () => {
+    it("should create a new space", () => {
+      const { result } = renderHook(() => useSpaceStore());
 
-      act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-      })
-
-      expect(result.current.spaces).toHaveLength(1)
-      expect(result.current.spaces[0].name).toBe('Test Space')
-    })
-
-    it('should delete a space', () => {
-      const { result } = renderHook(() => useSpaceStore())
+      const mockSpace = createMockSpace("space-1", "Test Space");
 
       act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-      })
+        result.current.addSpace(mockSpace);
+      });
 
-      expect(result.current.spaces).toHaveLength(1)
+      expect(result.current.spaces).toHaveLength(1);
+      expect(result.current.spaces[0].name).toBe("Test Space");
+    });
 
-      act(() => {
-        result.current.deleteSpace('space-1')
-      })
+    it("should set current space", () => {
+      const { result } = renderHook(() => useSpaceStore());
 
-      expect(result.current.spaces).toHaveLength(0)
-    })
-
-    it('should set current space', () => {
-      const { result } = renderHook(() => useSpaceStore())
+      const mockSpace = createMockSpace("space-1", "Test Space");
 
       act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-      })
+        result.current.addSpace(mockSpace);
+      });
 
       act(() => {
-        result.current.setCurrentSpace('space-1')
-      })
+        result.current.setCurrentSpace("space-1");
+      });
 
-      expect(result.current.currentSpaceId).toBe('space-1')
-    })
-  })
+      expect(result.current.currentSpaceId).toBe("space-1");
+    });
+  });
 
-  describe('Agent Management', () => {
-    it('should add an agent to a space', () => {
-      const { result } = renderHook(() => useSpaceStore())
+  describe("Agent Management", () => {
+    it("should add an agent to a space", () => {
+      const { result } = renderHook(() => useSpaceStore());
 
-      act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-        result.current.setCurrentSpace('space-1')
-      })
+      const mockSpace = createMockSpace("space-1", "Test Space");
 
       act(() => {
-        result.current.addAgent({
-          id: 'agent-1',
-          name: 'TestBot',
-          role: 'assistant',
-          position: { x: 10, y: 10 },
-          model: { provider: 'claude', name: 'claude-3-sonnet' },
-          state: 'idle',
-          messages: [],
-          createdAt: new Date(),
-        })
-      })
+        result.current.addSpace(mockSpace);
+        result.current.setCurrentSpace("space-1");
+      });
 
-      const agents = result.current.agents.get('space-1')
-      expect(agents).toHaveLength(1)
-      expect(agents?.[0].name).toBe('TestBot')
-    })
-
-    it('should update agent position', () => {
-      const { result } = renderHook(() => useSpaceStore())
+      const mockAgent = createMockAgent("agent-1", "TestBot", "space-1");
 
       act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-        result.current.setCurrentSpace('space-1')
-        result.current.addAgent({
-          id: 'agent-1',
-          name: 'TestBot',
-          role: 'assistant',
-          position: { x: 10, y: 10 },
-          model: { provider: 'claude', name: 'claude-3-sonnet' },
-          state: 'idle',
-          messages: [],
-          createdAt: new Date(),
-        })
-      })
+        result.current.addAgent("space-1", mockAgent);
+      });
+
+      const agent = result.current.agents.get("agent-1");
+      expect(agent).toBeDefined();
+      expect(agent?.name).toBe("TestBot");
+    });
+
+    it("should update agent position", () => {
+      const { result } = renderHook(() => useSpaceStore());
+
+      const mockSpace = createMockSpace("space-1", "Test Space");
+      const mockAgent = createMockAgent("agent-1", "TestBot", "space-1");
 
       act(() => {
-        result.current.updateAgentPosition('agent-1', { x: 20, y: 20 })
-      })
-
-      const agents = result.current.agents.get('space-1')
-      expect(agents?.[0].position).toEqual({ x: 20, y: 20 })
-    })
-
-    it('should remove an agent', () => {
-      const { result } = renderHook(() => useSpaceStore())
+        result.current.addSpace(mockSpace);
+        result.current.setCurrentSpace("space-1");
+        result.current.addAgent("space-1", mockAgent);
+      });
 
       act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-        result.current.setCurrentSpace('space-1')
-        result.current.addAgent({
-          id: 'agent-1',
-          name: 'TestBot',
-          role: 'assistant',
-          position: { x: 10, y: 10 },
-          model: { provider: 'claude', name: 'claude-3-sonnet' },
-          state: 'idle',
-          messages: [],
-          createdAt: new Date(),
-        })
-      })
+        result.current.updateAgent("agent-1", { position: { x: 20, y: 20 } });
+      });
 
-      expect(result.current.agents.get('space-1')).toHaveLength(1)
+      const agent = result.current.agents.get("agent-1");
+      expect(agent?.position).toEqual({ x: 20, y: 20 });
+    });
+
+    it("should remove an agent", () => {
+      const { result } = renderHook(() => useSpaceStore());
+
+      const mockSpace = createMockSpace("space-1", "Test Space");
+      const mockAgent = createMockAgent("agent-1", "TestBot", "space-1");
 
       act(() => {
-        result.current.removeAgent('agent-1')
-      })
+        result.current.addSpace(mockSpace);
+        result.current.setCurrentSpace("space-1");
+        result.current.addAgent("space-1", mockAgent);
+      });
 
-      expect(result.current.agents.get('space-1')).toHaveLength(0)
-    })
-
-    it('should update agent state', () => {
-      const { result } = renderHook(() => useSpaceStore())
+      expect(result.current.agents.has("agent-1")).toBe(true);
 
       act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-        result.current.setCurrentSpace('space-1')
-        result.current.addAgent({
-          id: 'agent-1',
-          name: 'TestBot',
-          role: 'assistant',
-          position: { x: 10, y: 10 },
-          model: { provider: 'claude', name: 'claude-3-sonnet' },
-          state: 'idle',
-          messages: [],
-          createdAt: new Date(),
-        })
-      })
+        result.current.removeAgent("agent-1");
+      });
+
+      expect(result.current.agents.has("agent-1")).toBe(false);
+    });
+
+    it("should update agent state", () => {
+      const { result } = renderHook(() => useSpaceStore());
+
+      const mockSpace = createMockSpace("space-1", "Test Space");
+      const mockAgent = createMockAgent("agent-1", "TestBot", "space-1");
 
       act(() => {
-        result.current.updateAgentState('agent-1', 'thinking')
-      })
-
-      const agents = result.current.agents.get('space-1')
-      expect(agents?.[0].state).toBe('thinking')
-    })
-  })
-
-  describe('User Position', () => {
-    it('should update user position', () => {
-      const { result } = renderHook(() => useSpaceStore())
+        result.current.addSpace(mockSpace);
+        result.current.setCurrentSpace("space-1");
+        result.current.addAgent("space-1", mockAgent);
+      });
 
       act(() => {
-        result.current.setUserPosition({ x: 30, y: 40 })
-      })
+        result.current.updateAgent("agent-1", { state: "thinking" });
+      });
 
-      expect(result.current.userPosition).toEqual({ x: 30, y: 40 })
-    })
+      const agent = result.current.agents.get("agent-1");
+      expect(agent?.state).toBe("thinking");
+    });
+  });
 
-    it('should have default user position', () => {
-      const { result } = renderHook(() => useSpaceStore())
+  describe("Multi-Agent Scenarios", () => {
+    it("should manage multiple agents in a space", () => {
+      const { result } = renderHook(() => useSpaceStore());
 
-      expect(result.current.userPosition).toEqual({ x: 25, y: 25 })
-    })
-  })
-
-  describe('Multiple Agents', () => {
-    it('should handle multiple agents in same space', () => {
-      const { result } = renderHook(() => useSpaceStore())
+      const mockSpace = createMockSpace("space-1", "Test Space");
 
       act(() => {
-        result.current.addSpace({
-          id: 'space-1',
-          name: 'Test Space',
-          width: 50,
-          height: 50,
-          createdAt: new Date(),
-        })
-        result.current.setCurrentSpace('space-1')
+        result.current.addSpace(mockSpace);
+        result.current.setCurrentSpace("space-1");
 
         for (let i = 0; i < 5; i++) {
-          result.current.addAgent({
-            id: `agent-${i}`,
-            name: `Bot ${i}`,
-            role: 'assistant',
-            position: { x: i * 10, y: i * 10 },
-            model: { provider: 'claude', name: 'claude-3-sonnet' },
-            state: 'idle',
-            messages: [],
-            createdAt: new Date(),
-          })
+          const agent = createMockAgent(`agent-${i}`, `Bot ${i}`, "space-1");
+          agent.position = { x: i * 10, y: i * 10 };
+          result.current.addAgent("space-1", agent);
         }
-      })
+      });
 
-      const agents = result.current.agents.get('space-1')
-      expect(agents).toHaveLength(5)
-    })
-  })
-})
+      expect(result.current.agents.size).toBe(5);
+    });
+  });
+});

@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { CLIDetectionResult } from "./types";
 
 export async function detectCLIs(): Promise<string[]> {
@@ -10,16 +10,39 @@ export async function detectCLIs(): Promise<string[]> {
   }
 }
 
+export interface CLIResponse {
+  content: string;
+  cli_type: string;
+  execution_time_ms: number;
+  metadata: {
+    model?: string;
+    tokens_used?: number;
+    finish_reason?: string;
+  };
+}
+
 export async function sendMessageToCLI(
   cliType: string,
-  prompt: string
+  prompt: string,
 ): Promise<string> {
   try {
-    const response = await invoke("execute_cli_command", {
-      cliType,
-      prompt,
+    const responseJson = await invoke("execute_cli_command", {
+      request: {
+        cli_type: cliType,
+        prompt: prompt,
+      },
     });
-    return response as string;
+
+    // Parse JSON response from Rust
+    const response: CLIResponse = JSON.parse(responseJson as string);
+
+    // Log execution metadata for debugging
+    console.log(
+      `[CLI] ${response.cli_type} responded in ${response.execution_time_ms}ms`,
+      response.metadata,
+    );
+
+    return response.content;
   } catch (error) {
     console.error(`Failed to execute ${cliType} command:`, error);
     throw error;

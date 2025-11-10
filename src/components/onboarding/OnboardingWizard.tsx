@@ -1,138 +1,118 @@
+import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
+import { Rocket, Gamepad2, Users, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
-import { useUserStore } from "../../stores/userStore";
-import "./OnboardingWizard.css";
 
 interface OnboardingWizardProps {
   onComplete: () => void;
 }
 
-export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
-  const [step, setStep] = useState(0);
-  const [detectedCLIs, setDetectedCLIs] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { setDetectedCLIs: storeDetectedCLIs } = useUserStore();
+export default function OnboardingWizard({
+  onComplete,
+}: OnboardingWizardProps) {
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
-    const detectCLIs = async () => {
-      try {
-        const clis = await invoke("detect_installed_clis");
-        setDetectedCLIs(clis as string[]);
-        storeDetectedCLIs(clis as string[]);
-      } catch (error) {
-        console.error("Failed to detect CLIs:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    detectCLIs();
-  }, []);
-
-  const handleNext = () => {
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
+    // Quick splash screen, then interactive tutorial takes over
+    const timer = setTimeout(() => {
       onComplete();
-    }
-  };
-
-  const handleSkip = () => {
-    setStep(3);
-  };
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
 
   return (
-    <div className="onboarding-container">
-      <div className="onboarding-card">
-        {step === 0 && (
-          <div className="onboarding-step">
-            <div className="onboarding-icon">🛸</div>
-            <h1>Welcome to SwarmVille</h1>
-            <p>
-              Collaborate with AI agents in interactive 2D spaces using your
-              existing AI subscriptions.
-            </p>
-            <button onClick={handleNext} className="btn btn-primary">
-              Get Started
-            </button>
-          </div>
-        )}
+    <div className="fixed inset-0 bg-gradient-to-br from-background to-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-        {step === 1 && (
-          <div className="onboarding-step">
-            <h2>Detect Your AI CLIs</h2>
-            {loading ? (
-              <div className="spinner" />
-            ) : (
-              <div className="cli-list">
-                {detectedCLIs.length > 0 ? (
-                  <>
-                    <p className="success">Found {detectedCLIs.length} CLI(s):</p>
-                    {detectedCLIs.map((cli) => (
-                      <div key={cli} className="cli-item">
-                        ✓ {cli}
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <p className="warning">
-                    No AI CLIs detected. You can configure them manually later.
-                  </p>
-                )}
+      <Card className="w-full max-w-2xl relative z-10 border-2">
+        <CardContent className="pt-8 pb-8">
+          <div className="flex flex-col items-center text-center space-y-8">
+            {/* Header */}
+            <div className="flex flex-col items-center space-y-3">
+              <div
+                className={`w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center transition-all duration-700 ${
+                  step >= 1 ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                }`}
+              >
+                <Rocket className="w-10 h-10 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
+                  SwarmVille
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Multi-agent collaborative workspace
+                </p>
+              </div>
+            </div>
+
+            {/* Feature Grid */}
+            {step >= 1 && (
+              <div className="grid grid-cols-3 gap-4 w-full opacity-0 animate-fadeIn">
+                <div className="flex flex-col items-center space-y-2 p-4 rounded-lg bg-muted/50">
+                  <Gamepad2 className="w-6 h-6 text-primary" />
+                  <span className="text-xs font-medium">WASD Control</span>
+                </div>
+                <div className="flex flex-col items-center space-y-2 p-4 rounded-lg bg-muted/50">
+                  <Users className="w-6 h-6 text-blue-500" />
+                  <span className="text-xs font-medium">Real-time Sync</span>
+                </div>
+                <div className="flex flex-col items-center space-y-2 p-4 rounded-lg bg-muted/50">
+                  <Zap className="w-6 h-6 text-yellow-500" />
+                  <span className="text-xs font-medium">AI Agents</span>
+                </div>
               </div>
             )}
-            <div className="button-group">
-              <button onClick={handleSkip} className="btn btn-secondary">
-                Skip
-              </button>
-              <button onClick={handleNext} className="btn btn-primary">
-                Next
-              </button>
-            </div>
-          </div>
-        )}
 
-        {step === 2 && (
-          <div className="onboarding-step">
-            <h2>Configure Settings</h2>
-            <div className="setting-group">
-              <label>Speech-to-Text Hotkey</label>
-              <input
-                type="text"
-                defaultValue="Ctrl+Space"
-                className="input"
-              />
-            </div>
-            <div className="setting-group">
-              <label>Whisper Model Size</label>
-              <select className="input">
-                <option>Small (fast)</option>
-                <option>Medium (balanced)</option>
-                <option>Large (accurate)</option>
-              </select>
-            </div>
-            <div className="button-group">
-              <button onClick={handleSkip} className="btn btn-secondary">
-                Skip
-              </button>
-              <button onClick={handleNext} className="btn btn-primary">
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+            {/* Description */}
+            {step >= 1 && (
+              <div className="space-y-3 opacity-0 animate-fadeIn">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Navigate with{" "}
+                  <span className="font-semibold text-foreground">WASD</span>,
+                  click to move, scroll to zoom. Collaborate in real-time with
+                  other users and AI agents.
+                </p>
+              </div>
+            )}
 
-        {step === 3 && (
-          <div className="onboarding-step">
-            <div className="onboarding-icon">✨</div>
-            <h2>You're All Set!</h2>
-            <p>Create your first space and start collaborating with AI agents.</p>
-            <button onClick={onComplete} className="btn btn-primary">
-              Create First Space
-            </button>
+            {/* CTA Button */}
+            <Button
+              onClick={onComplete}
+              size="lg"
+              className="w-full bg-gradient-to-r from-primary to-blue-600 hover:opacity-90 transition-all text-white font-semibold"
+            >
+              {step >= 1 ? "Enter Workspace" : "Loading..."}
+            </Button>
+
+            {/* Footer */}
+            <p className="text-xs text-muted-foreground">
+              💡 Space automatically created for you
+            </p>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
+
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease-out forwards;
+        }
+        .delay-1000 {
+          animation-delay: 1s;
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,0 +1,13 @@
+{
+  "name": "swarmville-agent-scripts",
+  "version": "1.0.0",
+  "description": "Agent deployment scripts for SwarmVille",
+  "scripts": {
+    "deploy:claude": "node deploy-agent.js --type claude",
+    "deploy:gemini": "node deploy-agent.js --type gemini"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "ws": "^8.14.2"
+  }
+}

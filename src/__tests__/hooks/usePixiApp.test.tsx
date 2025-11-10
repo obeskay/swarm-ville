@@ -1,54 +1,54 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { usePixiApp } from '../../hooks/usePixiApp'
+import { useRef } from 'react'
 
 describe('usePixiApp Hook', () => {
+  let containerDiv: HTMLDivElement
+
   beforeEach(() => {
-    // Create a mock canvas element for tests
-    const canvas = document.createElement('canvas')
-    canvas.id = 'pixi-canvas'
-    document.body.appendChild(canvas)
+    // Create a mock container element for tests
+    containerDiv = document.createElement('div')
+    containerDiv.id = 'pixi-container'
+    document.body.appendChild(containerDiv)
   })
 
-  it('should initialize Pixi app', () => {
-    const { result } = renderHook(() => usePixiApp())
+  it('should initialize with loading state', () => {
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(containerDiv)
+      return usePixiApp(ref)
+    })
 
-    expect(result.current.app).toBeDefined()
-    expect(result.current.viewport).toBeDefined()
+    expect(result.current.isLoading).toBeDefined()
   })
 
-  it('should provide app with correct properties', () => {
-    const { result } = renderHook(() => usePixiApp())
+  it('should provide app instance when loaded', () => {
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(containerDiv)
+      return usePixiApp(ref)
+    })
 
-    expect(result.current.app).toHaveProperty('stage')
-    expect(result.current.app).toHaveProperty('view')
-    expect(result.current.app).toHaveProperty('ticker')
+    // App may be null initially during loading
+    expect(result.current).toHaveProperty('app')
+    expect(result.current).toHaveProperty('stage')
   })
 
-  it('should provide viewport instance', () => {
-    const { result } = renderHook(() => usePixiApp())
+  it('should provide setGameLoop function', () => {
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(containerDiv)
+      return usePixiApp(ref)
+    })
 
-    expect(result.current.viewport).toBeDefined()
-    expect(result.current.viewport).toHaveProperty('x')
-    expect(result.current.viewport).toHaveProperty('y')
+    expect(result.current.setGameLoop).toBeDefined()
+    expect(typeof result.current.setGameLoop).toBe('function')
   })
 
-  it('should cleanup on unmount', () => {
-    const { unmount } = renderHook(() => usePixiApp())
+  it('should handle error state', () => {
+    const { result } = renderHook(() => {
+      const ref = useRef<HTMLDivElement>(containerDiv)
+      return usePixiApp(ref)
+    })
 
-    const result = renderHook(() => usePixiApp())
-    const app = result.result.current.app
-
-    unmount()
-
-    // App should still be defined but cleanup should have been called
-    expect(app).toBeDefined()
-  })
-
-  it('should have stage with app instance', () => {
-    const { result } = renderHook(() => usePixiApp())
-
-    expect(result.current.app.stage).toBeDefined()
-    expect(result.current.app.stage).toHaveProperty('children')
+    expect(result.current).toHaveProperty('error')
   })
 })

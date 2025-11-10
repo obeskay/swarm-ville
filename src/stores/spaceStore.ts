@@ -4,6 +4,7 @@ import { Space, Agent, Position } from "../lib/types";
 interface SpaceState {
   spaces: Space[];
   currentSpaceId: string | null;
+  selectedSpace: Space | null;
   agents: Map<string, Agent>;
   userPosition: Position;
 
@@ -11,7 +12,7 @@ interface SpaceState {
   addSpace: (space: Space) => void;
   setCurrentSpace: (id: string) => void;
   updateAgent: (agentId: string, agent: Partial<Agent>) => void;
-  addAgent: (agent: Agent) => void;
+  addAgent: (spaceId: string, agent: Agent) => void;
   removeAgent: (agentId: string) => void;
   setUserPosition: (position: Position) => void;
   loadSpace: (space: Space) => void;
@@ -20,33 +21,49 @@ interface SpaceState {
 export const useSpaceStore = create<SpaceState>((set) => ({
   spaces: [],
   currentSpaceId: null,
+  selectedSpace: null,
   agents: new Map(),
-  userPosition: { x: 25, y: 25 },
+  userPosition: { x: 0, y: 0 }, // Will be set to first walkable position when map loads
 
   addSpace: (space) =>
     set((state) => ({
       spaces: [...state.spaces, space],
       currentSpaceId: space.id,
+      selectedSpace: space,
     })),
 
   setCurrentSpace: (id) =>
-    set({
-      currentSpaceId: id,
+    set((state) => {
+      const space = state.spaces.find((s) => s.id === id);
+      return {
+        currentSpaceId: id,
+        selectedSpace: space || null,
+      };
     }),
 
   updateAgent: (agentId, updates) =>
     set((state) => {
       const agent = state.agents.get(agentId);
       if (!agent) return state;
-      return {
-        agents: new Map(state.agents).set(agentId, { ...agent, ...updates }),
-      };
+      const newAgents = new Map(state.agents);
+      newAgents.set(agentId, { ...agent, ...updates });
+      return { agents: newAgents };
     }),
 
-  addAgent: (agent) =>
-    set((state) => ({
-      agents: new Map(state.agents).set(agent.id, agent),
-    })),
+  addAgent: (spaceId, agent) =>
+    set((state) => {
+      const space = state.spaces.find((s) => s.id === spaceId);
+      if (!space) return state;
+
+      // Add agent to space
+      space.agents.push(agent.id);
+
+      return {
+        agents: new Map(state.agents).set(agent.id, agent),
+        spaces: [...state.spaces],
+        selectedSpace: state.selectedSpace?.id === spaceId ? space : state.selectedSpace,
+      };
+    }),
 
   removeAgent: (agentId) =>
     set((state) => {

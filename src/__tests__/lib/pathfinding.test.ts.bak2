@@ -1,0 +1,123 @@
+import { describe, it, expect } from 'vitest'
+import { findPath } from '../../lib/pathfinding'
+import type { Position } from '../../lib/types'
+
+describe('Pathfinding - BFS Algorithm', () => {
+  const gridWidth = 100
+  const gridHeight = 100
+
+  describe('findPath', () => {
+    it('should find a path from start to goal', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 5, y: 5 }
+      const obstacles: Set<string> = new Set()
+
+      const path = findPath(start, goal, gridWidth, gridHeight, obstacles)
+
+      expect(path.length).toBeGreaterThan(0)
+      expect(path[path.length - 1]).toEqual(goal)
+    })
+
+    it('should return direct path when no obstacles', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 3, y: 0 }
+      const obstacles: Set<string> = new Set()
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path).toHaveLength(4) // 0->3 is 3 steps + start
+      expect(path).toEqual([
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+        { x: 3, y: 0 },
+      ])
+    })
+
+    it('should avoid obstacles', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 3, y: 0 }
+      const obstacles: Set<string> = new Set(['1,0', '2,0']) // Block direct path
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path.length).toBeGreaterThan(4) // Longer than direct path
+      expect(path[0]).toEqual(start)
+      expect(path[path.length - 1]).toEqual(goal)
+
+      // Verify no obstacle is in the path
+      path.forEach((pos) => {
+        expect(obstacles.has(`${pos.x},${pos.y}`)).toBe(false)
+      })
+    })
+
+    it('should return empty path when goal is unreachable', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 5, y: 5 }
+      const obstacles: Set<string> = new Set()
+
+      // Create a barrier around the goal
+      for (let x = 4; x <= 6; x++) {
+        for (let y = 4; y <= 6; y++) {
+          if (x !== 5 || y !== 5) obstacles.add(`${x},${y}`)
+        }
+      }
+      // Block all entries to the goal area
+      obstacles.add('5,4')
+      obstacles.add('5,6')
+      obstacles.add('4,5')
+      obstacles.add('6,5')
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path).toEqual([start]) // Only start position returned
+    })
+
+    it('should handle diagonal movement', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 2, y: 2 }
+      const obstacles: Set<string> = new Set()
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path.length).toBeGreaterThan(0)
+      expect(path[path.length - 1]).toEqual(goal)
+    })
+
+    it('should start and goal at same position', () => {
+      const start: Position = { x: 3, y: 3 }
+      const goal: Position = { x: 3, y: 3 }
+      const obstacles: Set<string> = new Set()
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path).toEqual([start])
+    })
+
+    it('should handle large distances efficiently', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 50, y: 50 }
+      const obstacles: Set<string> = new Set()
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path.length).toBeGreaterThan(0)
+      expect(path[0]).toEqual(start)
+      expect(path[path.length - 1]).toEqual(goal)
+    })
+
+    it('should find shortest path around obstacles', () => {
+      const start: Position = { x: 0, y: 0 }
+      const goal: Position = { x: 4, y: 0 }
+      const obstacles: Set<string> = new Set()
+
+      // Create a wall directly in the path
+      obstacles.add('2,0')
+
+      const path = findPath(start, goal, obstacles)
+
+      expect(path.length).toBeGreaterThan(5)
+      expect(path[path.length - 1]).toEqual(goal)
+    })
+  })
+})

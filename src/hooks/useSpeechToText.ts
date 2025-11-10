@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useUserStore } from "../stores/userStore";
 import { useAgentStore } from "../stores/agentStore";
@@ -29,6 +29,14 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
 
     const setupListeners = async () => {
       try {
+        // Only setup listeners if in Tauri context
+        if (!window.__TAURI_IPC__) {
+          console.log(
+            "[useSpeechToText] Running in dev mode, skipping STT setup",
+          );
+          return;
+        }
+
         unlistenTranscript = await listen<TranscriptionResult>(
           "stt_transcript",
           (event) => {

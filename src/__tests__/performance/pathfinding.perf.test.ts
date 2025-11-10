@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { findPath } from '../../lib/pathfinding'
-import type { Position } from '../../lib/types'
+
+const gridWidth = 1000
+const gridHeight = 1000
 
 describe('Pathfinding - Performance Tests', () => {
   describe('Pathfinding Performance Benchmarks', () => {
@@ -9,6 +11,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 0, y: 0 },
         { x: 10, y: 0 },
+        gridWidth,
+        gridHeight,
         new Set()
       )
       const duration = performance.now() - start
@@ -22,6 +26,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 0, y: 0 },
         { x: 50, y: 50 },
+        gridWidth,
+        gridHeight,
         new Set()
       )
       const duration = performance.now() - start
@@ -35,6 +41,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 0, y: 0 },
         { x: 100, y: 100 },
+        gridWidth,
+        gridHeight,
         new Set()
       )
       const duration = performance.now() - start
@@ -54,6 +62,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 0, y: 0 },
         { x: 100, y: 100 },
+        gridWidth,
+        gridHeight,
         obstacles
       )
       const duration = performance.now() - start
@@ -75,6 +85,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 0, y: 50 },
         { x: 100, y: 50 },
+        gridWidth,
+        gridHeight,
         obstacles
       )
       const duration = performance.now() - start
@@ -85,13 +97,15 @@ describe('Pathfinding - Performance Tests', () => {
 
     it('should handle multiple pathfinding requests in parallel', () => {
       const start = performance.now()
-      const paths = Array.from({ length: 10 }).map((_, i) => {
-        return findPath(
+      const paths = Array.from({ length: 10 }).map((_, i) =>
+        findPath(
           { x: 0, y: 0 },
           { x: 50 + i * 5, y: 50 + i * 5 },
+          gridWidth,
+          gridHeight,
           new Set()
         )
-      })
+      )
       const duration = performance.now() - start
 
       expect(paths).toHaveLength(10)
@@ -104,9 +118,11 @@ describe('Pathfinding - Performance Tests', () => {
 
       for (let i = 0; i < 100; i++) {
         const start = performance.now()
-        findPath(
+        const path = findPath(
           { x: 0, y: 0 },
           { x: 25, y: 25 },
+          gridWidth,
+          gridHeight,
           new Set()
         )
         durations.push(performance.now() - start)
@@ -129,9 +145,11 @@ describe('Pathfinding - Performance Tests', () => {
 
       // Run pathfinding
       for (let i = 0; i < 1000; i++) {
-        findPath(
+        const path = findPath(
           { x: 0, y: 0 },
           { x: 50, y: 50 },
+          gridWidth,
+          gridHeight,
           new Set()
         )
       }
@@ -150,6 +168,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 25, y: 25 },
         { x: 25, y: 25 },
+        gridWidth,
+        gridHeight,
         new Set()
       )
       const duration = performance.now() - start
@@ -163,6 +183,8 @@ describe('Pathfinding - Performance Tests', () => {
       const path = findPath(
         { x: 0, y: 0 },
         { x: 100, y: 100 },
+        gridWidth,
+        gridHeight,
         new Set()
       )
       const duration = performance.now() - start

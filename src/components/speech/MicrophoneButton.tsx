@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Mic, MicOff, AlertCircle } from "lucide-react";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
-import "./MicrophoneButton.css";
+import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
+import { Alert } from "../ui/alert";
+import { cn } from "@/lib/utils";
 
 export default function MicrophoneButton() {
   const { isRecording, transcript, startRecording, stopRecording } =
@@ -29,12 +32,15 @@ export default function MicrophoneButton() {
   };
 
   return (
-    <div className="microphone-container">
-      <button
+    <div className="fixed bottom-6 right-6 flex flex-col items-end gap-2 z-50">
+      <Button
         onClick={handleClick}
-        className={`microphone-btn ${isRecording ? "recording" : ""} ${
-          error ? "error" : ""
-        }`}
+        size="icon"
+        variant={error ? "destructive" : isRecording ? "default" : "outline"}
+        className={cn(
+          "w-14 h-14 rounded-full shadow-lg transition-all",
+          isRecording && "animate-pulse ring-4 ring-primary/50",
+        )}
         title={
           isRecording
             ? "Stop recording (release)"
@@ -43,21 +49,27 @@ export default function MicrophoneButton() {
         disabled={!!error}
       >
         {error ? (
-          <AlertCircle size={20} />
+          <AlertCircle className="w-6 h-6" />
         ) : isRecording ? (
-          <Mic size={20} />
+          <Mic className="w-6 h-6" />
         ) : (
-          <MicOff size={20} />
+          <MicOff className="w-6 h-6" />
         )}
-      </button>
+      </Button>
 
       {showTranscript && transcript && (
-        <div className="transcript-toast">
-          <p className="transcript-text">{transcript}</p>
-        </div>
+        <Card className="max-w-xs animate-in slide-in-from-bottom-5">
+          <CardContent className="p-3">
+            <p className="text-sm">{transcript}</p>
+          </CardContent>
+        </Card>
       )}
 
-      {error && <div className="error-toast">{error}</div>}
+      {error && (
+        <Alert variant="destructive" className="max-w-xs p-3">
+          {error}
+        </Alert>
+      )}
     </div>
   );
 }

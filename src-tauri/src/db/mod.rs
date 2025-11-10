@@ -1,6 +1,14 @@
-use std::path::Path;
-use rusqlite::{Connection, Result as SqliteResult};
 use crate::error::Result;
+use rusqlite::Connection;
+use std::path::Path;
+
+pub mod errors;
+pub mod maps;
+pub mod persistence;
+pub mod sprites;
+
+pub use errors::{DbError, DbResult};
+pub use persistence::{Agent, PersistenceLayer, Space, UserProgress};
 
 pub struct Database {
     conn: Connection,
@@ -18,6 +26,15 @@ impl Database {
     }
 
     fn init_schema(&self) -> Result<()> {
+        // Run migrations in order
+        self.run_migration_001()?;
+        self.run_migration_003()?;
+        self.run_migration_004()?;
+        self.run_migration_005()?; // Language system
+        Ok(())
+    }
+
+    fn run_migration_001(&self) -> Result<()> {
         self.conn
             .execute_batch(
                 r#"
@@ -81,5 +98,39 @@ impl Database {
             .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
 
         Ok(())
+    }
+
+    fn run_migration_003(&self) -> Result<()> {
+        // Read and execute sprite system migration
+        let migration_sql = include_str!("migrations/003_sprites_system.sql");
+        self.conn
+            .execute_batch(migration_sql)
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
+    fn run_migration_004(&self) -> Result<()> {
+        // Read and execute maps storage migration
+        let migration_sql = include_str!("migrations/004_maps_system.sql");
+        self.conn
+            .execute_batch(migration_sql)
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
+    fn run_migration_005(&self) -> Result<()> {
+        // Read and execute language system migration
+        let migration_sql = include_str!("migrations/005_language_system.sql");
+        self.conn
+            .execute_batch(migration_sql)
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub fn get_connection(&self) -> &Connection {
+        &self.conn
     }
 }

@@ -1,10 +1,18 @@
-import { useEffect, useState, useRef } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useAgentStore } from "../../stores/agentStore";
 import { useSpaceStore } from "../../stores/spaceStore";
-import { sendMessageToCLI, getCliDisplayName } from "../../lib/cli";
+import { SimpleChatService } from "../../lib/ai/SimpleChatService";
 import { Message } from "../../lib/types";
-import "./AgentDialog.css";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Alert } from "../ui/alert";
+import { Loader2, Send, X, Bot, User } from "lucide-react";
 
 interface AgentDialogProps {
   agentId: string;
@@ -21,6 +29,17 @@ export default function AgentDialog({ agentId, onClose }: AgentDialogProps) {
   const messages = getMessages(agentId);
 
   const agent = Array.from(agents.values()).find((a) => a.id === agentId);
+
+  // Create a SimpleChatService instance for this agent's provider
+  const chatService = useMemo(() => {
+    if (!agent) return new SimpleChatService("gemini"); // Default fallback
+    // Map provider to supported types (local/custom fallback to gemini)
+    const provider =
+      agent.model.provider === "local" || agent.model.provider === "custom"
+        ? "gemini"
+        : agent.model.provider;
+    return new SimpleChatService(provider);
+  }, [agent?.model.provider]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -47,8 +66,9 @@ export default function AgentDialog({ agentId, onClose }: AgentDialogProps) {
     setAgentState(agentId, "thinking");
 
     try {
-      // Send to CLI
-      const response = await sendMessageToCLI(agent.model.provider, inputValue);
+      const startTime = Date.now();
+      const response = await chatService.sendMessage(inputValue);
+      const duration = Date.now() - startTime;
 
       const agentMessage: Message = {
         id: Math.random().toString(36).substr(2, 9),
@@ -59,7 +79,7 @@ export default function AgentDialog({ agentId, onClose }: AgentDialogProps) {
         metadata: {
           modelInfo: {
             model: agent.model.modelName,
-            duration: Math.random() * 5000,
+            duration,
           },
         },
       };
@@ -72,7 +92,7 @@ export default function AgentDialog({ agentId, onClose }: AgentDialogProps) {
         id: Math.random().toString(36).substr(2, 9),
         agentId,
         role: "agent",
-        content: `Error: ${errorMsg}. Make sure ${getCliDisplayName(agent.model.provider)} CLI is installed and configured.`,
+        content: `Error: ${errorMsg}`,
         timestamp: Date.now(),
       };
       addMessage(agentId, errorMessage);
@@ -83,68 +103,96 @@ export default function AgentDialog({ agentId, onClose }: AgentDialogProps) {
   };
 
   return (
-    <div className="agent-dialog-overlay">
-      <div className="agent-dialog">
-        <div className="dialog-header">
-          <div className="header-info">
-            <h3>{agent?.name || agentId}</h3>
-            <p className="agent-model">
-              {agent?.model.provider} • {agent?.role}
-            </p>
-          </div>
-          <button onClick={onClose} className="close-btn">
-            ✕
-          </button>
-        </div>
+    <Dialog open={true} onClose={onClose}>
+      <button
+        onClick={onClose}
+        className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </button>
 
-        {error && <div className="dialog-error">{error}</div>}
+      <DialogHeader>
+        <DialogTitle>{agent?.name || agentId}</DialogTitle>
+        <DialogDescription>{agent?.role}</DialogDescription>
+      </DialogHeader>
 
-        <div className="dialog-messages">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          {error}
+        </Alert>
+      )}
+
+      <div className="flex flex-col h-[400px] gap-4">
+        <div className="flex-1 overflow-y-auto space-y-3 pr-2">
           {messages.length === 0 && (
-            <div className="empty-messages">
-              Start a conversation with {agent?.name || "this agent"}
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Say hi
             </div>
           )}
           {messages.map((msg) => (
-            <div key={msg.id} className={`message message-${msg.role}`}>
-              <div className="message-content">{msg.content}</div>
-              <div className="message-time">
-                {new Date(msg.timestamp).toLocaleTimeString()}
+            <div
+              key={msg.id}
+              className={`flex gap-3 ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              {msg.role === "agent" && (
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-primary" />
+                </div>
+              )}
+              <div
+                className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                <div className="text-sm">{msg.content}</div>
+                <div className="text-xs opacity-70 mt-1">
+                  {new Date(msg.timestamp).toLocaleTimeString()}
+                </div>
               </div>
+              {msg.role === "user" && (
+                <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+              )}
             </div>
           ))}
           {isLoading && (
-            <div className="message message-agent">
-              <div className="message-loading">
-                <span className="loader"></span> Thinking...
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div className="bg-muted rounded-lg px-4 py-2 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSendMessage} className="dialog-input-area">
-          <input
+        <form onSubmit={handleSendMessage} className="flex gap-2">
+          <Input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type a message..."
             disabled={isLoading}
-            className="dialog-input"
+            className="flex-1"
             autoFocus
           />
-          <button
+          <Button
             type="submit"
             disabled={isLoading || !inputValue.trim()}
-            className="send-btn"
-            title={
-              isLoading ? "Waiting for response..." : "Send message (Enter)"
-            }
+            size="icon"
           >
-            {isLoading ? "…" : "→"}
-          </button>
+            <Send className="h-4 w-4" />
+          </Button>
         </form>
       </div>
-    </div>
+    </Dialog>
   );
 }

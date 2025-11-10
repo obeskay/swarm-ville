@@ -1,90 +1,125 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { useEffect, useState, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import SpaceContainer from "./components/space/SpaceContainer";
 import { useSpaceStore } from "./stores/spaceStore";
 import { useUserStore } from "./stores/userStore";
 import OnboardingWizard from "./components/onboarding/OnboardingWizard";
-import "./App.css";
+import { Button } from "./components/ui/button";
+import { Loader2 } from "lucide-react";
+import { ThemeProvider } from "./components/theme-provider";
+import { Toaster } from "./components/ui/sonner";
+import { MapGenerator } from "./lib/ai/MapGenerator";
+import { toast } from "sonner";
+import { useAutoSave, useLoadPersisted } from "./hooks/useAutoSave";
+import { AppLayout } from "./components/layout/AppLayout";
+import { TopToolbar } from "./components/layout/TopToolbar";
+import { BottomStatusBar } from "./components/layout/BottomStatusBar";
+import { LeftSidebar } from "./components/layout/LeftSidebar";
+import { RightSidebar } from "./components/layout/RightSidebar";
 
 function App() {
-  const { spaces } = useSpaceStore();
+  const { spaces, addSpace } = useSpaceStore();
   const { hasCompletedOnboarding, setOnboardingComplete } = useUserStore();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+
+  // Enable auto-save and load persisted data
+  useAutoSave({ enabled: true, interval: 30000, debounce: 2000 });
+  useLoadPersisted();
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Initialize database
+        if (!window.__TAURI_IPC__) {
+          setInitialized(true);
+          return;
+        }
+
         await invoke("init_db");
-
-        // Load user data
-        const userData = await invoke("load_user_data");
-        console.log("User data loaded:", userData);
-
-        setLoading(false);
+        await invoke("load_user_data");
+        setInitialized(true);
       } catch (error) {
-        console.error("Failed to initialize app:", error);
-        setLoading(false);
+        setInitialized(true);
       }
     };
 
-    initializeApp();
-  }, []);
+    if (!initialized) {
+      initializeApp();
+    }
+  }, [initialized]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center w-full h-screen bg-background">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-foreground">Initializing SwarmVille...</p>
+  const handleCreateSpace = useCallback(async () => {
+    if (loading) return; // Prevent double creation
+
+    // Create space directly - no MapGenerator
+    const spaceId = crypto.randomUUID();
+    addSpace({
+      id: spaceId,
+      name: "Startup Office",
+      ownerId: "local-user",
+      dimensions: {
+        width: 80,
+        height: 80,
+      },
+      tileset: {
+        floor: "grass",
+        theme: "modern",
+      },
+      tilemap: undefined, // Will load from defaultmap.json
+      agents: [],
+      settings: {
+        proximityRadius: 5,
+        maxAgents: 10,
+        snapToGrid: true,
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  }, [loading, addSpace]);
+
+  // Auto-create space if needed
+  useEffect(() => {
+    if (initialized && spaces.length === 0 && !loading) {
+      handleCreateSpace();
+    }
+  }, [initialized, spaces.length, loading, handleCreateSpace]);
+
+  // Initialize selectedSpaceId when spaces are available
+  useEffect(() => {
+    if (spaces.length > 0 && !selectedSpaceId) {
+      setSelectedSpaceId(spaces[0].id);
+    }
+  }, [spaces, selectedSpaceId]);
+
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <Toaster />
+      {loading ? (
+        <div className="flex items-center justify-center w-full h-screen bg-background">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
         </div>
-      </div>
-    );
-  }
-
-  if (!hasCompletedOnboarding) {
-    return <OnboardingWizard onComplete={() => setOnboardingComplete(true)} />;
-  }
-
-  if (spaces.length === 0) {
-    const handleCreateSpace = () => {
-      const { addSpace } = useSpaceStore.getState();
-      addSpace({
-        id: crypto.randomUUID(),
-        name: "Default Space",
-        ownerId: "local-user",
-        dimensions: {
-          width: 1600,
-          height: 1200,
-        },
-        tileset: {
-          tileSize: 32,
-          theme: "dark",
-        },
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-    };
-
-    return (
-      <div className="flex items-center justify-center w-full h-screen bg-background">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">No Spaces Yet</h1>
-          <p className="text-muted-foreground mb-6">
-            Create your first space to get started
-          </p>
-          <button
-            onClick={handleCreateSpace}
-            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-          >
-            Create Space
-          </button>
+      ) : !hasCompletedOnboarding ? (
+        <OnboardingWizard onComplete={() => setOnboardingComplete(true)} />
+      ) : spaces.length > 0 && selectedSpaceId ? (
+        <AppLayout
+          toolbar={<TopToolbar />}
+          leftSidebar={<LeftSidebar />}
+          rightSidebar={<RightSidebar spaceId={selectedSpaceId} />}
+          statusBar={<BottomStatusBar />}
+        >
+          <SpaceContainer
+            spaceId={selectedSpaceId}
+            onSpaceChange={setSelectedSpaceId}
+          />
+        </AppLayout>
+      ) : (
+        <div className="flex items-center justify-center w-full h-screen bg-background">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
         </div>
-      </div>
-    );
-  }
-
-  return <SpaceContainer spaceId={spaces[0].id} />;
+      )}
+    </ThemeProvider>
+  );
 }
 
 export default App;
