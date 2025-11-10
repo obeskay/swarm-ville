@@ -66,11 +66,11 @@ function App() {
     const spaceId = crypto.randomUUID();
     addSpace({
       id: spaceId,
-      name: "Startup Office",
+      name: "Default Space",
       ownerId: "local-user",
       dimensions: {
-        width: 80,
-        height: 80,
+        width: 1600,
+        height: 1200,
       },
       tileset: {
         floor: "grass",
