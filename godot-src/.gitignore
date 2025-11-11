@@ -1,0 +1,19 @@
+# Godot build files
+.godot/
+*.exe
+*.app
+*.dmg
+*.deb
+*.AppImage
+builds/
+bin/
+
+# Editor cache
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# User data
+user_data/
+godot.log

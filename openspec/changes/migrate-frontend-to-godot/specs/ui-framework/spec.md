@@ -8,7 +8,7 @@
 
 Define the Godot scene hierarchy and node structure for the SwarmVille interface, replacing React components with .tscn files and GDScript.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Scene Hierarchy & Node Organization
 
