@@ -6,6 +6,9 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { InfoBadge } from "../ui/info-badge";
 import { StatusIndicator } from "../ui/status-indicator";
+
+// Version from package.json
+const APP_VERSION = "0.1.0";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,13 +26,7 @@ import { SpaceGrid } from "../space/SpaceGrid";
 import { useToolbarUIConfig } from "@/hooks/useUIConfig";
 import { useThemeConfig } from "@/hooks/useThemeConfig";
 import { useToolbarConfig } from "@/hooks/useLayoutConfig";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 
 export function TopToolbar() {
   const { currentSpaceId, spaces, agents } = useSpaceStore();
@@ -125,6 +122,20 @@ export function TopToolbar() {
 
         {/* Right Section: Stats + Actions */}
         <div className="flex items-center gap-2">
+          {/* Version Indicator */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded cursor-help">
+                v{APP_VERSION}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">SwarmVille Version</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-4" />
+
           {/* Agent Count with status indicator */}
           {currentSpace && (
             <Tooltip>
@@ -247,9 +258,7 @@ export function TopToolbar() {
           <div className="p-8">
             <DialogHeader className="mb-6">
               <DialogTitle className="text-3xl">Your Spaces</DialogTitle>
-              <DialogDescription>
-                Browse and manage your collaborative workspaces
-              </DialogDescription>
+              <DialogDescription>Browse and manage your collaborative workspaces</DialogDescription>
             </DialogHeader>
             <SpaceGrid />
           </div>
