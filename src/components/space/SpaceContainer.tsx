@@ -3,6 +3,7 @@ import * as PIXI from "pixi.js";
 import gsap from "gsap";
 import { useSpaceStore } from "../../stores/spaceStore";
 import { usePixiApp } from "../../hooks/usePixiApp";
+import { useGameColors } from "../../hooks/useGameColors";
 import { GridRenderer, ProximityCircle } from "../../lib/pixi/GridRenderer";
 import { CharacterSprite } from "../../lib/pixi/CharacterSprite";
 import { Pathfinder } from "../../lib/pathfinding";
@@ -29,6 +30,9 @@ const PROXIMITY_RADIUS = GAME_CONFIG.PROXIMITY_CIRCLE_RADIUS_TILES;
 export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { app, stage, isLoading, error, setGameLoop } = usePixiApp(containerRef);
+
+  // Get game colors for dynamic theming
+  const gameColors = useGameColors();
 
   const { spaces, userPosition, setUserPosition, agents: agentsMap, updateSpaceVersion } = useSpaceStore();
 
@@ -96,6 +100,10 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
         let gridRenderer = new GridRenderer(space.dimensions.width, space.dimensions.height);
         await gridRenderer.init();
+
+        // Set theme colors for tile rendering
+        gridRenderer.setThemeColors(gameColors.themeColors);
+
         gridRendererRef.current = gridRenderer;
 
         // Add layers to stage
@@ -300,6 +308,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           false
         );
 
+        // Apply player color from theme
+        userAvatar.setTint(gameColors.playerColor);
+
         // Initialize spritesheet (async)
         userAvatar.init().catch((err) => {
           if (import.meta.env.DEV) {
@@ -311,7 +322,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         userAvatarRef.current = userAvatar;
 
         // Create proximity circle at spawn position
-        const proximityCircle = new ProximityCircle(spawnPosition, PROXIMITY_RADIUS);
+        const proximityCircle = new ProximityCircle(spawnPosition, PROXIMITY_RADIUS, gameColors.selectionColor);
         layers.object.addChild(proximityCircle);
         proximityCircleRef.current = proximityCircle;
 
@@ -319,7 +330,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         const tileHighlight = new PIXI.Graphics();
         tileHighlight.rect(0, 0, TILE_SIZE, TILE_SIZE);
         tileHighlight.fill({
-          color: GAME_CONFIG.COLORS.TILE_HIGHLIGHT,
+          color: gameColors.hoverColor,
           alpha: GAME_CONFIG.COLORS.TILE_HIGHLIGHT_ALPHA,
         });
         tileHighlight.position.set(spawnPosition.x * TILE_SIZE, spawnPosition.y * TILE_SIZE);
@@ -340,6 +351,11 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
             true,
             agent.id
           );
+
+          // Apply agent color based on allegiance
+          // For now, all agents in the space are friendly (primary color)
+          // TODO: Support hostile and neutral agent colors in future
+          sprite.setTint(gameColors.agentFriendlyColor);
 
           // Initialize spritesheet (async)
           sprite.init().catch((err) => {
@@ -386,7 +402,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     };
 
     initScene();
-  }, [space, app, stage, spaceId]);
+  }, [space, app, stage, spaceId, gameColors]);
 
   /**
    * Setup game loop for smooth movement and camera
@@ -927,17 +943,17 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         const objectLayer = gridRendererRef.current?.getLayer("object");
         if (!objectLayer) return;
 
-        // Outer ring
+        // Outer ring - use effect positive color (primary/success color)
         const ripple1 = new PIXI.Graphics();
         ripple1.circle(0, 0, 10);
-        ripple1.stroke({ color: 0x3b82f6, width: 2, alpha: 0.8 });
+        ripple1.stroke({ color: gameColors.effectPositiveColor, width: 2, alpha: 0.8 });
         ripple1.position.set(x, y);
         objectLayer.addChild(ripple1);
 
-        // Inner ring (delayed)
+        // Inner ring (delayed) - lighter variant of effect positive color
         const ripple2 = new PIXI.Graphics();
         ripple2.circle(0, 0, 6);
-        ripple2.stroke({ color: 0x60a5fa, width: 3, alpha: 0.6 });
+        ripple2.stroke({ color: gameColors.effectPositiveColor, width: 3, alpha: 0.6 });
         ripple2.position.set(x, y);
         objectLayer.addChild(ripple2);
 
@@ -973,12 +989,12 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       const createBlockedIndicator = (x: number, y: number) => {
         const indicator = new PIXI.Graphics();
 
-        // Draw "X" mark
+        // Draw "X" mark using effect negative color (danger/blocked)
         indicator.moveTo(-6, -6);
         indicator.lineTo(6, 6);
         indicator.moveTo(6, -6);
         indicator.lineTo(-6, 6);
-        indicator.stroke({ color: 0xff4444, width: 3, alpha: 0.9 });
+        indicator.stroke({ color: gameColors.effectNegativeColor, width: 3, alpha: 0.9 });
 
         indicator.position.set(x, y);
 
@@ -1071,7 +1087,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       }
       return () => {};
     }
-  }, [initialized, app, stage, userPosition]);
+  }, [initialized, app, stage, userPosition, gameColors]);
 
   /**
    * Zoom intuitivo: scroll hacia cursor + pinch
@@ -1321,6 +1337,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         const characterId = agent.avatar.spriteId ?? 1;
         const sprite = new CharacterSprite(agent.position, characterId, agent.name, true, agent.id);
 
+        // Apply agent color
+        sprite.setTint(gameColors.agentFriendlyColor);
+
         // Initialize spritesheet (async)
         sprite.init().catch((err) => {
           if (import.meta.env.DEV) {
@@ -1346,7 +1365,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     });
 
     gridRendererRef.current.sortObjectsByY();
-  }, [agentsMap, initialized]);
+  }, [agentsMap, initialized, gameColors]);
 
   useEffect(() => {
     if (!initialized || !isConnected || !space || hasJoinedSpaceRef.current) return;
@@ -1388,6 +1407,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           remoteUser.id
         );
 
+        // Apply player color for remote users (other players in the space)
+        sprite.setTint(gameColors.playerColor);
+
         sprite.init().catch((err) => {
           if (import.meta.env.DEV) {
             console.error(`Failed to init remote user ${remoteUser.id}:`, err);
@@ -1428,7 +1450,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     });
 
     gridRendererRef.current.sortObjectsByY();
-  }, [remoteUsers, initialized]);
+  }, [remoteUsers, initialized, gameColors]);
 
   return (
     <div

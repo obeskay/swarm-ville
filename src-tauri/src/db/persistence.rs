@@ -14,6 +14,8 @@ pub struct Space {
     pub tilemap: Option<String>, // JSON serialized tilemap
     pub created_at: i64,
     pub updated_at: i64,
+    pub version: i32,       // Version for change detection
+    pub updated_at_ms: i64, // Timestamp in milliseconds
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,7 +69,9 @@ impl PersistenceLayer {
                 height INTEGER NOT NULL,
                 tilemap TEXT,
                 created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
+                updated_at INTEGER NOT NULL,
+                version INTEGER NOT NULL DEFAULT 1,
+                updated_at_ms INTEGER NOT NULL DEFAULT 0
             )",
             [],
         )?;
@@ -121,8 +125,8 @@ impl PersistenceLayer {
     pub fn create_space(&self, space: &Space) -> DbResult<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO spaces (id, name, owner_id, width, height, tilemap, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO spaces (id, name, owner_id, width, height, tilemap, created_at, updated_at, version, updated_at_ms)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             params![
                 space.id,
                 space.name,
@@ -131,7 +135,9 @@ impl PersistenceLayer {
                 space.height,
                 space.tilemap,
                 space.created_at,
-                space.updated_at
+                space.updated_at,
+                space.version,
+                space.updated_at_ms
             ],
         )?;
         Ok(())
@@ -140,7 +146,7 @@ impl PersistenceLayer {
     pub fn get_space(&self, id: &str) -> DbResult<Space> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, name, owner_id, width, height, tilemap, created_at, updated_at
+            "SELECT id, name, owner_id, width, height, tilemap, created_at, updated_at, version, updated_at_ms
              FROM spaces WHERE id = ?1",
         )?;
 
@@ -155,6 +161,8 @@ impl PersistenceLayer {
                     tilemap: row.get(5)?,
                     created_at: row.get(6)?,
                     updated_at: row.get(7)?,
+                    version: row.get(8)?,
+                    updated_at_ms: row.get(9)?,
                 })
             })
             .map_err(|_| DbError::NotFound(format!("Space {} not found", id)))?;
@@ -165,7 +173,7 @@ impl PersistenceLayer {
     pub fn list_spaces(&self, owner_id: &str) -> DbResult<Vec<Space>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, name, owner_id, width, height, tilemap, created_at, updated_at
+            "SELECT id, name, owner_id, width, height, tilemap, created_at, updated_at, version, updated_at_ms
              FROM spaces WHERE owner_id = ?1 ORDER BY updated_at DESC",
         )?;
 
@@ -180,6 +188,8 @@ impl PersistenceLayer {
                     tilemap: row.get(5)?,
                     created_at: row.get(6)?,
                     updated_at: row.get(7)?,
+                    version: row.get(8)?,
+                    updated_at_ms: row.get(9)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -190,14 +200,33 @@ impl PersistenceLayer {
     pub fn update_space(&self, space: &Space) -> DbResult<()> {
         let conn = self.conn.lock().unwrap();
         let updated = conn.execute(
-            "UPDATE spaces SET name = ?1, tilemap = ?2, updated_at = ?3 WHERE id = ?4",
-            params![space.name, space.tilemap, space.updated_at, space.id],
+            "UPDATE spaces SET name = ?1, tilemap = ?2, updated_at = ?3, version = ?4, updated_at_ms = ?5 WHERE id = ?6",
+            params![space.name, space.tilemap, space.updated_at, space.version, space.updated_at_ms, space.id],
         )?;
 
         if updated == 0 {
             return Err(DbError::NotFound(format!("Space {} not found", space.id)));
         }
         Ok(())
+    }
+
+    pub fn increment_space_version(&self, space_id: &str) -> DbResult<(i32, i64)> {
+        let conn = self.conn.lock().unwrap();
+        let now_ms = Utc::now().timestamp_millis();
+
+        // Increment version and update timestamp
+        conn.execute(
+            "UPDATE spaces SET version = version + 1, updated_at_ms = ?1 WHERE id = ?2",
+            params![now_ms, space_id],
+        )?;
+
+        // Fetch and return new version
+        let mut stmt = conn.prepare("SELECT version FROM spaces WHERE id = ?1")?;
+        let new_version: i32 = stmt
+            .query_row([space_id], |row| row.get(0))
+            .map_err(|_| DbError::NotFound(format!("Space {} not found", space_id)))?;
+
+        Ok((new_version, now_ms))
     }
 
     pub fn delete_space(&self, id: &str) -> DbResult<()> {

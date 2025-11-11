@@ -1,253 +1,206 @@
 # SwarmVille - Quick Start Guide
 
-## 🚀 Getting Started (2 minutes)
+## Installation (5 minutos)
 
-### Prerequisites
-- Node.js 18+
-- pnpm (or npm)
-- Rust (for Tauri backend)
-
-### Installation
+### 1. Install Godot 4.5
 ```bash
-# Install dependencies
-pnpm install
+# macOS
+brew install godot
 
-# Set up environment
-pnpm setup
+# Or download: https://godotengine.org/download
 ```
 
-### Run Development
+### 2. Verify Installation
 ```bash
-# Start everything with one command (Tauri + Vite + WebSocket)
-pnpm dev
+godot --version
+# Should output: Godot Engine v4.5.x
 ```
 
-This starts:
-- 🎨 Vite dev server (http://localhost:5173)
-- 🦀 Tauri backend
-- 🔌 WebSocket server
+## Development Workflow
 
-### Build for Production
+### Terminal 1: Godot Editor
 ```bash
-pnpm build
+pnpm run dev:godot
+```
+This opens Godot with the project ready to edit and test.
+
+### Terminal 2: Backend (Rust)
+```bash
+cd src-tauri
+cargo run
+```
+This starts the WebSocket server on `ws://127.0.0.1:8080`
+
+### Terminal 3: Tauri with Godot Export (Optional)
+```bash
+pnpm run dev:godot-tauri
+```
+This builds Godot HTML5 export and runs inside Tauri window.
+
+## Quick Commands
+
+```bash
+# Development
+pnpm run dev:godot          # Open Godot editor
+pnpm run dev:godot-tauri    # Run Tauri + Godot export
+pnpm run build:godot        # Build Godot → HTML5
+
+# Backend
+cd src-tauri && cargo run   # Start WebSocket server
+cd src-tauri && cargo build # Build release binary
+
+# Git
+git add src/godot/ *.md build-godot.sh
+git commit -m "feat: godot implementation"
 ```
 
----
+## Troubleshooting
 
-## 🎮 Using SwarmVille
+### "Godot not found"
+```bash
+brew install godot
+# or add to PATH if downloaded manually
+export PATH="/Applications/Godot.app/Contents/MacOS:$PATH"
+```
 
-### Starting Your First Game
-1. **Launch App** → App initializes with player stats (Level 1, $50 balance)
-2. **Click "Create Space"** → Creates your first 2D workspace
-3. **You're in!** → You control the pink character in the grid
+### "WebSocket connection failed"
+```bash
+# Make sure backend is running
+cd src-tauri && cargo run
 
-### Controls
-- **WASD** or **Arrow Keys** → Move character
-- **Click Canvas** → Move to clicked location (shows path preview)
-- **Scroll** → Zoom in/out
-- **Space** → Recenter camera on player
+# Check port 8080 is free
+lsof -i :8080
+```
 
-### Creating Agents
-1. Click **"+ Add First Agent"** button (top right)
-2. Choose agent role (Coder, Designer, Researcher, PM, QA, DevOps)
-3. Name your agent
-4. Click **"Create Agent"** → Agent spawns on canvas
+### "Agent scene not found"
+Make sure `res://scenes/agents/agent.tscn` exists and is properly saved in Godot.
 
-### Tracking Progress
-- **Left Sidebar** → Active missions
-- **Top Bar** → Player level and balance
-- **Progression Dashboard** → Overall stats
-
----
-
-## 🏗️ Project Structure
+## Project Structure Overview
 
 ```
 swarm-ville/
-├── src/
-│   ├── components/          # React components (UI)
-│   ├── stores/             # Zustand stores (state)
-│   ├── lib/
-│   │   ├── pixi/          # Pixi.js rendering
-│   │   ├── ai/            # AI & map generation
-│   │   └── types.ts       # TypeScript types
-│   ├── hooks/             # Custom React hooks
-│   └── App.tsx            # Main app component
-│
-├── src-tauri/             # Rust backend
-│   └── src/
-│       ├── db/           # Database
-│       ├── ws/           # WebSocket
-│       ├── cli/          # CLI integration
-│       └── main.rs       # Backend entry
-│
-├── openspec/              # OpenSpec change specs
-│   ├── specs/            # Approved specs
-│   └── changes/          # Pending changes
-│
-└── docs/                  # Documentation
+├── src/godot/                  # Godot 4.5 project
+│   ├── project.godot           # Configuration
+│   ├── scenes/                 # Game scenes
+│   └── scripts/                # GDScript code
+├── src-tauri/                  # Tauri + Rust backend
+│   ├── src/                    # Rust source
+│   └── Cargo.toml
+└── godot_build/                # HTML5 export output
 ```
 
----
+## Architecture at a Glance
 
-## 📋 Key Features (What Works)
-
-### ✅ Core Gameplay
-- Create unlimited spaces (virtual worlds)
-- 2D grid-based movement (Pixi.js rendering)
-- Keyboard & mouse controls
-- Smooth camera following
-- Zoom in/out support
-
-### ✅ AI Agents
-- Spawn 6 different agent types (color-coded)
-- Custom agent naming
-- Agent pathfinding
-- Multi-agent coordination ready
-
-### ✅ Progression
-- Level system (1-based)
-- XP tracking
-- Mission system
-- Balance/currency
-- Achievement tracking
-
-### ✅ Developer Features
-- Hot reload (edit code → instant update)
-- TypeScript strict mode
-- ESLint + Prettier configured
-- Single dev command
-- Organized git history
-
----
-
-## 🔧 Common Tasks
-
-### Add a New Component
-```typescript
-// src/components/my-component.tsx
-import { FC } from 'react';
-
-interface MyComponentProps {
-  title: string;
-}
-
-export const MyComponent: FC<MyComponentProps> = ({ title }) => {
-  return <div>{title}</div>;
-};
+```
+Godot (Frontend)
+    ↓
+NetworkManager → WebSocket → Rust Backend
+    ↓                             ↓
+SpaceManager                   SQLite DB
+    ↓
+AgentManager → Render Agents
 ```
 
-### Access Global State
-```typescript
-import { useSpaceStore } from '@/stores/spaceStore';
+## What's Implemented
 
-const MyComponent = () => {
-  const { spaces, addSpace } = useSpaceStore();
-  // Use it...
-};
+✅ **NetworkManager**: WebSocket client with auto-reconnect
+✅ **SpaceManager**: Space state + version tracking
+✅ **AgentManager**: Multi-user agent rendering
+✅ **Main Scene**: Camera, TileMap, UI
+✅ **Agent Prefab**: Sprite, movement, name label
+
+## What's Next
+
+1. **Tilemap Rendering**: Parse JSON and render tiles
+2. **Input Handling**: WASD/Arrow keys for movement
+3. **Chat System**: UI for messages
+4. **Sound Effects**: Audio playback
+5. **Polish**: Animations, effects, UI improvements
+
+## Testing Checklist
+
+- [ ] Godot opens without errors
+- [ ] Main scene loads successfully
+- [ ] Rust backend runs on port 8080
+- [ ] WebSocket connects automatically
+- [ ] "Users: 0" shows in UI
+- [ ] Console shows connection messages
+- [ ] Agent appears when user joins (from another client)
+
+## Performance Notes
+
+- Godot 4.5 runs at 60 FPS by default
+- HTML5 export uses WebGL 2.0
+- Network messages ~100-200 bytes each
+- Typical latency: <50ms over localhost
+
+## Documentation Files
+
+| File | Purpose |
+|------|---------|
+| GODOT_MIGRATION_PLAN.md | Full migration plan |
+| GODOT_SETUP.md | Detailed setup guide |
+| MIGRATION_COMPLETE.md | Completion summary |
+| QUICK_START.md | This file |
+
+## Useful Godot Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| F5 | Run main scene |
+| F8 | Run current scene |
+| Ctrl+S | Save scene |
+| Ctrl+D | Duplicate node |
+| Ctrl+Shift+D | Toggle 2D/3D |
+
+## Debug Mode
+
+Enable console logging:
+```gdscript
+# In any script
+print("[TAG] Message here")
 ```
 
-### Add a Mission
-```typescript
-// In defaultMissions (userStore.ts)
-{
-  id: "my-mission",
-  title: "My Mission",
-  description: "Do something cool",
-  progress: 0,
-  total: 10,
-  goal: 10,
-  completed: false,
-  active: true,
-  icon: "🎯",
-  xpReward: 500,
-}
+View console output:
+- In Godot editor: View → Toggle Bottombar
+- In HTML5 export: F12 → Console tab
+
+## Contact Backend API
+
+From GDScript:
+```gdscript
+# Join a space
+NetworkManager.join_space("space-id", "user-id", "Username")
+
+# Send position update
+NetworkManager.update_position(100.0, 200.0, "down")
+
+# Send chat message
+NetworkManager.send_chat("Hello!")
+
+# Send agent action
+NetworkManager.send_agent_action("move", "target-id", {"x": 100})
 ```
 
-### Check Build Status
-```bash
-npm run type-check   # TypeScript check
-npm run lint         # ESLint check
-npm run build        # Production build
-```
+## Backend API Reference
+
+**WebSocket Server**: `ws://127.0.0.1:8080`
+
+**Messages from Client**:
+- `join_space` - Connect to space
+- `leave_space` - Disconnect
+- `update_position` - Move character
+- `chat_message` - Send message
+- `agent_action` - Trigger action
+
+**Messages from Server**:
+- `space_state` - Initial state (users, version)
+- `user_joined` - New user
+- `user_left` - User disconnected
+- `position_update` - Movement
+- `chat_broadcast` - Message
+- `space_updated` - Version change
 
 ---
 
-## 🐛 Troubleshooting
-
-### "Canvas shows gray but no grid"
-- Check browser console for errors
-- Verify Tauri is running (`pnpm dev`)
-- Try refreshing the page
-
-### "WASD keys don't work"
-- Click the canvas first to focus it
-- Check if a dialog is open
-- Try arrow keys instead
-
-### "Agent spawn dialog is hidden"
-- Check if there's a modal above it
-- Try pressing Escape to close overlays
-- Verify dialog div has `pointer-events: auto`
-
-### "Build fails"
-```bash
-rm -rf node_modules
-pnpm install
-pnpm build
-```
-
----
-
-## 📚 Documentation
-
-- **[SESSION_SUMMARY.md](./SESSION_SUMMARY.md)** - Complete session overview
-- **[QUICK_REFERENCE.md](./docs/QUICK_REFERENCE.md)** - API reference
-- **[openspec/](./openspec/)** - Feature specifications
-
----
-
-## 🚀 Next Steps
-
-### For Players
-1. Create your first space
-2. Spawn some agents
-3. Complete the "First Steps" mission
-4. Explore the progression system
-
-### For Developers
-1. Explore the component structure
-2. Look at store patterns
-3. Review the Pixi.js rendering system
-4. Check out the Tauri backend integration
-
----
-
-## 💬 Git Workflow
-
-```bash
-# See recent changes
-git log --oneline -10
-
-# Create feature branch
-git checkout -b feature/my-feature
-
-# Make changes and commit
-git add .
-git commit -m "feat: add my feature"
-
-# Push and create PR
-git push origin feature/my-feature
-```
-
----
-
-## 📞 Support
-
-See [SESSION_SUMMARY.md](./SESSION_SUMMARY.md) for detailed technical information.
-
----
-
-**Last Updated:** 2025-11-10  
-**Status:** ✅ MVP Ready  
-**Build:** 0 errors, 3008 modules
+**Ready to go!** Start with `pnpm run dev:godot` 🚀

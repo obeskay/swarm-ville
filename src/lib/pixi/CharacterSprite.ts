@@ -720,6 +720,25 @@ export class CharacterSprite extends PIXI.Container {
   }
 
   /**
+   * Apply color tint to sprite
+   * @param color - Hex color value (0xRRGGBB)
+   */
+  public setTint(color: number): void {
+    if (this.sprite) {
+      this.sprite.tint = color;
+    }
+  }
+
+  /**
+   * Remove color tint (reset to white/original)
+   */
+  public clearTint(): void {
+    if (this.sprite) {
+      this.sprite.tint = 0xffffff;
+    }
+  }
+
+  /**
    * Destruir sprite y devolver recursos al pool
    */
   public destroy(options?: boolean | PIXI.DestroyOptions): void {

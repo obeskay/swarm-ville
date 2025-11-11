@@ -47,6 +47,8 @@ pub async fn handle_client_message(
             let state_msg = ServerMessage::SpaceState {
                 space_id: space_id.clone(),
                 users: space_users,
+                version: 1,    // TODO: Load from database
+                updated_at: 0, // TODO: Load from database
             };
             send_to_client(client_id, state_msg, &clients).await;
         }

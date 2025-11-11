@@ -1,0 +1,24 @@
+# Godot
+.godot/
+*.exe
+*.dll
+*.dylib
+*.so
+*.a
+*.o
+*.obj
+*.os
+*.gd.json
+*.csproj
+*.sln
+build/
+dist/
+export_presets.cfg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store

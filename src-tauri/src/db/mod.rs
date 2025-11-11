@@ -35,6 +35,7 @@ impl Database {
         self.run_migration_004()?;
         self.run_migration_005()?; // Language system
         self.run_migration_006()?; // Achievement system
+        self.run_migration_007()?; // Space versioning
         Ok(())
     }
 
@@ -137,6 +138,16 @@ impl Database {
     fn run_migration_006(&self) -> Result<()> {
         // Read and execute achievement system migration
         let migration_sql = include_str!("migrations/006_achievement_system.sql");
+        self.conn
+            .execute_batch(migration_sql)
+            .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;
+
+        Ok(())
+    }
+
+    fn run_migration_007(&self) -> Result<()> {
+        // Read and execute space versioning migration
+        let migration_sql = include_str!("migrations/007_space_versioning.sql");
         self.conn
             .execute_batch(migration_sql)
             .map_err(|e| crate::error::SwarmvilleError::Database(e.to_string()))?;

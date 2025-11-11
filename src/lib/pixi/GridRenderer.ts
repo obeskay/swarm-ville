@@ -3,6 +3,7 @@ import { Position } from "../types";
 import { sprites } from "./spritesheet/spritesheet";
 import { ObjectPool } from "./ObjectPool";
 import { GAME_CONFIG } from "../game-config";
+import { getGameElementColor, type GameElementType, type ThemeColors } from "../../utils/game-colors";
 
 const TILE_SIZE = GAME_CONFIG.TILE_SIZE;
 
@@ -30,6 +31,7 @@ export class GridRenderer {
   private initialized: boolean = false;
   private width: number;
   private height: number;
+  private themeColors: ThemeColors | null = null;
 
   // Layer containers
   protected layers: { [key in Layer]: PIXI.Container } = {
@@ -68,6 +70,28 @@ export class GridRenderer {
     console.log("[GridRenderer] ✅ GridRenderer initialized");
 
     this.initialized = true;
+  }
+
+  /**
+   * Set theme colors for tile rendering
+   */
+  public setThemeColors(colors: ThemeColors): void {
+    this.themeColors = colors;
+  }
+
+  /**
+   * Map tile name to game element type for color lookup
+   */
+  private getTileElementType(tileName: string): GameElementType | null {
+    const lowerName = tileName.toLowerCase();
+
+    if (lowerName.includes("grass")) return "tile-grass";
+    if (lowerName.includes("dirt") || lowerName.includes("dirt")) return "tile-dirt";
+    if (lowerName.includes("water")) return "tile-water";
+    if (lowerName.includes("obstacle") || lowerName.includes("wall") || lowerName.includes("wall")) return "tile-obstacle";
+    if (lowerName.includes("interactive") || lowerName.includes("interact")) return "tile-interactive";
+
+    return null; // Unknown tile type
   }
 
   /**
@@ -156,6 +180,15 @@ export class GridRenderer {
       newSprite.visible = true;
       newSprite.alpha = 1;
       newSprite.scale.set(1);
+
+      // Apply theme color if available and tile type is recognized
+      if (this.themeColors) {
+        const tileType = this.getTileElementType(tileName);
+        if (tileType) {
+          const tileColor = getGameElementColor(tileType, this.themeColors);
+          newSprite.tint = tileColor;
+        }
+      }
 
       // Agregar sprite al layer correcto
       this.layers[layer].addChild(newSprite);
@@ -531,11 +564,15 @@ export class AgentSprite extends PIXI.Container {
 export class ProximityCircle extends PIXI.Graphics {
   private radius: number;
   private centerPos: Position;
+  private strokeColor: number;
+  private fillAlpha: number = GAME_CONFIG.COLORS.PROXIMITY_CIRCLE_FILL_ALPHA;
+  private strokeAlpha: number = GAME_CONFIG.COLORS.PROXIMITY_CIRCLE_ALPHA;
 
-  constructor(centerPos: Position, radius: number) {
+  constructor(centerPos: Position, radius: number, strokeColor: number = GAME_CONFIG.COLORS.TILE_HIGHLIGHT) {
     super();
     this.radius = radius;
     this.centerPos = centerPos;
+    this.strokeColor = strokeColor;
     this.render();
   }
 
@@ -546,14 +583,19 @@ export class ProximityCircle extends PIXI.Graphics {
     // FIXED: Draw circle at local origin (0,0) since container is positioned by parent
     this.circle(0, 0, worldRadius);
     this.stroke({
-      color: GAME_CONFIG.COLORS.TILE_HIGHLIGHT,
+      color: this.strokeColor,
       width: 2,
-      alpha: GAME_CONFIG.COLORS.PROXIMITY_CIRCLE_ALPHA,
+      alpha: this.strokeAlpha,
     });
     this.fill({
-      color: GAME_CONFIG.COLORS.TILE_HIGHLIGHT,
-      alpha: GAME_CONFIG.COLORS.PROXIMITY_CIRCLE_FILL_ALPHA,
+      color: this.strokeColor,
+      alpha: this.fillAlpha,
     });
+  }
+
+  public setColor(color: number): void {
+    this.strokeColor = color;
+    this.render();
   }
 
   public update(centerPos: Position): void {

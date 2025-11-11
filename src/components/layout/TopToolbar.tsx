@@ -42,6 +42,7 @@ export function TopToolbar() {
   const currentSpace = spaces.find((s) => s.id === currentSpaceId);
   const agentCount = agents.size;
   const activeMissionsCount = Object.values(missions).filter((m) => !m.completed).length;
+  const spaceVersion = currentSpace?.version || 1;
   const [showSpriteGenerator, setShowSpriteGenerator] = useState(false);
   const [showSpaceCreation, setShowSpaceCreation] = useState(false);
   const [showSpaceGrid, setShowSpaceGrid] = useState(false);
@@ -124,15 +125,18 @@ export function TopToolbar() {
 
         {/* Right Section: Stats + Actions */}
         <div className="flex items-center gap-2">
-          {/* Version Indicator */}
+          {/* Version Indicator - Shows Space Version when in space, App Version otherwise */}
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded cursor-help">
-                v{APP_VERSION}
+                v{APP_VERSION} {currentSpace && `• s${spaceVersion}`}
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="text-xs">SwarmVille Version</p>
+              <div className="text-xs space-y-1">
+                <p>SwarmVille v{APP_VERSION}</p>
+                {currentSpace && <p>Space Version: {spaceVersion}</p>}
+              </div>
             </TooltipContent>
           </Tooltip>
 

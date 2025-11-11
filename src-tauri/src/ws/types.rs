@@ -37,6 +37,8 @@ pub enum ServerMessage {
     SpaceState {
         space_id: String,
         users: Vec<UserState>,
+        version: i32,
+        updated_at: i64,
     },
 
     #[serde(rename = "user_joined")]
@@ -65,6 +67,13 @@ pub enum ServerMessage {
         agent_id: String,
         action: String,
         data: Option<serde_json::Value>,
+    },
+
+    #[serde(rename = "space_updated")]
+    SpaceUpdated {
+        space_id: String,
+        version: i32,
+        updated_at: i64,
     },
 
     #[serde(rename = "error")]
