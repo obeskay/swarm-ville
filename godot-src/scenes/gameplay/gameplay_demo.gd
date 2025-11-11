@@ -117,6 +117,11 @@ func _on_score_changed(new_score: int) -> void:
 	print("[GameplayDemo] Score: %d" % new_score)
 
 func _on_spawn_agent_demo() -> void:
+	# Limit spawning to prevent lag - max 50 agents
+	if agents_on_screen.size() >= 50:
+		print("[GameplayDemo] Max agents reached (50)")
+		return
+
 	# Spawn enemy agent near player
 	var offset = Vector2(randf_range(-5, 5) * GameConfig.TILE_SIZE, randf_range(-5, 5) * GameConfig.TILE_SIZE)
 	var spawn_pos = player_controller.global_position + offset

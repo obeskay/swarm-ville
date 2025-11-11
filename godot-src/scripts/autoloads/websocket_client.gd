@@ -18,12 +18,18 @@ var ws: WebSocketPeer
 var connected_to_backend: bool = false
 var reconnect_attempts: int = 0
 var reconnect_timer: Timer
+var ws_enabled: bool = false  # Demo mode: disabled by default
 
 func _ready() -> void:
 	reconnect_timer = Timer.new()
 	add_child(reconnect_timer)
 	reconnect_timer.timeout.connect(_on_reconnect_timeout)
-	connect_to_backend()
+
+	# Only connect to backend if explicitly enabled (for production builds)
+	if ws_enabled:
+		connect_to_backend()
+	else:
+		print("[WebSocketClient] WebSocket disabled - using demo mode")
 
 func connect_to_backend() -> void:
 	ws = WebSocketPeer.new()

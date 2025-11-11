@@ -8,11 +8,14 @@ signal agent_removed(agent_id: String)
 var agents: Dictionary = {}  # id → agent_data
 
 func _ready() -> void:
-	# Listen to WebSocket events
-	WebSocketClient.agent_spawned.connect(_on_agent_spawned)
-	WebSocketClient.agent_moved.connect(_on_agent_moved)
-	WebSocketClient.agent_removed.connect(_on_agent_removed)
-	print("[AgentRegistry] Initialized")
+	# Listen to WebSocket events ONLY if WebSocket is enabled
+	if WebSocketClient.ws_enabled:
+		WebSocketClient.agent_spawned.connect(_on_agent_spawned)
+		WebSocketClient.agent_moved.connect(_on_agent_moved)
+		WebSocketClient.agent_removed.connect(_on_agent_removed)
+		print("[AgentRegistry] Initialized with WebSocket")
+	else:
+		print("[AgentRegistry] Initialized in demo mode (WebSocket disabled)")
 
 func create_agent(agent_data: Dictionary) -> void:
 	var agent_id = agent_data.get("id", "")
