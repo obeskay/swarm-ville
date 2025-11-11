@@ -1,7 +1,5 @@
 extends Node
 
-class_name SpaceManager
-
 # Current space data
 var current_space: Dictionary = {}
 var space_version: int = 1
@@ -12,11 +10,14 @@ var tilemap_data: Dictionary = {}
 signal space_loaded
 signal space_updated
 signal version_changed(new_version: int)
+signal tilemap_updated(tilemap_data: Dictionary)
+signal tile_changed(x: int, y: int, tile_id: int, data: Dictionary)
 
 func _ready() -> void:
-	# Connect to network signals
-	NetworkManager.space_state_received.connect(_on_space_state_received)
-	NetworkManager.space_updated.connect(_on_space_updated)
+	# Connect to network signals (autoload)
+	var net_mgr = get_tree().root.get_node("NetworkManager")
+	net_mgr.space_state_received.connect(_on_space_state_received)
+	net_mgr.space_updated.connect(_on_space_updated)
 
 func _on_space_state_received(state: Dictionary) -> void:
 	print("[SpaceManager] Space state received: %s" % state.get("space_id"))
@@ -60,6 +61,12 @@ func get_user_count() -> int:
 
 func get_tilemap_data() -> Dictionary:
 	return tilemap_data
+
+func get_space_data() -> Dictionary:
+	return current_space.duplicate()
+
+func update_tile(x: int, y: int, tile_id: int, data: Dictionary = {}) -> void:
+	tile_changed.emit(x, y, tile_id, data)
 
 func clear() -> void:
 	current_space = {}

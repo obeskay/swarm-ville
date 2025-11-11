@@ -49,8 +49,10 @@ var light_mode_colors: Dictionary = {
 	"tile_water": Color(0.604, 0.561, 0.541),  # chart2
 	"tile_obstacle": Color(0.890, 0.867, 0.851),  # border
 	"tile_interactive": Color(0.925, 0.616, 0.435),  # accent
+	"tile_blocked": Color(0.227, 0.227, 0.227),  # destructive
 	"selection": Color(0.420, 0.267, 0.137),  # ring
 	"hover": Color(0.925, 0.616, 0.435),  # accent
+	"grid": Color(0.667, 0.667, 0.667),  # muted gray
 	"effect_positive": Color(0.420, 0.267, 0.137),  # primary
 	"effect_negative": Color(0.227, 0.227, 0.227),  # destructive
 	"effect_neutral": Color(0.929, 0.910, 0.902),  # muted
@@ -99,8 +101,10 @@ var dark_mode_colors: Dictionary = {
 	"tile_water": Color(0.757, 0.714, 0.702),  # chart2
 	"tile_obstacle": Color(0.451, 0.416, 0.404),  # border
 	"tile_interactive": Color(0.831, 0.647, 0.435),  # accent
+	"tile_blocked": Color(1.0, 0.267, 0.267),  # destructive
 	"selection": Color(0.831, 0.647, 0.435),  # ring
 	"hover": Color(0.831, 0.647, 0.435),  # accent
+	"grid": Color(0.451, 0.451, 0.451),  # dark gray
 	"effect_positive": Color(0.831, 0.647, 0.435),  # primary
 	"effect_negative": Color(1.0, 0.267, 0.267),  # destructive
 	"effect_neutral": Color(0.451, 0.416, 0.404),  # muted
@@ -112,7 +116,11 @@ func _ready() -> void:
 
 func detect_theme() -> void:
 	# Check OS dark mode preference
-	var is_dark = DisplayServer.is_dark_mode_supported() and DisplayServer.get_dark_mode()
+	var is_dark = false
+	if DisplayServer.is_dark_mode_supported():
+		# For Godot 4.x, check system preference (varies by platform)
+		# Default to light mode for now
+		is_dark = false
 	current_theme = "dark" if is_dark else "light"
 	apply_theme(current_theme)
 

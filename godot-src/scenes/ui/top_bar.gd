@@ -1,7 +1,7 @@
 extends HBoxContainer
 ## Top toolbar - theme toggle and space selector
 
-@onready var theme_toggle = $"../../../TopBar/ThemeToggle"
+@onready var theme_toggle = $ThemeToggle
 
 func _ready() -> void:
 	if theme_toggle:

@@ -1,4 +1,4 @@
-extends Node2D
+extends Area2D
 ## Agent sprite and proximity circle
 
 signal selected(agent_id: String)
@@ -11,7 +11,8 @@ var pixel_position: Vector2 = Vector2.ZERO
 
 var sprite: Sprite2D
 var name_label: Label
-var proximity_circle: Circle2D
+var proximity_circle: CanvasItem
+var collision_shape: CollisionShape2D
 
 func _ready() -> void:
 	# Create sprite
@@ -27,21 +28,26 @@ func _ready() -> void:
 	add_child(name_label)
 
 	# Create proximity circle
-	proximity_circle = Circle2D.new()
+	proximity_circle = Node.new()
+	proximity_circle = load("res://scripts/utils/circle_2d.gd").new()
 	proximity_circle.radius = GameConfig.PROXIMITY_CIRCLE_RADIUS * GameConfig.TILE_SIZE
 	proximity_circle.visible = false
 	add_child(proximity_circle)
 
+	# Create collision shape for mouse interaction
+	collision_shape = CollisionShape2D.new()
+	var circle_shape = CircleShape2D.new()
+	circle_shape.radius = GameConfig.TILE_SIZE / 2.0
+	collision_shape.shape = circle_shape
+	add_child(collision_shape)
+
 	# Connect theme changes
 	ThemeManager.theme_changed.connect(_on_theme_changed)
 
-	# Connect mouse events
+	# Connect Area2D signals
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
-	gui_input.connect(_on_gui_input)
-
-	# Enable interaction
-	mouse_filter = MOUSE_FILTER_STOP
+	input_event.connect(_on_input_event)
 
 func setup(data: Dictionary) -> void:
 	agent_data = data.duplicate()
@@ -82,7 +88,7 @@ func _on_mouse_entered() -> void:
 func _on_mouse_exited() -> void:
 	proximity_circle.visible = false
 
-func _on_gui_input(event: InputEvent) -> void:
+func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		clicked.emit(agent_id)
 

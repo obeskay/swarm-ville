@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dh9ppy7f8yuvx"]
+
+[ext_resource type="Script" path="res://scenes/space/agent_node.gd" id="1_ij5hc"]
+
+[node name="AgentNode" type="Area2D"]
+script = ExtResource("1_ij5hc")

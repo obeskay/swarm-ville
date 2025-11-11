@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://cn8yd5lbf2t7e"]
+[gd_scene load_steps=5 format=3 uid="uid://cn8yd5lbf2t7e"]
 
 [ext_resource type="Script" path="res://scenes/main/main_container.gd" id="1_efo72"]
 [ext_resource type="Script" path="res://scenes/ui/top_bar.gd" id="2_4eujf"]
+[ext_resource type="Script" path="res://scenes/space/space_node.gd" id="3_ysw8e"]
+[ext_resource type="Script" path="res://scenes/main/test_agent_spawner.gd" id="4_spawn"]
 
 [node name="MainContainer" type="Control"]
 layout_mode = 1
@@ -36,6 +38,9 @@ split_offset = 1600
 [node name="Viewport2D" type="SubViewport" parent="VBoxContainer/SplitContainer"]
 layout_mode = 2
 size = Vector2(1600, 1020)
+
+[node name="SpaceNode" type="Node2D" parent="VBoxContainer/SplitContainer/Viewport2D"]
+script = ExtResource("3_ysw8e")
 
 [node name="RightSidebar" type="Control" parent="VBoxContainer/SplitContainer"]
 layout_mode = 2
@@ -74,3 +79,6 @@ text = "(0, 0)"
 [node name="FPS" type="Label" parent="VBoxContainer/BottomBar"]
 layout_mode = 2
 text = "60 FPS"
+
+[node name="TestAgentSpawner" type="Node" parent="."]
+script = ExtResource("4_spawn")

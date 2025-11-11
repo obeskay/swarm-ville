@@ -7,12 +7,13 @@ extends Control
 @onready var bottom_bar = $VBoxContainer/BottomBar
 
 func _ready() -> void:
-	# Wait for WebSocket connection
+	# Initialize systems immediately for testing
+	_on_backend_connected()
+
+	# Also listen for WebSocket connection
 	if not WebSocketClient.connected_to_backend:
-		WebSocketClient.connected.connect(_on_backend_connected)
+		WebSocketClient.connected.connect(_on_websocket_connected)
 		print("[MainContainer] Waiting for backend connection...")
-	else:
-		_on_backend_connected()
 
 func _on_backend_connected() -> void:
 	print("[MainContainer] Backend connected, initializing...")
@@ -46,3 +47,6 @@ func _on_agent_updated(agent_id: String) -> void:
 
 func _on_theme_changed(new_theme: String) -> void:
 	print("[MainContainer] Theme changed to: %s" % new_theme)
+
+func _on_websocket_connected() -> void:
+	print("[MainContainer] WebSocket connected")
