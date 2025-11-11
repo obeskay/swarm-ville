@@ -267,7 +267,7 @@ export function BatchAssetGenerator({
 
         {/* Batch List */}
         {batchItems.length > 0 && (
-          <Card variant="blue" spacing="generous">
+          <Card variant="blue" padding="lg">
             <div className="space-y-2">
               <div className="flex items-center justify-between border-b border-foreground/10 pb-3">
                 <h3 className="text-sm font-semibold">

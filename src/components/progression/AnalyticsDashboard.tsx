@@ -106,7 +106,7 @@ export function AnalyticsDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
           >
-            <Card variant="elevated" spacing="generous" className="h-full">
+            <Card variant="elevated" padding="lg" className="h-full">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="text-sm font-medium text-foreground/70 mb-1">{metric.label}</div>
@@ -134,7 +134,7 @@ export function AnalyticsDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Card variant="yellow" spacing="generous">
+        <Card variant="yellow" padding="lg">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-primary" />
             Engagement Score Breakdown
@@ -197,7 +197,7 @@ export function AnalyticsDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <Card variant="blue" spacing="generous">
+        <Card variant="blue" padding="lg">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <PieChart className="w-5 h-5 text-primary" />
             Achievement Rarity Distribution
@@ -222,7 +222,7 @@ export function AnalyticsDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card variant="elevated" spacing="generous">
+        <Card variant="elevated" padding="lg">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
             Achievement Categories
@@ -257,7 +257,7 @@ export function AnalyticsDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card variant="yellow" spacing="generous">
+          <Card variant="yellow" padding="lg">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Target className="w-5 h-5 text-primary" />
               Next Streak Milestone
@@ -287,7 +287,7 @@ export function AnalyticsDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <Card variant="elevated" spacing="generous">
+          <Card variant="elevated" padding="lg">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Flame className="w-5 h-5 text-primary" />
               Event Streaks
@@ -331,7 +331,7 @@ export function AnalyticsDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
       >
-        <Card variant="blue" spacing="generous">
+        <Card variant="blue" padding="lg">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary" />
             Time Analysis

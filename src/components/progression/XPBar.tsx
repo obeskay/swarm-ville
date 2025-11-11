@@ -53,7 +53,7 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
           )}
         </AnimatePresence>
 
-        <Card variant="elevated" spacing="default" className="overflow-hidden">
+        <Card variant="elevated" className="overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-2">
             {/* Level Badge */}
             <div className="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-bold shadow-soft">
@@ -116,7 +116,7 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
         )}
       </AnimatePresence>
 
-      <Card variant="yellow" spacing="generous" className="overflow-hidden">
+      <Card variant="yellow" padding="lg" className="overflow-hidden">
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">

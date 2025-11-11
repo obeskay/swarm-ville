@@ -54,7 +54,7 @@ export class CharacterSprite extends PIXI.Container {
 
   // Movement state
   private targetPixelPosition: { x: number; y: number } | null = null;
-  private movementSpeed: number = 8; // pixels per frame (32px tile takes ~4 frames = 65ms at 60fps)
+  private movementSpeed: number = 4; // pixels per frame (32px tile takes ~8 frames = 133ms at 60fps - smooth like Gather)
   private currentDirection: Direction = Direction.DOWN;
   private currentFrame: number = 0;
   private animationSpeed: number = 0.15; // Frames per tick

@@ -118,7 +118,7 @@ export function MorseVisualizer({ className = "", initialText = "" }: MorseVisua
   return (
     <Card
       variant="elevated"
-      spacing="generous"
+      padding="lg"
       className={`overflow-hidden ${className}`}
     >
       <div className="space-y-6">

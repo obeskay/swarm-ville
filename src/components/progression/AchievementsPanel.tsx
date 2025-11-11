@@ -75,7 +75,7 @@ export function AchievementsPanel() {
   return (
     <div className="space-y-6">
       {/* Header Stats */}
-      <Card variant="yellow" spacing="generous">
+      <Card variant="yellow" padding="lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-soft">
@@ -125,7 +125,7 @@ export function AchievementsPanel() {
       </Card>
 
       {/* Filters */}
-      <Card variant="elevated" spacing="generous">
+      <Card variant="elevated" padding="lg">
         <div className="space-y-4">
           {/* Search */}
           <div className="relative">

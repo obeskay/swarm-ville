@@ -20,6 +20,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Label } from "../ui/label";
+import { Card } from "../ui/card";
 import { X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -167,6 +168,15 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
     // Track achievement
     await trackAgentSpawn();
 
+    // Emit activity event
+    window.dispatchEvent(new CustomEvent('agent-activity', {
+      detail: {
+        agentId: agent.id,
+        action: 'spawned',
+        details: `joined as ${selectedRoleData?.name || 'Agent'}`
+      }
+    }));
+
     // Celebration!
     toast.success(`${agentName} joined your team! 🎉`);
 
@@ -254,7 +264,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
 
           {/* Preview */}
           {agentName && selectedRoleData && (
-            <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-2">
+            <Card variant="flat" padding="default" className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Preview
               </p>
@@ -265,7 +275,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
                   <div className="text-xs text-muted-foreground">{selectedRoleData.name}</div>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </DialogContent>

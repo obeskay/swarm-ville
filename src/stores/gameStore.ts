@@ -245,6 +245,16 @@ export const useGameStore = create<GameState>()(
               detail: { mission },
             })
           );
+          // Also emit as activity
+          window.dispatchEvent(
+            new CustomEvent("agent-activity", {
+              detail: {
+                agentId: 'system',
+                action: 'mission_completed',
+                details: `completed mission: ${mission.title}`
+              }
+            })
+          );
         }
 
         set({

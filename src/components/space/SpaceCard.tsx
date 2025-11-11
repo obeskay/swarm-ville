@@ -132,16 +132,16 @@ export function SpaceCard({
       {/* Agent Count */}
       <div className="flex items-center gap-2 mb-4">
         {agentCount > 0 ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+          <Badge variant="status" className="flex items-center gap-1.5">
             <Users className="w-4 h-4" />
-            <span className="text-sm font-semibold">{agentCount}</span>
+            <span className="font-semibold">{agentCount}</span>
             <span className="text-xs">active</span>
-          </div>
+          </Badge>
         ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full">
-            <Users className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Empty</span>
-          </div>
+          <Badge variant="secondary" className="flex items-center gap-1.5">
+            <Users className="w-4 h-4" />
+            <span>Empty</span>
+          </Badge>
         )}
       </div>
 

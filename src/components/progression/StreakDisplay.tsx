@@ -90,7 +90,7 @@ export function StreakDisplay() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0 }}
       >
-        <Card variant="elevated" spacing="generous">
+        <Card variant="elevated" padding="lg">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
@@ -132,7 +132,7 @@ export function StreakDisplay() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card variant="yellow" spacing="generous">
+          <Card variant="yellow" padding="lg">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Gift className="w-5 h-5 text-primary" />
               Next Bonus Milestone
@@ -188,7 +188,7 @@ export function StreakDisplay() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card variant="blue" spacing="generous">
+          <Card variant="blue" padding="lg">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Flame className="w-5 h-5 text-primary" />
               Active Streaks
@@ -242,7 +242,7 @@ export function StreakDisplay() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <Card variant="elevated" spacing="generous">
+        <Card variant="elevated" padding="lg">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
             Bonus Milestones
@@ -295,7 +295,7 @@ export function StreakDisplay() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card variant="yellow" spacing="generous">
+        <Card variant="yellow" padding="lg">
           <h3 className="text-lg font-bold mb-4">💡 Streak Tips</h3>
           <ul className="space-y-2 text-sm text-foreground/80">
             <li className="flex gap-2">

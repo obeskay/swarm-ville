@@ -51,7 +51,7 @@ export function LanguagePanel({
       {/* Compact Stats View */}
       <Card
         variant="yellow"
-        spacing="generous"
+        padding="lg"
         className="backdrop-blur-md transition-all duration-300"
       >
         <div

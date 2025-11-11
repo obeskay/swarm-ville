@@ -1,7 +1,7 @@
 import React from "react";
 import { useUIStore } from "../../stores/uiStore";
-import { PanelLeft, PanelRight } from "lucide-react";
-import { Button } from "../ui/button";
+import { useLayoutConfig } from "@/hooks/useLayoutConfig";
+import { useThemeConfig } from "@/hooks/useThemeConfig";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,44 +20,72 @@ export function AppLayout({
 }: AppLayoutProps) {
   const leftSidebarCollapsed = useUIStore((state) => state.leftSidebarCollapsed);
   const rightSidebarCollapsed = useUIStore((state) => state.rightSidebarCollapsed);
-  const toggleLeftSidebar = useUIStore((state) => state.toggleLeftSidebar);
-  const toggleRightSidebar = useUIStore((state) => state.toggleRightSidebar);
+  const layout = useLayoutConfig();
+  const theme = useThemeConfig();
+
+  const sidebarWidth = layout.desktop.sidebarWidth;
 
   return (
-    <div className="h-screen w-screen overflow-hidden grid grid-rows-[auto_1fr_auto] bg-background">
+    <div
+      style={{
+        backgroundColor: theme.colors.surface.dark,
+        color: theme.colors.text.dark.primary,
+      }}
+      className="h-screen w-screen overflow-hidden grid grid-rows-[auto_1fr_auto]"
+    >
       {/* Top Toolbar */}
-      <div className="border-b border-border/50">{toolbar}</div>
+      <div
+        style={{
+          borderBottomColor: theme.colors.border.dark,
+          borderBottomWidth: 1,
+        }}
+      >
+        {toolbar}
+      </div>
 
       {/* Main Content Area */}
       <div className="grid grid-cols-[auto_1fr_auto] overflow-hidden">
-        {/* Left Sidebar - smooth slide transition */}
+        {/* Left Sidebar */}
         <div
-          className="transition-all duration-300 border-r border-border/50 overflow-hidden"
           style={{
-            width: leftSidebarCollapsed ? "0px" : "200px",
+            width: leftSidebarCollapsed ? "0px" : `${sidebarWidth}px`,
             opacity: leftSidebarCollapsed ? 0 : 1,
+            borderRightColor: theme.colors.border.dark,
+            borderRightWidth: 1,
+            transition: `all 300ms ease-in-out`,
           }}
+          className="overflow-hidden"
         >
           {leftSidebar}
         </div>
 
         {/* Main Content */}
-        <div className="overflow-hidden relative bg-muted/30 flex-1">{children}</div>
+        <div className="overflow-hidden relative flex-1">{children}</div>
 
-        {/* Right Sidebar - smooth slide transition */}
+        {/* Right Sidebar */}
         <div
-          className="transition-all duration-300 border-l border-border/50 overflow-hidden"
           style={{
-            width: rightSidebarCollapsed ? "0px" : "240px",
+            width: rightSidebarCollapsed ? "0px" : `${sidebarWidth}px`,
             opacity: rightSidebarCollapsed ? 0 : 1,
+            borderLeftColor: theme.colors.border.dark,
+            borderLeftWidth: 1,
+            transition: `all 300ms ease-in-out`,
           }}
+          className="overflow-hidden"
         >
           {rightSidebar}
         </div>
       </div>
 
       {/* Bottom Status Bar */}
-      <div>{statusBar}</div>
+      <div
+        style={{
+          borderTopColor: theme.colors.border.dark,
+          borderTopWidth: 1,
+        }}
+      >
+        {statusBar}
+      </div>
     </div>
   );
 }

@@ -250,13 +250,13 @@ export function SpaceCreationDialog({ open, onClose }: SpaceCreationDialogProps)
           {spaceName && selectedTemplate && (
             <>
               <Separator />
-              <div className="p-5 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border-2 border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="p-5 bg-card border border-border rounded-xl animate-in fade-in slide-in-from-top-2 duration-300 hover:border-primary/50 transition-colors">
                 <div className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
                   Preview
                 </div>
                 <div className="flex items-center gap-4">
                   <div
-                    className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg ring-2 ring-primary/20"
+                    className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg"
                     style={{ backgroundColor: selectedTemplate.color + "20", color: selectedTemplate.color }}
                   >
                     {selectedTemplate.icon}
@@ -290,7 +290,7 @@ export function SpaceCreationDialog({ open, onClose }: SpaceCreationDialogProps)
               type="button"
               onClick={handleCreate}
               disabled={creating || !spaceName.trim()}
-              className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+              className="flex-1 h-12"
             >
               {creating ? (
                 <>

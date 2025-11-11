@@ -128,7 +128,7 @@ export const useUserStore = create<UserState>()(
       missions: defaultMissions,
       level: 1,
       xp: 0,
-      balance: 50.0,
+      balance: 0,
       isInitialized: false,
       initializePlayerStats: () => {
         const state = get();
@@ -138,7 +138,7 @@ export const useUserStore = create<UserState>()(
 
         try {
           // Check if we have persisted data
-          const hasPersistedData = state.level !== 1 || state.xp !== 0 || state.balance !== 50.0;
+          const hasPersistedData = state.level !== 1 || state.xp !== 0 || state.balance !== 0;
 
           if (hasPersistedData) {
             // Returning user - validate persisted data
@@ -154,7 +154,7 @@ export const useUserStore = create<UserState>()(
               set({
                 level: 1,
                 xp: 0,
-                balance: 50.0,
+                balance: 0,
                 missions: defaultMissions,
                 isInitialized: true,
               });
@@ -165,7 +165,7 @@ export const useUserStore = create<UserState>()(
             set({
               level: 1,
               xp: 0,
-              balance: 50.0,
+              balance: 0,
               missions: defaultMissions,
             });
           }
@@ -178,7 +178,7 @@ export const useUserStore = create<UserState>()(
           set({
             level: 1,
             xp: 0,
-            balance: 50.0,
+            balance: 0,
             missions: defaultMissions,
             isInitialized: true,
           });

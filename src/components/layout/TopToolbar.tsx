@@ -19,6 +19,9 @@ import { useAchievementStore } from "../../stores/achievementStore";
 import { useState, useEffect } from "react";
 import SpriteGeneratorDialog from "../ai/SpriteGeneratorDialog";
 import { SpaceCreationDialog } from "../space/SpaceCreationDialog";
+import { useToolbarUIConfig } from "@/hooks/useUIConfig";
+import { useThemeConfig } from "@/hooks/useThemeConfig";
+import { useToolbarConfig } from "@/hooks/useLayoutConfig";
 
 export function TopToolbar() {
   const { currentSpaceId, spaces, agents } = useSpaceStore();
@@ -26,6 +29,9 @@ export function TopToolbar() {
   const { leftSidebarCollapsed, rightSidebarCollapsed, toggleLeftSidebar, toggleRightSidebar } =
     useUIStore();
   const { setUserId, updateStats } = useAchievementStore();
+  const toolbarUI = useToolbarUIConfig();
+  const theme = useThemeConfig();
+  const toolbarLayout = useToolbarConfig();
   const currentSpace = spaces.find((s) => s.id === currentSpaceId);
   const agentCount = agents.size;
   const activeMissionsCount = Object.values(missions).filter((m) => !m.completed).length;
@@ -54,7 +60,15 @@ export function TopToolbar() {
 
   return (
     <TooltipProvider>
-      <div className="h-12 px-4 flex items-center justify-between bg-card">
+      <div
+        style={{
+          height: `${toolbarLayout.height}px`,
+          backgroundColor: toolbarUI.backgroundColor,
+          borderBottomColor: toolbarUI.borderBottomColor,
+          borderBottomWidth: 1,
+        }}
+        className="px-4 flex items-center justify-between"
+      >
         {/* Left Section: Space Info + Missions Toggle */}
         <div className="flex items-center gap-3">
           {/* Missions Toggle (when collapsed) */}
@@ -83,9 +97,19 @@ export function TopToolbar() {
 
           {currentSpace && (
             <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-sm tracking-tight">SwarmVille</h1>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs font-medium text-muted-foreground">{currentSpace.name}</span>
+              <h1
+                style={{
+                  color: toolbarUI.logoColor,
+                  fontSize: `${toolbarUI.logoFontSize}px`,
+                  fontWeight: toolbarUI.logoFontWeight,
+                }}
+              >
+                {toolbarUI.logoText}
+              </h1>
+              <span style={{ color: theme.colors.text.dark.tertiary }}>•</span>
+              <span style={{ color: theme.colors.text.dark.secondary, fontSize: "12px" }}>
+                {currentSpace.name}
+              </span>
             </div>
           )}
         </div>
@@ -188,10 +212,7 @@ export function TopToolbar() {
 
       {/* Space Creation Dialog */}
       {showSpaceCreation && (
-        <SpaceCreationDialog
-          open={showSpaceCreation}
-          onClose={() => setShowSpaceCreation(false)}
-        />
+        <SpaceCreationDialog open={showSpaceCreation} onClose={() => setShowSpaceCreation(false)} />
       )}
 
       {/* Sprite Generator Dialog */}

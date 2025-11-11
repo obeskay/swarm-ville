@@ -153,7 +153,7 @@ export function ProgressionDashboard() {
 
                     {/* Quick Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card variant="elevated" spacing="generous">
+                      <Card variant="elevated" padding="lg">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
                             <Trophy className="w-6 h-6 text-amber-500" />
@@ -165,7 +165,7 @@ export function ProgressionDashboard() {
                         </div>
                       </Card>
 
-                      <Card variant="elevated" spacing="generous">
+                      <Card variant="elevated" padding="lg">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                             <Target className="w-6 h-6 text-green-500" />
@@ -179,7 +179,7 @@ export function ProgressionDashboard() {
                         </div>
                       </Card>
 
-                      <Card variant="elevated" spacing="generous">
+                      <Card variant="elevated" padding="lg">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                             <Zap className="w-6 h-6 text-blue-500" />
@@ -193,7 +193,7 @@ export function ProgressionDashboard() {
                     </div>
 
                     {/* Recent Achievements */}
-                    <Card variant="yellow" spacing="generous">
+                    <Card variant="yellow" padding="lg">
                       <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <Star className="w-5 h-5 text-primary" />
                         Recent Unlocks
@@ -226,7 +226,7 @@ export function ProgressionDashboard() {
                     </Card>
 
                     {/* Available Missions */}
-                    <Card variant="blue" spacing="generous">
+                    <Card variant="blue" padding="lg">
                       <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <Target className="w-5 h-5 text-primary" />
                         Available Missions

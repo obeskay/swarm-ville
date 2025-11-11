@@ -13,6 +13,7 @@ export class CharacterTextureLoader {
   /**
    * Preload all character textures
    * Called during app initialization
+   * OPTIMIZED: Uses Promise.allSettled to continue even if some fail
    */
   public static async preloadAllCharacters(): Promise<void> {
     const characterUrls: string[] = [];
@@ -25,56 +26,43 @@ export class CharacterTextureLoader {
     }
 
     console.log(
-      `[CharacterTextureLoader] 📦 Preloading ${characterUrls.length} character textures...`,
+      `[CharacterTextureLoader] 📦 Preloading ${characterUrls.length} character textures...`
     );
 
     try {
       // Load all character textures in parallel using PIXI.Assets.load
       const loadPromises = characterUrls.map(async (url, index) => {
         try {
-          console.log(
-            `[CharacterTextureLoader] 🔄 Loading ${index + 1}/${characterUrls.length}: ${url}`,
-          );
-
-          // Load directly with PIXI.Assets.load - it handles PNG files natively
+          // Don't log every single load - too verbose. Only log failures
           const texture = await PIXI.Assets.load(url);
-
-          console.log(`[CharacterTextureLoader] ✅ Loaded: ${url}`, {
-            width: texture.width,
-            height: texture.height,
-            valid: texture.valid,
-          });
           return { url, texture, error: null };
         } catch (error) {
-          console.error(
-            `[CharacterTextureLoader] ❌ Failed to load ${url}:`,
-            error,
-          );
+          console.warn(`[CharacterTextureLoader] ⚠️ Failed to load ${url}`);
           return { url, texture: null, error };
         }
       });
 
-      const results = await Promise.all(loadPromises);
+      // Use allSettled to continue even if some fail
+      const results = await Promise.allSettled(loadPromises);
 
       // Count successful loads
-      const successful = results.filter((r) => r.texture).length;
-      const failed = results.filter((r) => r.error).length;
+      const successful = results.filter((r) => r.status === "fulfilled" && r.value?.texture).length;
+      const failed = results.filter(
+        (r) => r.status === "rejected" || (r.status === "fulfilled" && r.value?.error)
+      ).length;
 
       console.log(
-        `[CharacterTextureLoader] ✅ Preload complete: ${successful} successful, ${failed} failed`,
+        `[CharacterTextureLoader] ✅ Preload complete: ${successful} successful, ${failed} failed`
       );
 
       if (failed > 0) {
         console.warn(
-          `[CharacterTextureLoader] Some characters failed to load. Fallback will be used.`,
+          `[CharacterTextureLoader] ⚠️ ${failed} characters failed to load. Fallback will be used.`
         );
       }
     } catch (error) {
-      console.error(
-        `[CharacterTextureLoader] ❌ Critical error during preload:`,
-        error,
-      );
-      throw error;
+      console.error(`[CharacterTextureLoader] ❌ Critical error during preload:`, error);
+      // Don't throw - allow app to continue even if preload fails
     }
   }
 
@@ -84,10 +72,7 @@ export class CharacterTextureLoader {
    */
   public static getCharacterTexture(characterId: number): PIXI.Texture | null {
     // Clamp to valid range
-    const clampedId = Math.max(
-      this.MIN_CHARACTER,
-      Math.min(this.MAX_CHARACTER, characterId),
-    );
+    const clampedId = Math.max(this.MIN_CHARACTER, Math.min(this.MAX_CHARACTER, characterId));
     const paddedId = String(clampedId).padStart(3, "0");
     const url = `/sprites/characters/Character_${paddedId}.png`;
 
@@ -97,13 +82,13 @@ export class CharacterTextureLoader {
         return texture;
       }
       console.warn(
-        `[CharacterTextureLoader] Texture not in cache: ${url}. It may not have been preloaded.`,
+        `[CharacterTextureLoader] Texture not in cache: ${url}. It may not have been preloaded.`
       );
       return null;
     } catch (error) {
       console.error(
         `[CharacterTextureLoader] Error retrieving texture for character ${characterId}:`,
-        error,
+        error
       );
       return null;
     }
@@ -113,10 +98,7 @@ export class CharacterTextureLoader {
    * Check if a character texture is available
    */
   public static isCharacterLoaded(characterId: number): boolean {
-    const clampedId = Math.max(
-      this.MIN_CHARACTER,
-      Math.min(this.MAX_CHARACTER, characterId),
-    );
+    const clampedId = Math.max(this.MIN_CHARACTER, Math.min(this.MAX_CHARACTER, characterId));
     const paddedId = String(clampedId).padStart(3, "0");
     const url = `/sprites/characters/Character_${paddedId}.png`;
 

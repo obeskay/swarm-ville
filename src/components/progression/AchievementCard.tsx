@@ -53,7 +53,7 @@ export function AchievementCard({
     >
       <Card
         variant={unlocked ? "elevated" : "default"}
-        spacing="generous"
+        padding="lg"
         className={`relative overflow-hidden transition-all duration-300 border-2 ${
           unlocked ? rarityBorders[achievement.rarity] : "border-transparent"
         } ${unlocked ? rarityGlow[achievement.rarity] : ""} ${

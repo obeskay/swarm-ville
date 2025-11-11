@@ -14,6 +14,11 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // NEW: Game-specific variants
+        level: "border-transparent bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold shadow-sm",
+        category: "border-transparent bg-gradient-to-r from-primary/20 to-primary/10 text-primary transition-all",
+        status: "border-transparent bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+        metric: "border border-border/40 bg-card text-card-foreground",
       },
     },
     defaultVariants: {

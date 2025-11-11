@@ -74,6 +74,14 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   const mouseDownTimeRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
   const lastMouseMoveRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastPreviewTileRef = useRef<{ x: number; y: number } | null>(null);
+
+  // CRITICAL: Track pressed keys to reduce lag from rapid key presses
+  const pressedKeysRef = useRef<Set<string>>(new Set());
+  const lastMovementTimeRef = useRef<number>(0);
+  const MOVEMENT_THROTTLE_MS = 100; // Max 10 moves per second = smoother than holding down
+  const lastDragMoveRef = useRef<number>(0);
+  const DRAG_THROTTLE_MS = 150; // Throttle drag movement
 
   /**
    * Initialize scene - runs when app is ready or spaceId changes
@@ -114,9 +122,15 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
             const response = await fetch(mapFile);
             mapData = await response.json();
           } catch {
-            // Fallback to defaultmap.json
-            const response = await fetch("/maps/defaultmap.json");
-            mapData = await response.json();
+            // Fallback to defaultmap.json for all spaces
+            try {
+              const mapFile = "/maps/defaultmap.json";
+              const response = await fetch(mapFile);
+              mapData = await response.json();
+            } catch {
+              // If default map also missing, use empty tilemap (blank grid)
+              mapData = null;
+            }
           }
 
           if (mapData && mapData.rooms && mapData.rooms[0] && mapData.rooms[0].tilemap) {
@@ -125,18 +139,21 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
             // CRITICAL FIX: Detect actual map dimensions from tilemap and recreate renderer if needed
             const tileKeys = Object.keys(loadedTilemap);
             if (tileKeys.length > 0) {
-              const coords = tileKeys.map((k) => k.split(", ").map(Number));
+              const coords = tileKeys.map((k) => k.split(",").map(Number));
               const actualMaxX = Math.max(...coords.map((c) => c[0])) + 1;
               const actualMaxY = Math.max(...coords.map((c) => c[1])) + 1;
 
               // If actual map dimensions differ from space dimensions, recreate renderer
+              // NOTE: With fixed 48x48 spaces, this should rarely happen now
               if (actualMaxX !== space.dimensions.width || actualMaxY !== space.dimensions.height) {
                 console.warn(
                   `[SpaceContainer] Map dimensions mismatch: Space expects ${space.dimensions.width}x${space.dimensions.height}, but map is ${actualMaxX}x${actualMaxY}. Recreating renderer...`
                 );
 
-                // Remove old layers
-                stage.removeChildren();
+                // Remove old layers from stage to avoid memory leaks
+                if (layers.floor.parent) stage.removeChild(layers.floor);
+                if (layers.above_floor.parent) stage.removeChild(layers.above_floor);
+                if (layers.object.parent) stage.removeChild(layers.object);
 
                 // Create new gridRenderer with correct dimensions
                 const newGridRenderer = new GridRenderer(actualMaxX, actualMaxY);
@@ -164,6 +181,17 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           await gridRenderer.loadTilemap(loadedTilemap);
           const blockedTiles = gridRenderer.getBlockedTiles();
           pathfinder.setBlocked(blockedTiles);
+
+          // CRITICAL DEBUG: Verify collision system is initialized correctly
+          if (import.meta.env.DEV) {
+            const pathfinderBlockedCount = pathfinder.getBlockedCount();
+            console.log(
+              `[SpaceContainer] Collision system initialized:`,
+              `GridRenderer blocked tiles: ${blockedTiles.length}`,
+              `Pathfinder blocked count: ${pathfinderBlockedCount}`,
+              `Match: ${blockedTiles.length === pathfinderBlockedCount ? "✓" : "✗ MISMATCH"}`
+            );
+          }
         } catch (error) {
           if (import.meta.env.DEV) {
             console.error("Map loading failed:", error);
@@ -297,6 +325,47 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     if (!initialized || !setGameLoop) return;
 
     setGameLoop((deltaTime: number) => {
+      // OPTIMIZED: Process pressed keys with throttling to reduce lag
+      const now = Date.now();
+      if (
+        now - lastMovementTimeRef.current >= MOVEMENT_THROTTLE_MS &&
+        pressedKeysRef.current.size > 0
+      ) {
+        lastMovementTimeRef.current = now;
+
+        let dx = 0;
+        let dy = 0;
+
+        // Process all pressed movement keys
+        if (pressedKeysRef.current.has("arrowup") || pressedKeysRef.current.has("w")) dy -= 1;
+        if (pressedKeysRef.current.has("arrowdown") || pressedKeysRef.current.has("s")) dy += 1;
+        if (pressedKeysRef.current.has("arrowleft") || pressedKeysRef.current.has("a")) dx -= 1;
+        if (pressedKeysRef.current.has("arrowright") || pressedKeysRef.current.has("d")) dx += 1;
+
+        // Only move if there's a direction
+        if ((dx !== 0 || dy !== 0) && userAvatarRef.current && gridRendererRef.current) {
+          const currentUserPos = {
+            x: userAvatarRef.current.gridPosition.x,
+            y: userAvatarRef.current.gridPosition.y,
+          };
+
+          const targetPos = {
+            x: currentUserPos.x + dx,
+            y: currentUserPos.y + dy,
+          };
+
+          if (
+            gridRendererRef.current.isValidPosition(targetPos) &&
+            !gridRendererRef.current.isAreaBlocked(targetPos)
+          ) {
+            movePlayerToTarget(targetPos, false);
+          } else {
+            // Play bounce animation on collision
+            createCollisionBounce(dx, dy);
+          }
+        }
+      }
+
       // Update all agent sprites
       if (userAvatarRef.current) {
         // ✨ Spawn movement particles when moving (simple juice)
@@ -308,9 +377,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
         // Follow path automatically when close to next waypoint (smooth Gather-clone movement)
         if (pathQueueRef.current.length > 0) {
-          // Use a generous threshold for smooth transitions (allow pre-loading next tile)
+          // Use threshold larger than movement speed (8px/frame) to prevent bounce
           const distanceToTarget = userAvatarRef.current.getDistanceToTarget();
-          const hasReachedWaypoint = distanceToTarget <= 6; // ~75% of tile distance (32px tile = 8 pixels threshold)
+          const hasReachedWaypoint = distanceToTarget <= 10; // Larger than movementSpeed (8px) for smooth transitions
 
           if (hasReachedWaypoint) {
             const nextPos = pathQueueRef.current.shift();
@@ -353,6 +422,12 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
       // Update camera smoothly
       updateCamera();
+
+      // ✨ Sync proximity circle with sprite's actual pixel position (not grid position)
+      // This fixes lag where circle was out of sync during smooth movement animation
+      if (proximityCircleRef.current && userAvatarRef.current) {
+        proximityCircleRef.current.position.set(userAvatarRef.current.x, userAvatarRef.current.y);
+      }
 
       // ✨ Update current tile highlight position
       if (currentTileHighlightRef.current) {
@@ -884,19 +959,27 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           if (dx > 5 || dy > 5) {
             isDraggingRef.current = true;
 
-            // Mover hacia donde está el cursor continuamente
-            const gridRenderer = gridRendererRef.current;
-            const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
+            // Throttle drag movement to prevent lag
+            const now = Date.now();
+            if (now - lastDragMoveRef.current >= DRAG_THROTTLE_MS) {
+              lastDragMoveRef.current = now;
 
-            if (!isBlocked) {
-              // Solo mover si no está bloqueado
-              movePlayerToTarget(targetGridPos);
+              // Mover hacia donde está el cursor continuamente
+              const gridRenderer = gridRendererRef.current;
+              const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
+
+              if (!isBlocked) {
+                // Solo mover si no está bloqueado
+                movePlayerToTarget(targetGridPos);
+              }
             }
           }
         }
 
         lastMouseMoveRef.current = { x: screenX, y: screenY };
-        showPathPreview(targetGridPos);
+        // Path preview disabled for cleaner aesthetic - user prefers minimal UI
+        // Only show destination circle indicator
+        clearPathPreview();
       };
 
       // Click ripple effect (success) - dual ring
@@ -1154,64 +1237,40 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   }, [initialized]);
 
   /**
-   * Handle keyboard input for movement - simple tile-by-tile like Gather.town
+   * OPTIMIZED: Handle keyboard input for movement with throttling
+   * Prevents lag from rapid key press events by debouncing movement
    */
   useEffect(() => {
     if (!initialized) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore keyboard input if dialog is open
       if (isDialogOpenRef.current) return;
 
       const key = event.key.toLowerCase();
+      const isMovementKey = [
+        "arrowup",
+        "arrowdown",
+        "arrowleft",
+        "arrowright",
+        "w",
+        "a",
+        "s",
+        "d",
+      ].includes(key);
 
-      // Arrow keys and WASD for movement - ONE tile per keypress
-      if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(key)) {
+      // Track pressed keys
+      if (isMovementKey) {
         event.preventDefault();
-
-        let dx = 0;
-        let dy = 0;
-
-        if (key === "arrowup" || key === "w") dy -= 1;
-        if (key === "arrowdown" || key === "s") dy += 1;
-        if (key === "arrowleft" || key === "a") dx -= 1;
-        if (key === "arrowright" || key === "d") dx += 1;
-
-        // Get current position - use avatar's target if moving, otherwise current position
-        const currentUserPos = {
-          x: userAvatarRef.current?.gridPosition.x ?? userPosition.x,
-          y: userAvatarRef.current?.gridPosition.y ?? userPosition.y,
-        };
-
-        const targetPos = {
-          x: currentUserPos.x + dx,
-          y: currentUserPos.y + dy,
-        };
-
-        const gridRenderer = gridRendererRef.current;
-        if (!gridRenderer) return;
-
-        // Try direct movement - one tile per keypress
-        // Allow movement even if already moving (queue the next move)
-        if (gridRenderer.isValidPosition(targetPos) && !gridRenderer.isAreaBlocked(targetPos)) {
-          movePlayerToTarget(targetPos, false);
-        } else {
-          // Visual feedback for blocked direction
-          if (import.meta.env.DEV) {
-            console.log("[SpaceContainer] Movement blocked to:", targetPos);
-          }
-        }
+        pressedKeysRef.current.add(key);
       }
 
-      // Space to recenter camera on player
+      // Space to recenter camera
       if (key === " " || key === "space") {
         event.preventDefault();
         if (userAvatarRef.current && stage && app) {
-          // Smooth snap to player
           const targetX = userAvatarRef.current.x - app.screen.width / 2 / scaleRef.current;
           const targetY = userAvatarRef.current.y - app.screen.height / 2 / scaleRef.current;
 
-          // Animate camera snap using pivot
           const startPivotX = cameraPositionRef.current.x;
           const startPivotY = cameraPositionRef.current.y;
           const duration = 300;
@@ -1239,12 +1298,19 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       }
     };
 
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      pressedKeysRef.current.delete(key);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [initialized, app, stage, userPosition]);
+  }, [initialized, app, stage]);
 
   /**
    * Mouse wheel zoom control - like Gather Clone
@@ -1482,14 +1548,14 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       {/* Dialogue Bubbles */}
       <DialogueBubbles scale={scaleState} cameraPosition={cameraPosition} />
 
-      {/* Game Systems - Disabled for minimalist UI */}
-      {/* <GameHUD />
+      {/* Game Systems */}
+      <GameHUD />
       <GameNotifications />
-      <InteractiveTutorial /> */}
+      <InteractiveTutorial />
 
-      {/* Panels - Disabled for minimalist UI */}
-      {/* <AgentPanel spaceId={spaceId} />
-      <AgentMetricsPanel /> */}
+      {/* Panels */}
+      <AgentPanel spaceId={spaceId} />
+      <AgentMetricsPanel />
     </div>
   );
 }

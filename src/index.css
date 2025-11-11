@@ -221,98 +221,7 @@ canvas {
   border: 1px solid oklch(from var(--foreground) l c h / 0.2);
 }
 
-/* Minimal card */
-.card-minimal {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 1rem;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-}
-
-.card-minimal:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-/* Effects */
-.glow-subtle {
-  box-shadow: 0 0 20px oklch(from var(--primary) l c h / 0.1);
-}
-
-.transition-smooth {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.scroll-hidden::-webkit-scrollbar {
-  display: none;
-}
-
-.scroll-hidden {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Modern Design System */
-
-/* Smooth card with layered shadows */
-.card-smooth {
-  position: relative;
-  background: var(--card);
-  border-radius: calc(var(--radius) * 1.5);
-  padding: 1.25rem;
-  box-shadow:
-    0 0 0 1px oklch(from var(--border) l c h / 0.05),
-    0 1px 2px oklch(0 0 0 / 0.03),
-    0 2px 4px oklch(0 0 0 / 0.03),
-    0 4px 8px oklch(0 0 0 / 0.02);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-smooth:hover {
-  box-shadow:
-    0 0 0 1px oklch(from var(--border) l c h / 0.08),
-    0 2px 4px oklch(0 0 0 / 0.04),
-    0 4px 8px oklch(0 0 0 / 0.04),
-    0 8px 16px oklch(0 0 0 / 0.03);
-  transform: translateY(-1px);
-}
-
-/* Ultra flat card - minimal with subtle border */
-.card-flat {
-  background: var(--card);
-  border: 1px solid oklch(from var(--border) l c h / 0.4);
-  border-radius: var(--radius);
-  padding: 1rem;
-  transition: all 0.2s ease;
-}
-
-.card-flat:hover {
-  border-color: oklch(from var(--border) l c h / 0.6);
-  background: oklch(from var(--card) l c h / 0.98);
-}
-
-/* Elevated panel */
-.panel-elevated {
-  position: relative;
-  background: var(--card);
-  border-radius: var(--radius);
-  box-shadow:
-    0 0 0 1px oklch(from var(--border) l c h / 0.1),
-    0 4px 12px oklch(0 0 0 / 0.05),
-    0 8px 24px oklch(0 0 0 / 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Sidebar with inner corners (using mask for smooth edges) */
-.sidebar-modern {
-  position: relative;
-  background: var(--card);
-  border-right: 1px solid oklch(from var(--border) l c h / 0.5);
-}
-
-/* Glass panel with gradient border */
+/* Glassmorphism utilities (kept for future use) */
 .glass-panel {
   position: relative;
   background: oklch(from var(--card) l c h / 0.6);
@@ -461,28 +370,6 @@ canvas {
 .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
 
-/* Hover effects */
-.hover-lift {
-  transition: transform var(--duration-normal) var(--ease-smooth), box-shadow var(--duration-normal) var(--ease-smooth);
-}
-
-.hover-lift:hover {
-  transform: translateY(-2px);
-}
-
-.hover-scale {
-  transition: transform var(--duration-fast) var(--ease-smooth);
-}
-
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-.hover-glow:hover {
-  box-shadow:
-    0 0 0 1px oklch(from var(--primary) l c h / 0.2),
-    0 0 20px oklch(from var(--primary) l c h / 0.1);
-}
 
 /* Focus states */
 .focus-ring-smooth:focus-visible {

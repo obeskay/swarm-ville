@@ -171,8 +171,8 @@ export function TeachingInterface({
         {/* Associations Section */}
         <Card
           variant="blue"
-          innerCorners="topLeft"
-          spacing="generous"
+         
+          padding="lg"
           className="overflow-hidden"
         >
           <div className="space-y-4">

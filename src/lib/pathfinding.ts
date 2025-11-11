@@ -16,6 +16,7 @@ export class Pathfinder {
 
   /**
    * Set blocked tiles (colliders)
+   * CRITICAL: Uses format "${x},${y}" with NO SPACES (consistent with findPath)
    */
   public setBlocked(positions: Position[]): void {
     this.blocked.clear();
@@ -26,6 +27,7 @@ export class Pathfinder {
 
   /**
    * Add a blocked tile
+   * CRITICAL: Uses format "${x},${pos.y}" with NO SPACES
    */
   public addBlocked(pos: Position): void {
     this.blocked.add(`${pos.x},${pos.y}`);
@@ -33,6 +35,7 @@ export class Pathfinder {
 
   /**
    * Remove a blocked tile
+   * CRITICAL: Uses format "${x},${pos.y}" with NO SPACES
    */
   public removeBlocked(pos: Position): void {
     this.blocked.delete(`${pos.x},${pos.y}`);
@@ -56,9 +59,26 @@ export class Pathfinder {
    * Check if position is valid (within bounds)
    */
   public isValid(pos: Position): boolean {
-    return (
-      pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height
-    );
+    return pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height;
+  }
+
+  /**
+   * Get count of blocked tiles (for debugging)
+   */
+  public getBlockedCount(): number {
+    return this.blocked.size;
+  }
+
+  /**
+   * Get all blocked tiles (for debugging/visualization)
+   */
+  public getBlockedTiles(): Position[] {
+    const tiles: Position[] = [];
+    this.blocked.forEach((key) => {
+      const [x, y] = key.split(",").map(Number);
+      tiles.push({ x, y });
+    });
+    return tiles;
   }
 }
 
@@ -72,7 +92,7 @@ export function findPath(
   goal: Position,
   width: number,
   height: number,
-  blocked: Set<string> = new Set(),
+  blocked: Set<string> = new Set()
 ): Position[] {
   // Check if goal is blocked
   if (blocked.has(`${goal.x},${goal.y}`)) {
@@ -119,12 +139,7 @@ export function findPath(
       if (visited.has(key)) continue;
 
       // Skip if out of bounds
-      if (
-        nextPos.x < 0 ||
-        nextPos.x >= width ||
-        nextPos.y < 0 ||
-        nextPos.y >= height
-      ) {
+      if (nextPos.x < 0 || nextPos.x >= width || nextPos.y < 0 || nextPos.y >= height) {
         continue;
       }
 
@@ -146,7 +161,7 @@ export function hasLineOfSight(
   to: Position,
   width: number,
   height: number,
-  blocked: Set<string> = new Set(),
+  blocked: Set<string> = new Set()
 ): boolean {
   const dx = to.x - from.x;
   const dy = to.y - from.y;

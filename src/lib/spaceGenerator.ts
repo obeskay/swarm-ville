@@ -89,12 +89,44 @@ export function generateSpaceConfigWithName(userProvidedName: string): SpaceConf
 }
 
 /**
- * Generate a default space for initial app load (still randomized, not hardcoded)
+ * Generate a default space for initial app load
+ * CRITICAL: Uses FIXED dimensions (48x48) to match the defaultmap.json tilemap
+ * Do NOT randomize dimensions - they must match the actual tilemap size
  */
 export function generateDefaultSpaceConfig(): SpaceConfig {
-  const config = generateRandomSpaceConfig();
+  const theme = randomChoice(THEMES) as "modern" | "cozy" | "minimal";
+  const floor = randomChoice(FLOORS);
+
   return {
-    ...config,
     name: `Welcome Space`,
+    // CRITICAL: These dimensions MUST match the actual tilemap (48x48)
+    // The tilemap defaultmap.json is 48x48 tiles - changing this breaks the game
+    dimensions: { width: 48, height: 48 },
+    theme,
+    floor,
+    settings: {
+      proximityRadius: 5,
+      maxAgents: 10,
+      snapToGrid: true,
+    },
+  };
+}
+
+/**
+ * Generate an office space config
+ * Fixed 48x48 dimensions matching a modern office tilemap
+ * Perfect for collaborative team workspaces
+ */
+export function generateOfficeSpaceConfig(): SpaceConfig {
+  return {
+    name: "Office",
+    dimensions: { width: 48, height: 48 },
+    theme: "modern",
+    floor: "tile",
+    settings: {
+      proximityRadius: 5,
+      maxAgents: 15,
+      snapToGrid: true,
+    },
   };
 }

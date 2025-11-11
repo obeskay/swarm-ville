@@ -21,23 +21,26 @@ export function GameHUD() {
     <>
       {/* Level and XP Bar - Top Left */}
       <div className="fixed top-6 left-6 z-20 select-none">
-        <Card variant="yellow" spacing="generous" className="backdrop-blur-md min-w-[240px]">
+        <Card variant="hud" padding="lg" className="min-w-[240px]">
           <div className="flex items-center gap-4">
             {/* Level Badge */}
-            <div className="w-14 h-14 rounded-full bg-foreground flex items-center justify-center shadow-soft relative">
+            <div className="relative w-14 h-14 rounded-full bg-foreground flex items-center justify-center shadow-sm">
               <span className="text-xl font-bold text-background">{level}</span>
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-foreground rounded-full flex items-center justify-center ring-2 ring-[hsl(var(--card-accent))]">
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-foreground rounded-full flex items-center justify-center ring-2 ring-amber-500">
                 <Zap className="w-3 h-3 text-background" fill="currentColor" />
               </div>
             </div>
 
             {/* XP Progress */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="text-sm font-medium mb-2">Level {level}</div>
               <div className="relative h-2.5 bg-foreground/10 rounded-full overflow-hidden">
                 <div
-                  className="absolute inset-y-0 left-0 bg-foreground transition-all duration-500 ease-out rounded-full"
-                  style={{ width: `${xpPercentage}%` }}
+                  className={cn(
+                    "h-full bg-foreground transition-all duration-500 ease-out rounded-full",
+                    xpPercentage === 100 && "bg-green-500"
+                  )}
+                  style={{ width: `${Math.min(100, xpPercentage)}%` }}
                 />
               </div>
               <div className="text-xs text-foreground/70 mt-2">
@@ -52,12 +55,11 @@ export function GameHUD() {
       {activeMissions.length > 0 && (
         <div className="fixed left-6 top-36 z-20 select-none">
           <Card
-            variant="blue"
-            spacing="generous"
-            innerCorners="topLeft"
-            className="backdrop-blur-md overflow-hidden min-w-[320px]"
+            variant="hud"
+            padding="lg"
+            className="overflow-hidden min-w-[320px]"
           >
-            <div className="flex items-center justify-between border-b border-foreground/10 pb-4">
+            <div className="flex items-center justify-between border-b border-foreground/10 pb-4 mb-4">
               <div className="flex items-center gap-3">
                 <Trophy className="w-5 h-5 text-foreground" />
                 <h3 className="text-base font-semibold">Active Missions</h3>
@@ -72,40 +74,44 @@ export function GameHUD() {
             </div>
 
             {showMissions && (
-              <div className="mt-4 space-y-3">
-                {activeMissions.map((mission) => (
-                  <div
-                    key={mission.id}
-                    className="p-4 rounded-[calc(var(--radius)*0.66)] bg-background/50 hover:bg-background/70 transition-all shadow-soft"
-                  >
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="text-2xl">{mission.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold mb-1">{mission.title}</div>
-                        <div className="text-xs text-foreground/70">{mission.description}</div>
+              <div className="space-y-3">
+                {activeMissions.map((mission) => {
+                  const progressPercent = (mission.progress / mission.maxProgress) * 100;
+                  return (
+                    <div
+                      key={mission.id}
+                      className="p-4 rounded-lg bg-background/50 hover:bg-background/70 transition-all shadow-sm"
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <span className="text-2xl flex-shrink-0">{mission.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold mb-1">{mission.title}</div>
+                          <div className="text-xs text-foreground/70">{mission.description}</div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="relative h-2 bg-foreground/10 rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full bg-foreground transition-all duration-500 rounded-full",
+                            progressPercent === 100 && "bg-green-500"
+                          )}
+                          style={{ width: `${Math.min(100, progressPercent)}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-foreground/70">
+                          {mission.progress} / {mission.maxProgress}
+                        </span>
+                        <span className="text-xs font-semibold bg-foreground/10 px-2 py-1 rounded-full">
+                          +{mission.xpReward} XP
+                        </span>
                       </div>
                     </div>
-
-                    {/* Progress Bar */}
-                    <div className="relative h-2 bg-foreground/10 rounded-full overflow-hidden">
-                      <div
-                        className="absolute inset-y-0 left-0 bg-foreground transition-all duration-500 rounded-full"
-                        style={{
-                          width: `${(mission.progress / mission.maxProgress) * 100}%`,
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-foreground/70">
-                        {mission.progress} / {mission.maxProgress}
-                      </span>
-                      <span className="text-xs font-semibold bg-foreground/10 px-2 py-1 rounded-full">
-                        +{mission.xpReward} XP
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>

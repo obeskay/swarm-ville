@@ -31,7 +31,7 @@ function MissionCard({ mission, completed, onComplete }: MissionCardProps) {
     <motion.div whileHover={{ y: -2 }} className="relative">
       <Card
         variant={completed ? "elevated" : "default"}
-        spacing="generous"
+        padding="lg"
         className={`relative overflow-hidden transition-all duration-300 ${
           completed ? "opacity-75" : ""
         }`}
@@ -120,7 +120,7 @@ export function MissionTracker() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card variant="blue" spacing="generous">
+      <Card variant="blue" padding="lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-soft">
@@ -175,7 +175,7 @@ export function MissionTracker() {
             ))}
           </div>
         ) : (
-          <Card variant="default" spacing="generous" className="text-center">
+          <Card variant="default" padding="lg" className="text-center">
             <div className="py-8 text-foreground/50">
               <Target className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p className="text-sm">No missions available in this category.</p>

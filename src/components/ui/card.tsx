@@ -3,31 +3,33 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const cardVariants = cva(
-  "rounded-[var(--radius)] bg-card text-card-foreground shadow-soft transition-all",
+  "rounded-lg bg-card text-card-foreground transition-all",
   {
     variants: {
       variant: {
-        default: "bg-card border border-border",
-        yellow: "bg-[hsl(var(--card-accent))] border-0",
-        blue: "bg-[hsl(var(--card-accent-light))] border-0",
-        elevated: "shadow-soft-lg border-0",
+        default: "bg-card border border-border shadow-sm",
+        yellow: "bg-amber-50/80 dark:bg-amber-950/30 backdrop-blur-md shadow-sm",
+        blue: "bg-blue-50/80 dark:bg-blue-950/30 backdrop-blur-md shadow-sm",
+        elevated: "shadow-lg backdrop-blur-md bg-card/95",
+        minimal: "bg-card rounded-lg p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all",
+        flat: "bg-card border border-border/40 hover:border-border/60 hover:bg-card/98 transition-all",
+        glass: "bg-card/60 backdrop-blur-xl border border-border/50 shadow-md",
+        // NEW: Specialized variants for game UI
+        panel: "bg-card/95 backdrop-blur-xl border border-border/50 shadow-lg",
+        hud: "bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 shadow-sm",
+        metric: "bg-card hover:bg-card/80 border border-border/40 hover:border-border/60 transition-all shadow-sm",
+        achievement: "bg-card hover:shadow-xl hover:-translate-y-1 transition-all border border-border/20",
       },
-      innerCorners: {
+      padding: {
         none: "",
-        topLeft: "inner-corner-tl",
-        topRight: "inner-corner-tr",
-        bottomLeft: "inner-corner-bl",
-        bottomRight: "inner-corner-br",
-      },
-      spacing: {
-        default: "",
-        generous: "spacing-generous",
+        sm: "p-3",
+        default: "p-4",
+        lg: "p-6",
       },
     },
     defaultVariants: {
       variant: "default",
-      innerCorners: "none",
-      spacing: "default",
+      padding: "default",
     },
   }
 );
@@ -37,10 +39,10 @@ export interface CardProps
     VariantProps<typeof cardVariants> {}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant, innerCorners, spacing, ...props }, ref) => (
+  ({ className, variant, padding, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(cardVariants({ variant, innerCorners, spacing, className }))}
+      className={cn(cardVariants({ variant, padding, className }))}
       {...props}
     />
   )
@@ -53,7 +55,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-3 p-[var(--spacing-base)]", className)}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
     {...props}
   />
 ));
@@ -66,7 +68,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-tight tracking-tight",
+      "text-2xl font-semibold leading-none tracking-tight",
       className
     )}
     {...props}
@@ -80,7 +82,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-body-large", className)}
+    className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
 ));
@@ -92,7 +94,7 @@ const CardContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("p-[var(--spacing-base)] pt-0", className)}
+    className={cn("p-6 pt-0", className)}
     {...props}
   />
 ));
@@ -104,7 +106,7 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center gap-4 p-[var(--spacing-base)] pt-0", className)}
+    className={cn("flex items-center p-6 pt-0", className)}
     {...props}
   />
 ));

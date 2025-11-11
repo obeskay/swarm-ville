@@ -1,42 +1,97 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-export interface DialogProps extends React.HTMLAttributes<HTMLDivElement> {
+// Dialog overlay variants with proper backdrop
+const dialogOverlayVariants = cva(
+  "fixed inset-0 flex items-center justify-center transition-all duration-200 pointer-events-auto",
+  {
+    variants: {
+      backdrop: {
+        default: "bg-background/80 backdrop-blur-sm",
+        dark: "bg-background/90 backdrop-blur-md",
+        light: "bg-background/60 backdrop-blur-sm",
+        none: "bg-transparent",
+      },
+      zIndex: {
+        modal: "z-[100]",
+        popover: "z-50",
+        toast: "z-[200]",
+      },
+    },
+    defaultVariants: {
+      backdrop: "default",
+      zIndex: "modal",
+    },
+  }
+);
+
+// Dialog content variants
+const dialogContentVariants = cva(
+  "bg-card rounded-2xl shadow-2xl mx-4 flex flex-col max-h-[90vh] w-full transition-all duration-200",
+  {
+    variants: {
+      size: {
+        sm: "max-w-sm",
+        default: "max-w-lg",
+        lg: "max-w-2xl",
+        xl: "max-w-4xl",
+        full: "max-w-[95vw]",
+      },
+      animation: {
+        none: "",
+        fade: "animate-in fade-in-0",
+        scale: "animate-in fade-in-0 zoom-in-95",
+        slide: "animate-in fade-in-0 slide-in-from-bottom-4",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+      animation: "scale",
+    },
+  }
+);
+
+export interface DialogProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof dialogContentVariants>,
+    Pick<VariantProps<typeof dialogOverlayVariants>, "backdrop" | "zIndex"> {
   open?: boolean;
   onClose?: () => void;
-  size?: "sm" | "default" | "lg" | "xl" | "full";
 }
 
-const sizeClasses = {
-  sm: "max-w-sm",
-  default: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
-  full: "max-w-[95vw]",
-};
-
 const Dialog = React.forwardRef<HTMLDivElement, DialogProps>(
-  ({ className, children, open, onClose, size = "default", ...props }, ref) => {
+  ({ className, children, open, onClose, size, animation, backdrop, zIndex, ...props }, ref) => {
+    // Don't render if not open
     if (!open) return null;
 
-    return (
+    // Prevent body scroll when dialog is open
+    React.useEffect(() => {
+      if (open) {
+        document.body.style.overflow = "hidden";
+        return () => {
+          document.body.style.overflow = "";
+        };
+      }
+    }, [open]);
+
+    // Render in portal at document.body for proper z-index layering
+    return createPortal(
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-colors pointer-events-auto"
+        className={cn(dialogOverlayVariants({ backdrop, zIndex }))}
         onClick={onClose}
         {...props}
       >
         <div
           ref={ref}
-          className={cn(
-            "bg-card rounded-2xl shadow-lg mx-4 transition-all flex flex-col max-h-[90vh] w-full",
-            sizeClasses[size],
-            className
-          )}
+          className={cn(dialogContentVariants({ size, animation, className }))}
           onClick={(e) => e.stopPropagation()}
         >
           {children}
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 );
