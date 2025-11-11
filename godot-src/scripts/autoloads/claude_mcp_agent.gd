@@ -2,8 +2,8 @@ extends Node
 ## Claude MCP Integration for Agent Collaboration
 ## Enables agents to make decisions and communicate via Claude AI
 
-var claude_process: Process
 var is_initialized: bool = false
+var claude_available: bool = false
 var agent_conversations: Dictionary = {}  # agent_id -> conversation history
 var pending_decisions: Dictionary = {}    # agent_id -> decision request
 
@@ -11,19 +11,23 @@ func _ready() -> void:
 	print("[ClaudeMCPAgent] Initializing Claude integration...")
 	set_process(true)
 
-	# Try to start Claude process
+	# Initialize Claude availability
 	_initialize_claude()
 
 func _initialize_claude() -> void:
 	# Check if Claude CLI is available
-	var result = OS.execute("which", ["claude"], [], true)
+	var output = []
+	var result = OS.execute("which", ["claude"], output, true)
+
+	is_initialized = true
 
 	if result == 0:
 		print("[ClaudeMCPAgent] Claude CLI found - MCP integration available")
-		is_initialized = true
+		claude_available = true
 	else:
-		print("[ClaudeMCPAgent] Claude CLI not found - agent AI disabled")
-		print("[ClaudeMCPAgent] Install: brew install anthropic-cli")
+		print("[ClaudeMCPAgent] Claude CLI not found - using fallback AI")
+		print("[ClaudeMCPAgent] To enable: brew install anthropic-cli")
+		claude_available = false
 
 func _process(_delta: float) -> void:
 	# Process any pending agent decisions
@@ -34,9 +38,12 @@ func request_agent_decision(agent_id: String, agent_state: Dictionary) -> String
 	if not is_initialized:
 		return _fallback_agent_decision(agent_id, agent_state)
 
+	if not claude_available:
+		return _fallback_agent_decision(agent_id, agent_state)
+
 	var prompt = _build_agent_prompt(agent_id, agent_state)
 
-	# Queue for async processing (would be async in real implementation)
+	# Queue for async processing
 	pending_decisions[agent_id] = {
 		"prompt": prompt,
 		"state": agent_state,
@@ -81,13 +88,12 @@ func _process_pending_decisions() -> void:
 
 		if decision:
 			print("[ClaudeMCPAgent] Agent %s decision: %s" % [agent_id, decision])
-			GameState.emit_signal("agent_decision", agent_id, decision)
 
 		pending_decisions.erase(agent_id)
 
 ## Call Claude API
 func _call_claude(prompt: String) -> String:
-	if not is_initialized:
+	if not claude_available:
 		return ""
 
 	# Use claude command via CLI
@@ -134,7 +140,7 @@ func add_conversation_message(agent_id: String, message: String, is_agent: bool)
 
 ## Generate agent response to player
 func generate_agent_response(agent_id: String, player_message: String) -> String:
-	if not is_initialized:
+	if not claude_available:
 		return _fallback_response(agent_id)
 
 	var conversation = get_agent_conversation(agent_id)
@@ -181,6 +187,7 @@ func _fallback_response(agent_id: String) -> String:
 func get_status() -> Dictionary:
 	return {
 		"initialized": is_initialized,
+		"claude_available": claude_available,
 		"agents_with_conversations": agent_conversations.size(),
 		"pending_decisions": pending_decisions.size()
 	}
