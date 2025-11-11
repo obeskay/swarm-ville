@@ -83,12 +83,13 @@ func _process(delta: float) -> void:
 	if player_controller:
 		viewport_camera.global_position = viewport_camera.global_position.lerp(player_controller.global_position, 0.15)
 
-	# Spawn enemies periodically (if room)
-	if GameState.is_playing and agents_on_screen.size() < GameState.game_config.max_agents:
-		agent_spawner_timer += delta
-		if agent_spawner_timer > (1.0 / GameState.game_config.spawn_rate):
-			_spawn_ai_agent()
-			agent_spawner_timer = 0.0
+	# NOTE: Auto-spawning disabled - agents now spawn only on user request (SPACE key)
+	# This prevents agents from moving randomly without player input
+	#if GameState.is_playing and agents_on_screen.size() < GameState.game_config.max_agents:
+	#	agent_spawner_timer += delta
+	#	if agent_spawner_timer > (1.0 / GameState.game_config.spawn_rate):
+	#		_spawn_ai_agent()
+	#		agent_spawner_timer = 0.0
 
 func _draw() -> void:
 	# Draw grid
