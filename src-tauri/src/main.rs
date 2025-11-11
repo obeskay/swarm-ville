@@ -59,10 +59,11 @@ async fn detect_installed_clis() -> Result<String, String> {
 async fn execute_cli_command(request: ExecuteCLIRequest) -> Result<String, String> {
     use cli::{CLICommand, CLIConnector, CLIType, CommandOptions};
 
-    let connector = CLIConnector::new(30000); // 30s timeout
+    let connector = CLIConnector::new(120000); // 120s timeout for code generation
 
     let cli_type = match request.cli_type.to_lowercase().as_str() {
         "claude" => CLIType::Claude,
+        "claude-code" | "claudecode" => CLIType::ClaudeCode,
         "gemini" => CLIType::Gemini,
         "openai" => CLIType::OpenAI,
         custom => CLIType::Custom(custom.to_string()),
@@ -79,6 +80,42 @@ async fn execute_cli_command(request: ExecuteCLIRequest) -> Result<String, Strin
         .map_err(|e| e.to_string())?;
 
     serde_json::to_string(&response).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn start_claude_code_task(task_description: String) -> Result<String, String> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    // Invoke claude-code-cli without requiring API keys
+    // claude-code-cli works directly with local projects
+    let mut child = Command::new("claude-code-cli")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start claude-code-cli: {}", e))?;
+
+    // Send task description via stdin
+    {
+        let stdin = child.stdin.as_mut().ok_or("Failed to open stdin")?;
+        stdin
+            .write_all(task_description.as_bytes())
+            .map_err(|e| format!("Failed to write to stdin: {}", e))?;
+    }
+
+    // Wait for completion
+    let output = child
+        .wait_with_output()
+        .map_err(|e| format!("Failed to wait for claude-code-cli: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("claude-code-cli error: {}", stderr));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.to_string())
 }
 
 #[tauri::command]
@@ -435,6 +472,7 @@ fn main() {
             detect_installed_clis,
             test_cli_connection,
             execute_cli_command,
+            start_claude_code_task,
             execute_claude_script,
             start_stt,
             stop_stt,

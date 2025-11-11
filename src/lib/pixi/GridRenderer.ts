@@ -2,8 +2,9 @@ import * as PIXI from "pixi.js";
 import { Position } from "../types";
 import { sprites } from "./spritesheet/spritesheet";
 import { ObjectPool } from "./ObjectPool";
+import { GAME_CONFIG } from "../game-config";
 
-const TILE_SIZE = 32;
+const TILE_SIZE = GAME_CONFIG.TILE_SIZE;
 
 // Layer types for rendering
 export type Layer = "floor" | "above_floor" | "object";
@@ -92,10 +93,15 @@ export class GridRenderer {
     for (const [tilePoint, tileData] of Object.entries(normalizedTilemap)) {
       const [x, y] = tilePoint.split(",").map(Number);
 
-      // CRITICAL FIX: Filter out-of-bounds tiles
+      // CRITICAL FIX: Filter out-of-bounds tiles AND validate coordinates
       // Map files may contain border tiles with negative coords or coords >= dimensions
-      // Only process tiles within valid grid bounds
-      if (!this.isValidPosition({ x, y })) {
+      // Also skip invalid/NaN coordinates from malformed data
+      if (isNaN(x) || isNaN(y) || !this.isValidPosition({ x, y })) {
+        if (import.meta.env.DEV && !isNaN(x) && !isNaN(y)) {
+          console.warn(
+            `[GridRenderer] Skipping out-of-bounds tile at ${x},${y} (map size: ${this.width}x${this.height})`
+          );
+        }
         continue;
       }
 
@@ -267,12 +273,20 @@ export class GridRenderer {
    * Character visual size: 96x96 pixels (3x3 tiles) with anchor (0.5, 1)
    * But collision should only check the tile the character stands on
    *
-   * PERFORMANCE: Single Set lookup instead of iterating multiple tiles
+   * PERFORMANCE: Single lookup instead of iterating multiple tiles
    * Result: 60 FPS smooth even with many colliders
    */
-  public isAreaBlocked(centerPos: Position, width: number = 0.6, height: number = 0.6): boolean {
+  public isAreaBlocked(
+    centerPos: Position,
+    width: number = GAME_CONFIG.COLLISION_CHECK_RADIUS,
+    height: number = GAME_CONFIG.COLLISION_CHECK_RADIUS
+  ): boolean {
     // OPTIMIZED: Only check the center tile where character's feet are
-    // This is O(1) - just a Set lookup, no iteration
+    // This is O(1) - just a lookup, no iteration
+    // First validate position is within bounds to prevent edge case bugs
+    if (!this.isValidPosition(centerPos)) {
+      return true; // Treat out-of-bounds as blocked
+    }
     return this.hasCollider(centerPos);
   }
 
@@ -280,7 +294,10 @@ export class GridRenderer {
    * ✨ Improved: Get nearest walkable position to a target
    * Useful when pathfinding to blocked tiles
    */
-  public getNearestWalkable(target: Position, maxRadius: number = 3): Position | null {
+  public getNearestWalkable(
+    target: Position,
+    maxRadius: number = GAME_CONFIG.NEAREST_WALKABLE_MAX_RADIUS
+  ): Position | null {
     // If target is already walkable, return it
     if (!this.isBlocked(target)) return target;
 
@@ -355,7 +372,7 @@ export class AgentSprite extends PIXI.Container {
 
   // Movement state
   private targetPixelPosition: { x: number; y: number } | null = null;
-  private movementSpeed: number = 6; // pixels per frame at 60fps (smooth and natural like Gather Clone)
+  private movementSpeed: number = GAME_CONFIG.AGENT_MOVEMENT_SPEED; // pixels per frame
 
   constructor(gridPosition: Position, color: number, name: string, interactive: boolean = false) {
     super();
@@ -368,22 +385,25 @@ export class AgentSprite extends PIXI.Container {
 
     // Obtener circle del pool
     this.circle = agentGraphicsPool.acquire();
-    this.circle.circle(0, 0, TILE_SIZE / 2 - 2);
+    this.circle.circle(0, 0, TILE_SIZE / 2 - GAME_CONFIG.AGENT_CIRCLE_RADIUS_OFFSET);
     this.circle.fill({ color });
-    this.circle.stroke({ color: 0x1e40af, width: 2 });
+    this.circle.stroke({
+      color: GAME_CONFIG.AGENT_STROKE_COLOR,
+      width: GAME_CONFIG.AGENT_STROKE_WIDTH,
+    });
 
     // Create name label
     this.nameText = new PIXI.Text({
       text: name,
       style: {
-        fontSize: 10,
-        fill: 0xffffff,
+        fontSize: GAME_CONFIG.AGENT_NAME_TEXT_FONT_SIZE,
+        fill: GAME_CONFIG.AGENT_NAME_TEXT_FILL,
         align: "center",
         fontWeight: "bold",
       },
     });
     this.nameText.anchor.set(0.5);
-    this.nameText.y = -TILE_SIZE;
+    this.nameText.y = GAME_CONFIG.AGENT_NAME_TEXT_OFFSET_Y;
 
     this.addChild(this.circle);
     this.addChild(this.nameText);
@@ -477,9 +497,12 @@ export class AgentSprite extends PIXI.Container {
 
   public setColor(color: number): void {
     this.circle.clear();
-    this.circle.circle(0, 0, TILE_SIZE / 2 - 2);
+    this.circle.circle(0, 0, TILE_SIZE / 2 - GAME_CONFIG.AGENT_CIRCLE_RADIUS_OFFSET);
     this.circle.fill({ color });
-    this.circle.stroke({ color: 0x1e40af, width: 2 });
+    this.circle.stroke({
+      color: GAME_CONFIG.AGENT_STROKE_COLOR,
+      width: GAME_CONFIG.AGENT_STROKE_WIDTH,
+    });
   }
 
   /**
@@ -522,8 +545,15 @@ export class ProximityCircle extends PIXI.Graphics {
 
     // FIXED: Draw circle at local origin (0,0) since container is positioned by parent
     this.circle(0, 0, worldRadius);
-    this.stroke({ color: 0x3b82f6, width: 2, alpha: 0.3 });
-    this.fill({ color: 0x3b82f6, alpha: 0.05 });
+    this.stroke({
+      color: GAME_CONFIG.COLORS.TILE_HIGHLIGHT,
+      width: 2,
+      alpha: GAME_CONFIG.COLORS.PROXIMITY_CIRCLE_ALPHA,
+    });
+    this.fill({
+      color: GAME_CONFIG.COLORS.TILE_HIGHLIGHT,
+      alpha: GAME_CONFIG.COLORS.PROXIMITY_CIRCLE_FILL_ALPHA,
+    });
   }
 
   public update(centerPos: Position): void {

@@ -42,7 +42,7 @@ export function AchievementNotifications() {
             className="pointer-events-auto"
           >
             <div
-              className={`relative overflow-hidden rounded-2xl shadow-elevated backdrop-blur-md bg-gradient-to-r ${
+              className={`relative overflow-hidden rounded-2xl shadow-lg backdrop-blur-md bg-gradient-to-r ${
                 notificationColors[notification.type]
               } p-4`}
             >

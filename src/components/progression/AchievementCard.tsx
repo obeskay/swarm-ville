@@ -117,7 +117,7 @@ export function AchievementCard({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={onClick}
-              className="w-full mt-2 py-2 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold text-sm shadow-soft hover:shadow-elevated transition-all duration-200"
+              className="w-full mt-2 py-2 rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold text-sm shadow-sm hover:shadow-lg transition-all duration-200"
             >
               Claim Achievement
             </motion.button>

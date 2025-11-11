@@ -18,21 +18,21 @@ export function AgentPanel({ spaceId = "default" }: AgentPanelProps) {
 
   if (isCollapsed) {
     return (
-      <div className="fixed bottom-6 right-6 z-10">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-10">
         <Button
           size="sm"
           variant="outline"
           onClick={() => setIsCollapsed(false)}
         >
           <Users className="w-4 h-4 mr-2" />
-          <span className="font-semibold">{agentList.length} Agents</span>
+          <span className="font-semibold text-xs sm:text-sm">{agentList.length} Agents</span>
         </Button>
       </div>
     );
   }
 
   return (
-    <Card variant="panel" className="fixed bottom-6 right-6 w-80 z-10">
+    <Card variant="panel" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-full sm:w-80 max-w-[calc(100vw-2rem)] sm:max-w-none z-10">
       <CardHeader className="pb-3 border-b border-border/20">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-bold flex items-center gap-2">

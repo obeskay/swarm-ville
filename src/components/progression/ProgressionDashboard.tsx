@@ -58,7 +58,7 @@ export function ProgressionDashboard() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-30 p-4 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-elevated hover:shadow-lg transition-all duration-200"
+        className="fixed bottom-6 right-6 z-30 p-4 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-lg transition-all duration-200"
       >
         <Trophy className="w-6 h-6" />
       </motion.button>
@@ -74,7 +74,7 @@ export function ProgressionDashboard() {
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-soft">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
                     <Trophy className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <div>

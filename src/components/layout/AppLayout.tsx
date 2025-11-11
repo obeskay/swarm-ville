@@ -44,7 +44,7 @@ export function AppLayout({
       </div>
 
       {/* Main Content Area */}
-      <div className="grid grid-cols-[auto_1fr_auto] overflow-hidden">
+      <div className="grid grid-cols-[auto_1fr_auto] overflow-hidden h-full w-full">
         {/* Left Sidebar */}
         <div
           style={{

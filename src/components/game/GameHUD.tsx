@@ -20,8 +20,8 @@ export function GameHUD() {
   return (
     <>
       {/* Level and XP Bar - Top Left */}
-      <div className="fixed top-6 left-6 z-20 select-none">
-        <Card variant="hud" padding="lg" className="min-w-[240px]">
+      <div className="fixed top-4 left-4 sm:top-6 sm:left-6 z-20 select-none max-w-[calc(100vw-2rem)] sm:max-w-none">
+        <Card variant="hud" padding="lg" className="min-w-[240px] w-full sm:w-auto">
           <div className="flex items-center gap-4">
             {/* Level Badge */}
             <div className="relative w-14 h-14 rounded-full bg-foreground flex items-center justify-center shadow-sm">
@@ -53,11 +53,11 @@ export function GameHUD() {
 
       {/* Active Missions - Left Side */}
       {activeMissions.length > 0 && (
-        <div className="fixed left-6 top-36 z-20 select-none">
+        <div className="fixed left-4 sm:left-6 top-32 sm:top-36 z-20 select-none max-w-[calc(100vw-2rem)] sm:max-w-none">
           <Card
             variant="hud"
             padding="lg"
-            className="overflow-hidden min-w-[320px]"
+            className="overflow-hidden min-w-[320px] w-full sm:w-auto"
           >
             <div className="flex items-center justify-between border-b border-foreground/10 pb-4 mb-4">
               <div className="flex items-center gap-3">

@@ -7,7 +7,6 @@ import { useCallback } from "react";
 import { useAchievementStore } from "@/stores/achievementStore";
 import { useAchievementSystem } from "./useAchievementSystem";
 import type { GameEvent } from "@/types/achievements";
-import { toast } from "sonner";
 
 interface EventXPMapping {
   [key: string]: number;
@@ -80,21 +79,10 @@ export function useAchievementTriggers() {
         });
 
         if (result.success) {
-          toast.success("Mission Complete!", {
-            description: `+${result.totalXp} XP${
-              result.streakBonus && result.streakBonus > 1
-                ? ` (${Math.round((result.streakBonus - 1) * 100)}% streak bonus)`
-                : ""
-            }`,
-            icon: "🎯",
-            duration: 5000,
-          });
-
           await store.checkAndUnlockAchievements();
         }
       } catch (error) {
         console.error("Failed to track mission completion:", error);
-        toast.error("Failed to complete mission");
       }
     },
     [trackEvent, store]
@@ -110,12 +98,6 @@ export function useAchievementTriggers() {
         );
 
         if (result.success) {
-          toast.success(`🔍 Discovered: ${featureName}`, {
-            description: `+${result.totalXp} XP`,
-            icon: "✨",
-            duration: 4000,
-          });
-
           await store.checkAndUnlockAchievements();
         }
       } catch (error) {
@@ -131,24 +113,7 @@ export function useAchievementTriggers() {
         loginAt: Date.now(),
       });
 
-      if (result.success && result.streakBonus) {
-        const streakDays = result.streak || 1;
-        const bonusPercent = Math.round((result.streakBonus - 1) * 100);
-
-        if (streakDays > 1) {
-          toast.success(`🔥 ${streakDays} Day Streak!`, {
-            description: `+${result.totalXp} XP (${bonusPercent}% bonus)`,
-            icon: "🎉",
-            duration: 5000,
-          });
-        } else {
-          toast.success("Daily Login Bonus", {
-            description: `+${result.totalXp} XP - Come back tomorrow to build your streak!`,
-            icon: "🌟",
-            duration: 4000,
-          });
-        }
-
+      if (result.success) {
         await store.checkAndUnlockAchievements();
       }
     } catch (error) {
@@ -175,16 +140,6 @@ export function useAchievementTriggers() {
         const result = await trackEvent(event, xpReward, metadata);
 
         if (result.success && xpReward > 0) {
-          if (result.streakBonus && result.streakBonus > 1) {
-            toast.success(
-              `+${result.totalXp} XP with ${Math.round((result.streakBonus - 1) * 100)}% bonus!`,
-              {
-                icon: "⚡",
-                duration: 3000,
-              }
-            );
-          }
-
           await store.checkAndUnlockAchievements();
         }
 

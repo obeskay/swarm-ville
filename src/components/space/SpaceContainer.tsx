@@ -16,14 +16,15 @@ import { GameNotifications } from "../game/GameNotifications";
 import { InteractiveTutorial } from "../game/InteractiveTutorial";
 import { DialogueBubbles } from "../game/DialogueBubbles";
 import { useGameStore } from "../../stores/gameStore";
+import { GAME_CONFIG } from "../../lib/game-config";
 
 interface SpaceContainerProps {
   spaceId: string;
   onSpaceChange?: (spaceId: string) => void;
 }
 
-const TILE_SIZE = 32;
-const PROXIMITY_RADIUS = 5;
+const TILE_SIZE = GAME_CONFIG.TILE_SIZE;
+const PROXIMITY_RADIUS = GAME_CONFIG.PROXIMITY_CIRCLE_RADIUS_TILES;
 
 export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,11 +59,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   const cameraPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const pathQueueRef = useRef<{ x: number; y: number }[]>([]);
   const isDialogOpenRef = useRef<boolean>(false);
-  const pathPreviewRef = useRef<PIXI.Graphics | null>(null);
   const currentTileHighlightRef = useRef<PIXI.Graphics | null>(null);
-  const particlesRef = useRef<PIXI.Graphics[]>([]);
-  const particlePoolRef = useRef<PIXI.Graphics[]>([]);
-  const processedRemoteUsersRef = useRef<Set<string>>(new Set());
   const hasJoinedSpaceRef = useRef<boolean>(false);
   const localUserIdRef = useRef<string>("");
   const lastPositionSyncRef = useRef<{ x: number; y: number; time: number }>({
@@ -74,14 +71,13 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   const mouseDownTimeRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
   const lastMouseMoveRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const lastPreviewTileRef = useRef<{ x: number; y: number } | null>(null);
 
   // CRITICAL: Track pressed keys to reduce lag from rapid key presses
   const pressedKeysRef = useRef<Set<string>>(new Set());
   const lastMovementTimeRef = useRef<number>(0);
-  const MOVEMENT_THROTTLE_MS = 100; // Max 10 moves per second = smoother than holding down
+  const MOVEMENT_THROTTLE_MS = GAME_CONFIG.MOVEMENT_THROTTLE_MS;
   const lastDragMoveRef = useRef<number>(0);
-  const DRAG_THROTTLE_MS = 150; // Throttle drag movement
+  const DRAG_THROTTLE_MS = GAME_CONFIG.DRAG_THROTTLE_MS;
 
   /**
    * Initialize scene - runs when app is ready or spaceId changes
@@ -198,21 +194,55 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           }
         }
 
-        // Find a walkable spawn position in the loaded tilemap
+        // FIXED: Find a walkable spawn position near center of map (not corner)
         let spawnPosition = userPosition;
-        if (loadedTilemap && typeof loadedTilemap === "object") {
-          for (const [tilePoint, tileData] of Object.entries(loadedTilemap)) {
-            if (
-              tileData &&
-              typeof tileData === "object" &&
-              !("object" in tileData && tileData.object) &&
-              !("impassable" in tileData && tileData.impassable)
-            ) {
-              const [x, y] = tilePoint.split(",").map(Number);
-              spawnPosition = { x, y };
-              break;
+        if (loadedTilemap && typeof loadedTilemap === "object" && space) {
+          // Try to spawn near center of map first
+          const centerX = Math.floor(space.dimensions.width / 2);
+          const centerY = Math.floor(space.dimensions.height / 2);
+
+          // Search in expanding circles from center for a walkable tile
+          let found = false;
+          for (let radius = 0; radius <= 10 && !found; radius++) {
+            for (let dx = -radius; dx <= radius && !found; dx++) {
+              for (let dy = -radius; dy <= radius && !found; dy++) {
+                if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+
+                const candidateX = centerX + dx;
+                const candidateY = centerY + dy;
+                const tileKey = `${candidateX},${candidateY}`;
+                const tileData = loadedTilemap[tileKey];
+
+                // Check if tile exists and is walkable
+                if (
+                  tileData &&
+                  typeof tileData === "object" &&
+                  !("object" in tileData && tileData.object) &&
+                  !("impassable" in tileData && tileData.impassable)
+                ) {
+                  spawnPosition = { x: candidateX, y: candidateY };
+                  found = true;
+                }
+              }
             }
           }
+
+          // Fallback to any walkable tile if center not available
+          if (!found) {
+            for (const [tilePoint, tileData] of Object.entries(loadedTilemap)) {
+              if (
+                tileData &&
+                typeof tileData === "object" &&
+                !("object" in tileData && tileData.object) &&
+                !("impassable" in tileData && tileData.impassable)
+              ) {
+                const [x, y] = tilePoint.split(",").map(Number);
+                spawnPosition = { x, y };
+                break;
+              }
+            }
+          }
+
           // Update user position if different from current
           if (spawnPosition.x !== userPosition.x || spawnPosition.y !== userPosition.y) {
             setUserPosition(spawnPosition);
@@ -259,7 +289,10 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         // ✨ Create current tile highlight (subtle glow under player)
         const tileHighlight = new PIXI.Graphics();
         tileHighlight.rect(0, 0, TILE_SIZE, TILE_SIZE);
-        tileHighlight.fill({ color: 0x3b82f6, alpha: 0.15 });
+        tileHighlight.fill({
+          color: GAME_CONFIG.COLORS.TILE_HIGHLIGHT,
+          alpha: GAME_CONFIG.COLORS.TILE_HIGHLIGHT_ALPHA,
+        });
         tileHighlight.position.set(spawnPosition.x * TILE_SIZE, spawnPosition.y * TILE_SIZE);
         layers.floor.addChild(tileHighlight);
         currentTileHighlightRef.current = tileHighlight;
@@ -287,13 +320,21 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           });
 
           // Spawn animation
-          sprite.alpha = 0;
-          sprite.scale.set(0.5);
+          sprite.alpha = GAME_CONFIG.SPAWN_ANIMATION_START_ALPHA;
+          sprite.scale.set(GAME_CONFIG.SPAWN_ANIMATION_START_SCALE);
           let spawnProgress = 0;
           const spawnAnim = () => {
-            spawnProgress += 0.08;
-            sprite.alpha = Math.min(1, spawnProgress);
-            sprite.scale.set(Math.min(1, 0.5 + spawnProgress * 0.5));
+            spawnProgress += GAME_CONFIG.SPAWN_ANIMATION_SPEED;
+            sprite.alpha = Math.min(GAME_CONFIG.SPAWN_ANIMATION_END_ALPHA, spawnProgress);
+            sprite.scale.set(
+              Math.min(
+                GAME_CONFIG.SPAWN_ANIMATION_END_SCALE,
+                GAME_CONFIG.SPAWN_ANIMATION_START_SCALE +
+                  spawnProgress *
+                    (GAME_CONFIG.SPAWN_ANIMATION_END_SCALE -
+                      GAME_CONFIG.SPAWN_ANIMATION_START_SCALE)
+              )
+            );
             if (spawnProgress < 1) requestAnimationFrame(spawnAnim);
           };
           spawnAnim();
@@ -354,10 +395,10 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
             y: currentUserPos.y + dy,
           };
 
-          if (
-            gridRendererRef.current.isValidPosition(targetPos) &&
-            !gridRendererRef.current.isAreaBlocked(targetPos)
-          ) {
+          // OPTIMIZED: Single collision check (no iteration over tiles)
+          const isBlocked = gridRendererRef.current.isAreaBlocked(targetPos);
+
+          if (!isBlocked) {
             movePlayerToTarget(targetPos, false);
           } else {
             // Play bounce animation on collision
@@ -368,27 +409,19 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
       // Update all agent sprites
       if (userAvatarRef.current) {
-        // ✨ Spawn movement particles when moving (simple juice)
-        if (userAvatarRef.current.isMoving() && Math.random() < 0.3) {
-          spawnMovementParticle(userAvatarRef.current.x, userAvatarRef.current.y);
-        }
-
         userAvatarRef.current.update(deltaTime);
 
         // Follow path automatically when close to next waypoint (smooth Gather-clone movement)
         if (pathQueueRef.current.length > 0) {
-          // Use threshold larger than movement speed (8px/frame) to prevent bounce
+          // Use threshold larger than movement speed to prevent bounce
           const distanceToTarget = userAvatarRef.current.getDistanceToTarget();
-          const hasReachedWaypoint = distanceToTarget <= 10; // Larger than movementSpeed (8px) for smooth transitions
+          const hasReachedWaypoint = distanceToTarget <= GAME_CONFIG.WAYPOINT_REACHED_DISTANCE;
 
           if (hasReachedWaypoint) {
             const nextPos = pathQueueRef.current.shift();
             if (nextPos && gridRendererRef.current) {
-              // CRITICAL: Validate next position is valid AND not blocked (using area collision for character size)
-              if (
-                gridRendererRef.current.isValidPosition(nextPos) &&
-                !gridRendererRef.current.isAreaBlocked(nextPos)
-              ) {
+              // OPTIMIZED: Single collision check (isAreaBlocked already validates bounds)
+              if (!gridRendererRef.current.isAreaBlocked(nextPos)) {
                 userAvatarRef.current.setTargetGridPosition(nextPos);
                 setUserPosition(nextPos);
                 proximityCircleRef.current?.update(nextPos);
@@ -556,8 +589,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
     if (!pathfinder || !gridRenderer) return;
 
-    // CRITICAL: Validate target is within bounds AND not blocked (using area collision for character size)
-    if (!gridRenderer.isValidPosition(targetGridPos) || gridRenderer.isAreaBlocked(targetGridPos)) {
+    // OPTIMIZED: Single collision check (isAreaBlocked validates bounds internally)
+    if (gridRenderer.isAreaBlocked(targetGridPos)) {
       return;
     }
 
@@ -616,85 +649,13 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   };
 
   /**
-   * ✨ Get particle from pool or create new
-   */
-  const acquireParticle = (): PIXI.Graphics => {
-    const particle = particlePoolRef.current.pop();
-    if (particle) {
-      particle.clear();
-      particle.alpha = 1;
-      particle.visible = true;
-      return particle;
-    }
-    return new PIXI.Graphics();
-  };
-
-  /**
-   * ✨ Return particle to pool
-   */
-  const releaseParticle = (particle: PIXI.Graphics) => {
-    particle.visible = false;
-    if (particlePoolRef.current.length < 100) {
-      particlePoolRef.current.push(particle);
-    } else {
-      particle.destroy();
-    }
-  };
-
-  /**
-   * ✨ Spawn movement particle (pooled & optimized)
-   */
-  const spawnMovementParticle = (x: number, y: number) => {
-    const gridRenderer = gridRendererRef.current;
-    if (!gridRenderer) return;
-
-    const particle = acquireParticle();
-    const size = 2 + Math.random() * 2;
-    particle.circle(0, 0, size);
-    particle.fill({ color: 0x888888, alpha: 0.4 });
-    particle.position.set(x + (Math.random() - 0.5) * 8, y + (Math.random() - 0.5) * 8);
-
-    const objectLayer = gridRenderer.getLayer("floor");
-    objectLayer.addChild(particle);
-    particlesRef.current.push(particle);
-
-    let alpha = 0.4;
-    let scale = 1;
-    const animate = () => {
-      alpha -= 0.04;
-      scale += 0.1;
-
-      particle.alpha = alpha;
-      particle.scale.set(scale);
-
-      if (alpha > 0) {
-        requestAnimationFrame(animate);
-      } else {
-        objectLayer.removeChild(particle);
-        const idx = particlesRef.current.indexOf(particle);
-        if (idx > -1) particlesRef.current.splice(idx, 1);
-        releaseParticle(particle);
-      }
-    };
-    animate();
-
-    if (particlesRef.current.length > 30) {
-      const oldParticle = particlesRef.current.shift();
-      if (oldParticle) {
-        objectLayer.removeChild(oldParticle);
-        releaseParticle(oldParticle);
-      }
-    }
-  };
-
-  /**
    * ✨ Collision bounce + camera shake (GSAP-powered)
    */
   const createCollisionBounce = (dx: number, dy: number) => {
     const userAvatar = userAvatarRef.current;
     if (!userAvatar || !stage) return;
 
-    const bounceDistance = 4;
+    const bounceDistance = GAME_CONFIG.COLLISION_BOUNCE_DISTANCE;
     const originalX = userAvatar.x;
     const originalY = userAvatar.y;
     const bounceX = originalX - dx * bounceDistance;
@@ -703,7 +664,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     // Camera shake properties
     const originalPivotX = cameraPositionRef.current.x;
     const originalPivotY = cameraPositionRef.current.y;
-    const shakeAmount = 3;
+    const shakeAmount = GAME_CONFIG.COLLISION_SHAKE_AMOUNT;
 
     // Bounce sprite with elastic ease
     gsap.to(userAvatar, {
@@ -775,89 +736,6 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   }, [initialized]);
 
   /**
-   * ✨ Show path preview on hover (juicy microinteraction)
-   */
-  const showPathPreview = (targetGridPos: { x: number; y: number }) => {
-    const pathfinder = pathfinderRef.current;
-    const gridRenderer = gridRendererRef.current;
-
-    if (!pathfinder || !gridRenderer) return;
-
-    // Remove old preview
-    if (pathPreviewRef.current) {
-      const objectLayer = gridRenderer.getLayer("object");
-      objectLayer.removeChild(pathPreviewRef.current);
-      pathPreviewRef.current.destroy();
-      pathPreviewRef.current = null;
-    }
-
-    // Check if target is valid (using area collision for character size)
-    const isBlocked = gridRenderer.isAreaBlocked(targetGridPos);
-    let actualTarget = targetGridPos;
-
-    if (isBlocked) {
-      const nearestWalkable = gridRenderer.getNearestWalkable(targetGridPos, 3);
-      if (!nearestWalkable) return; // Can't reach
-      actualTarget = nearestWalkable;
-    }
-
-    // Find path
-    const path = pathfinder.findPath(userPosition, actualTarget);
-    if (path.length === 0) return;
-
-    // Draw path preview
-    const preview = new PIXI.Graphics();
-    preview.alpha = 0.4;
-
-    // Draw dotted line along path
-    const allPoints = [userPosition, ...path];
-    for (let i = 0; i < allPoints.length - 1; i++) {
-      const from = allPoints[i];
-      const to = allPoints[i + 1];
-
-      const fromX = from.x * TILE_SIZE + TILE_SIZE / 2;
-      const fromY = from.y * TILE_SIZE + TILE_SIZE / 2;
-      const toX = to.x * TILE_SIZE + TILE_SIZE / 2;
-      const toY = to.y * TILE_SIZE + TILE_SIZE / 2;
-
-      // Dotted line effect
-      const dist = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
-      const segments = Math.ceil(dist / 8);
-
-      for (let s = 0; s < segments; s += 2) {
-        const t1 = s / segments;
-        const t2 = Math.min((s + 1) / segments, 1);
-
-        const x1 = fromX + (toX - fromX) * t1;
-        const y1 = fromY + (toY - fromY) * t1;
-        const x2 = fromX + (toX - fromX) * t2;
-        const y2 = fromY + (toY - fromY) * t2;
-
-        preview.moveTo(x1, y1);
-        preview.lineTo(x2, y2);
-      }
-    }
-
-    preview.stroke({ color: 0x3b82f6, width: 2 });
-
-    const objectLayer = gridRenderer.getLayer("object");
-    objectLayer.addChild(preview);
-    pathPreviewRef.current = preview;
-  };
-
-  /**
-   * ✨ Clear path preview
-   */
-  const clearPathPreview = () => {
-    if (!pathPreviewRef.current || !gridRendererRef.current) return;
-
-    const objectLayer = gridRendererRef.current.getLayer("object");
-    objectLayer.removeChild(pathPreviewRef.current);
-    pathPreviewRef.current.destroy();
-    pathPreviewRef.current = null;
-  };
-
-  /**
    * Handle canvas click to move player (left click only) + ripple effect
    */
   useEffect(() => {
@@ -905,22 +783,16 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
             y: Math.floor(worldY / TILE_SIZE),
           };
 
-          clearPathPreview();
-
           const gridRenderer = gridRendererRef.current;
-          const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
-
-          if (isBlocked) {
+          if (!gridRenderer?.isAreaBlocked(targetGridPos)) {
+            createClickRipple(worldX, worldY);
+            movePlayerToTarget(targetGridPos);
+          } else {
             const nearestWalkable = gridRenderer?.getNearestWalkable(targetGridPos, 3);
             if (nearestWalkable) {
               createClickRipple(worldX, worldY);
               movePlayerToTarget(nearestWalkable);
-            } else {
-              createBlockedIndicator(worldX, worldY);
             }
-          } else {
-            createClickRipple(worldX, worldY);
-            movePlayerToTarget(targetGridPos);
           }
         }
       };
@@ -977,9 +849,6 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         }
 
         lastMouseMoveRef.current = { x: screenX, y: screenY };
-        // Path preview disabled for cleaner aesthetic - user prefers minimal UI
-        // Only show destination circle indicator
-        clearPathPreview();
       };
 
       // Click ripple effect (success) - dual ring
@@ -1085,7 +954,6 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
         const screenX = touch.clientX - rect.left;
         const screenY = touch.clientY - rect.top;
-        // Convert screen coordinates to world coordinates
         const worldX = (screenX + cameraPositionRef.current.x) / scaleRef.current;
         const worldY = (screenY + cameraPositionRef.current.y) / scaleRef.current;
 
@@ -1094,22 +962,16 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           y: Math.floor(worldY / TILE_SIZE),
         };
 
-        clearPathPreview();
-
         const gridRenderer = gridRendererRef.current;
-        const isBlocked = gridRenderer?.isAreaBlocked(targetGridPos) ?? false;
-
-        if (isBlocked) {
+        if (!gridRenderer?.isAreaBlocked(targetGridPos)) {
+          createClickRipple(worldX, worldY);
+          movePlayerToTarget(targetGridPos);
+        } else {
           const nearestWalkable = gridRenderer?.getNearestWalkable(targetGridPos, 3);
           if (nearestWalkable) {
             createClickRipple(worldX, worldY);
             movePlayerToTarget(nearestWalkable);
-          } else {
-            createBlockedIndicator(worldX, worldY);
           }
-        } else {
-          createClickRipple(worldX, worldY);
-          movePlayerToTarget(targetGridPos);
         }
       };
 
@@ -1131,7 +993,6 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         canvas.removeEventListener("contextmenu", handleContextMenu);
         canvas.removeEventListener("dblclick", handleDoubleClick);
         canvas.removeEventListener("touchstart", handleTouchStart);
-        clearPathPreview();
       };
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -1397,18 +1258,6 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
           if (progress < 1) requestAnimationFrame(spawn);
         };
         spawn();
-
-        // Spawn particles
-        for (let i = 0; i < 8; i++) {
-          setTimeout(() => {
-            const angle = (i / 8) * Math.PI * 2;
-            const dist = 16;
-            spawnMovementParticle(
-              agent.position.x * TILE_SIZE + Math.cos(angle) * dist,
-              agent.position.y * TILE_SIZE + Math.sin(angle) * dist
-            );
-          }, i * 30);
-        }
 
         layers.object.addChild(sprite);
         agentSpritesRef.current.set(agent.id, sprite);

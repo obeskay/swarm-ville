@@ -102,7 +102,7 @@ export function MorseVisualizer({ className = "", initialText = "" }: MorseVisua
                 ${symbol === '.' ? 'w-2 h-2' : 'w-6 h-2'}
                 rounded-full
                 ${isActive
-                  ? 'bg-foreground scale-125 shadow-soft-lg'
+                  ? 'bg-foreground scale-125 shadow-md'
                   : isPast
                     ? 'bg-foreground/40'
                     : 'bg-foreground/60'

@@ -53,7 +53,6 @@ export function SpaceGrid() {
         <Button
           size="lg"
           onClick={() => setShowCreation(true)}
-          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
         >
           <Plus className="w-5 h-5 mr-2" />
           Create Space
@@ -63,7 +62,7 @@ export function SpaceGrid() {
       {/* Grid or Empty State */}
       {spaces.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 px-4">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 shadow-soft">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 shadow-sm">
             <Sparkles className="w-10 h-10 text-primary" />
           </div>
           <h2 className="text-2xl font-bold mb-3">No spaces yet</h2>
@@ -74,7 +73,6 @@ export function SpaceGrid() {
           <Button
             size="lg"
             onClick={() => setShowCreation(true)}
-            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
           >
             <Sparkles className="w-5 h-5 mr-2" />
             Create First Space

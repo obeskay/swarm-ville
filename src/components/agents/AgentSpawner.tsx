@@ -178,7 +178,7 @@ export default function AgentSpawner({ spaceId, spriteId, onClose }: AgentSpawne
     }));
 
     // Celebration!
-    toast.success(`${agentName} joined your team! 🎉`);
+    toast.success(`${agentName} joined the space! 🎉`);
 
     setCreating(false);
     handleClose();

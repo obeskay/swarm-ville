@@ -78,7 +78,7 @@ export function AchievementsPanel() {
       <Card variant="yellow" padding="lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-soft">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
               <Trophy className="w-8 h-8 text-primary-foreground" />
             </div>
             <div>

@@ -15,7 +15,6 @@ import {
   type StreakData,
 } from "@/lib/achievements/AchievementEventTracker";
 import type { Achievement, GameEvent } from "@/types/achievements";
-import { toast } from "sonner";
 
 interface AchievementSystemState {
   metrics: AchievementMetrics | null;
@@ -60,7 +59,6 @@ export function useAchievementSystem() {
       console.log("🎮 Achievement system initialized", { metrics });
     } catch (error) {
       console.error("Failed to initialize achievement system:", error);
-      toast.error("Failed to initialize achievement system");
     }
   }, [store]);
 
@@ -84,14 +82,6 @@ export function useAchievementSystem() {
         // Award XP if applicable
         if (totalXp > 0) {
           await store.addXP(totalXp, `Event: ${event}`);
-
-          // Show streak bonus notification if significant
-          if (streakBonus > 1) {
-            toast.success(`🔥 +${Math.round((streakBonus - 1) * 100)}% streak bonus!`, {
-              description: `${streak?.currentStreak} day streak`,
-              icon: "⚡",
-            });
-          }
         }
 
         // Check for newly unlockable achievements
@@ -108,7 +98,6 @@ export function useAchievementSystem() {
         };
       } catch (error) {
         console.error("Failed to track event:", error);
-        toast.error("Failed to track event");
         return { success: false };
       }
     },
@@ -131,13 +120,6 @@ export function useAchievementSystem() {
         // Unlock achievement
         await store.unlockAchievement(achievement.id);
         analyticsRef.current.recordAchievementUnlock(achievement.id);
-
-        // Show celebration notification
-        toast.success(`🏆 Achievement Unlocked: ${achievement.id}`, {
-          description: `+${achievement.xpReward} XP • ${achievement.rarity}`,
-          icon: achievement.icon,
-          duration: 5000,
-        });
 
         // Update metrics
         updateMetrics();
@@ -171,15 +153,6 @@ export function useAchievementSystem() {
         const totalXp = Math.floor(baseXp * streakBonus);
 
         await store.addXP(totalXp, "Daily login bonus");
-
-        // Show bonus milestone if reached
-        if (bonusInfo.current) {
-          toast.success(`🎁 Daily Bonus: ${bonusInfo.current.description}`, {
-            description: `${loginStreak} day streak • +${totalXp} XP (x${streakBonus.toFixed(1)})`,
-            icon: "🔥",
-            duration: 5000,
-          });
-        }
 
         // Show next milestone progress
         if (bonusInfo.next) {

@@ -5,6 +5,7 @@ use std::path::PathBuf;
 #[serde(rename_all = "lowercase")]
 pub enum CLIType {
     Claude,
+    ClaudeCode,
     Gemini,
     OpenAI,
     Custom(String),

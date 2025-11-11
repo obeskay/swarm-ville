@@ -150,7 +150,6 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
     const { userId, progress } = get();
     if (!progress) {
       console.error("Cannot add XP: No progress found");
-      toast.error("Achievement system not initialized");
       return;
     }
 
@@ -217,10 +216,8 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
       // Check for newly unlockable achievements
       await get().checkAndUnlockAchievements();
     } catch (error) {
-      console.error("[Achievement] Failed to add XP - Detailed Error:", {
+      console.error("[Achievement] Failed to add XP:", {
         error,
-        message: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : undefined,
         userId,
         amount,
         reason,
@@ -230,9 +227,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
         error: errorMessage,
         loading: false,
       });
-      toast.error(`Failed to add XP: ${errorMessage}`, {
-        description: "Check console for details",
-      });
+      toast.error("Failed to award XP");
     }
   },
 
@@ -272,6 +267,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
       // Check for newly unlockable achievements
       await get().checkAndUnlockAchievements();
     } catch (error) {
+      console.error("Failed to complete mission:", error);
       set({
         error: error instanceof Error ? error.message : "Failed to complete mission",
         loading: false,
@@ -316,6 +312,7 @@ export const useAchievementStore = create<AchievementStore>((set, get) => ({
         await get().addXP(achievement.xpReward, achievement.id);
       }
     } catch (error) {
+      console.error("Failed to unlock achievement:", error);
       set({
         error: error instanceof Error ? error.message : "Failed to unlock achievement",
         loading: false,

@@ -3,11 +3,12 @@ import gsap from "gsap";
 import { Position } from "../types";
 import { ObjectPool } from "./ObjectPool";
 import { CharacterTextureLoader } from "./CharacterTextureLoader";
+import { GAME_CONFIG } from "../game-config";
 import characterSpriteSheetData from "./CharacterSpriteSheetData";
 
-const TILE_SIZE = 32;
-const SPRITE_SIZE = 48; // Each frame is 48x48 (4x4 grid in 192x192 spritesheet)
-const SPRITE_SCALE = 2.0; // 2x size (96x96) for better visibility
+const TILE_SIZE = GAME_CONFIG.TILE_SIZE;
+const SPRITE_SIZE = GAME_CONFIG.CHARACTER_SPRITE_SIZE;
+const SPRITE_SCALE = GAME_CONFIG.CHARACTER_SPRITE_SCALE;
 
 /**
  * Pool de Graphics para reutilizar círculos de proximidad
@@ -54,10 +55,10 @@ export class CharacterSprite extends PIXI.Container {
 
   // Movement state
   private targetPixelPosition: { x: number; y: number } | null = null;
-  private movementSpeed: number = 4; // pixels per frame (32px tile takes ~8 frames = 133ms at 60fps - smooth like Gather)
+  private movementSpeed: number = GAME_CONFIG.CHARACTER_MOVEMENT_SPEED; // pixels per frame
   private currentDirection: Direction = Direction.DOWN;
   private currentFrame: number = 0;
-  private animationSpeed: number = 0.15; // Frames per tick
+  private animationSpeed: number = GAME_CONFIG.CHARACTER_ANIMATION_SPEED;
   private characterId: number;
 
   // Interaction
@@ -68,7 +69,10 @@ export class CharacterSprite extends PIXI.Container {
    * Must be called after construction
    */
   public async init(): Promise<void> {
-    const clampedId = Math.max(1, Math.min(83, this.characterId));
+    const clampedId = Math.max(
+      GAME_CONFIG.CHARACTER_MIN_ID,
+      Math.min(GAME_CONFIG.CHARACTER_MAX_ID, this.characterId)
+    );
     const paddedId = String(clampedId).padStart(3, "0");
     const src = `/sprites/characters/Character_${paddedId}.png`;
 
@@ -134,8 +138,11 @@ export class CharacterSprite extends PIXI.Container {
     this.pixelPosition = this.gridToPixel(gridPosition);
 
     // Load character sprite sheet from preloaded cache
-    // Clamp characterId to valid range (1-83)
-    const clampedId = Math.max(1, Math.min(83, characterId));
+    // Clamp characterId to valid range
+    const clampedId = Math.max(
+      GAME_CONFIG.CHARACTER_MIN_ID,
+      Math.min(GAME_CONFIG.CHARACTER_MAX_ID, characterId)
+    );
 
     // Get preloaded texture from CharacterTextureLoader
     let texture = CharacterTextureLoader.getCharacterTexture(clampedId);
@@ -171,21 +178,32 @@ export class CharacterSprite extends PIXI.Container {
     this.nameText = new PIXI.Text({
       text: name,
       style: {
-        fontSize: 10,
-        fill: 0xffffff,
+        fontSize: GAME_CONFIG.CHARACTER_TEXT_FONT_SIZE,
+        fill: GAME_CONFIG.CHARACTER_TEXT_FILL,
         align: "center",
         fontWeight: "bold",
-        stroke: { color: 0x000000, width: 2 },
+        stroke: {
+          color: GAME_CONFIG.CHARACTER_TEXT_STROKE_COLOR,
+          width: GAME_CONFIG.CHARACTER_TEXT_STROKE_WIDTH,
+        },
       },
       resolution: 2, // High DPI rendering
     });
     this.nameText.anchor.set(0.5);
-    this.nameText.y = -TILE_SIZE - 8;
+    this.nameText.y = -TILE_SIZE - GAME_CONFIG.CHARACTER_TEXT_OFFSET_Y;
 
     // Obtener proximity indicator del pool
     this.proximityIndicator = graphicsPool.acquire();
-    this.proximityIndicator.circle(0, 0, TILE_SIZE / 2 + 4);
-    this.proximityIndicator.stroke({ color: 0x10b981, width: 2, alpha: 0.6 });
+    this.proximityIndicator.circle(
+      0,
+      0,
+      TILE_SIZE / 2 + GAME_CONFIG.CHARACTER_PROXIMITY_INDICATOR_OFFSET
+    );
+    this.proximityIndicator.stroke({
+      color: GAME_CONFIG.CHARACTER_PROXIMITY_INDICATOR_COLOR,
+      width: GAME_CONFIG.CHARACTER_PROXIMITY_INDICATOR_WIDTH,
+      alpha: GAME_CONFIG.CHARACTER_PROXIMITY_INDICATOR_ALPHA,
+    });
     this.proximityIndicator.visible = false;
     this.proximityIndicator.zIndex = -1; // Behind the sprite
 
@@ -211,37 +229,41 @@ export class CharacterSprite extends PIXI.Container {
 
         // Smooth hover animation
         gsap.to(this.sprite.scale, {
-          x: SPRITE_SCALE * 1.15,
-          y: SPRITE_SCALE * 1.15,
-          duration: 0.2,
+          x: SPRITE_SCALE * GAME_CONFIG.CHARACTER_HOVER_SCALE,
+          y: SPRITE_SCALE * GAME_CONFIG.CHARACTER_HOVER_SCALE,
+          duration: GAME_CONFIG.CHARACTER_HOVER_DURATION,
           ease: "back.out",
         });
 
         // Name text pop animation
         gsap.to(this.nameText, {
-          scaleX: 1.1,
-          scaleY: 1.1,
-          duration: 0.2,
+          scaleX: GAME_CONFIG.CHARACTER_HOVER_TEXT_SCALE,
+          scaleY: GAME_CONFIG.CHARACTER_HOVER_TEXT_SCALE,
+          duration: GAME_CONFIG.CHARACTER_HOVER_DURATION,
           ease: "elastic.out",
         });
 
         // Show proximity indicator with fade in
         this.proximityIndicator.visible = true;
         this.proximityIndicator.clear();
-        this.proximityIndicator.circle(0, 0, TILE_SIZE / 2 + 6);
+        this.proximityIndicator.circle(
+          0,
+          0,
+          TILE_SIZE / 2 + GAME_CONFIG.CHARACTER_PROXIMITY_CIRCLE_HOVER_OFFSET
+        );
         this.proximityIndicator.stroke({
-          color: 0x60a5fa,
-          width: 3,
+          color: GAME_CONFIG.CHARACTER_PROXIMITY_CIRCLE_HOVER_COLOR,
+          width: GAME_CONFIG.CHARACTER_PROXIMITY_CIRCLE_HOVER_WIDTH,
           alpha: 0,
         });
 
         gsap.to(this.proximityIndicator.stroke, {
-          alpha: 0.8,
+          alpha: GAME_CONFIG.CHARACTER_PROXIMITY_CIRCLE_HOVER_ALPHA,
           duration: 0.15,
         });
 
         // Color tint animation
-        this.nameText.style.fill = 0x60a5fa;
+        this.nameText.style.fill = GAME_CONFIG.CHARACTER_PROXIMITY_CIRCLE_HOVER_COLOR;
       });
 
       // ✨ Unhover: Smooth reset
@@ -254,7 +276,7 @@ export class CharacterSprite extends PIXI.Container {
         gsap.to(this.sprite.scale, {
           x: SPRITE_SCALE,
           y: SPRITE_SCALE,
-          duration: 0.2,
+          duration: GAME_CONFIG.CHARACTER_HOVER_DURATION,
           ease: "back.out",
         });
 
@@ -262,7 +284,7 @@ export class CharacterSprite extends PIXI.Container {
         gsap.to(this.nameText, {
           scaleX: 1,
           scaleY: 1,
-          duration: 0.2,
+          duration: GAME_CONFIG.CHARACTER_HOVER_DURATION,
           ease: "back.out",
         });
 
@@ -282,7 +304,7 @@ export class CharacterSprite extends PIXI.Container {
         });
 
         // Color reset
-        this.nameText.style.fill = 0xffffff;
+        this.nameText.style.fill = GAME_CONFIG.CHARACTER_TEXT_FILL;
       });
 
       // ✨ Click: Bounce + squeeze effect with GSAP
@@ -291,25 +313,25 @@ export class CharacterSprite extends PIXI.Container {
 
         // Squeeze animation on click
         gsap.to(this.sprite.scale, {
-          x: SPRITE_SCALE * 0.8,
-          y: SPRITE_SCALE * 1.1,
-          duration: 0.1,
+          x: SPRITE_SCALE * GAME_CONFIG.CHARACTER_CLICK_SCALE_X,
+          y: SPRITE_SCALE * GAME_CONFIG.CHARACTER_CLICK_SCALE_Y,
+          duration: GAME_CONFIG.CHARACTER_CLICK_DURATION,
           ease: "power2.in",
         });
 
         // Spring back animation
         gsap.to(this.sprite.scale, {
-          x: SPRITE_SCALE * (isHovered ? 1.15 : 1),
-          y: SPRITE_SCALE * (isHovered ? 1.15 : 1),
-          duration: 0.3,
-          delay: 0.1,
+          x: SPRITE_SCALE * (isHovered ? GAME_CONFIG.CHARACTER_HOVER_SCALE : 1),
+          y: SPRITE_SCALE * (isHovered ? GAME_CONFIG.CHARACTER_HOVER_SCALE : 1),
+          duration: GAME_CONFIG.CHARACTER_SPRING_BACK_DURATION,
+          delay: GAME_CONFIG.CHARACTER_SPRING_BACK_DELAY,
           ease: "elastic.out",
         });
 
         // Bounce effect with slight rotation
         gsap.to(this.sprite, {
-          rotation: 0.05,
-          duration: 0.1,
+          rotation: GAME_CONFIG.CHARACTER_BOUNCE_ROTATION,
+          duration: GAME_CONFIG.CHARACTER_BOUNCE_DURATION,
           yoyo: true,
           repeat: 1,
         });
@@ -324,11 +346,17 @@ export class CharacterSprite extends PIXI.Container {
           const rect = this.getBounds();
           const centerX = rect.x + rect.width / 2;
           const relativeX = event.global.x - centerX;
-          const tilt = Math.max(-0.1, Math.min(0.1, relativeX / 100));
+          const tilt = Math.max(
+            -GAME_CONFIG.CHARACTER_TILT_MAX_ANGLE,
+            Math.min(
+              GAME_CONFIG.CHARACTER_TILT_MAX_ANGLE,
+              relativeX / GAME_CONFIG.CHARACTER_TILT_DIVISOR
+            )
+          );
 
           gsap.to(this.sprite, {
             skewX: tilt,
-            duration: 0.15,
+            duration: GAME_CONFIG.CHARACTER_TILT_DURATION,
             ease: "power2.out",
           });
         }
@@ -338,8 +366,8 @@ export class CharacterSprite extends PIXI.Container {
       this.on("pointerdown", () => {
         isDragging = true;
         gsap.to(this, {
-          alpha: 0.8,
-          duration: 0.1,
+          alpha: GAME_CONFIG.CHARACTER_DRAG_ALPHA,
+          duration: GAME_CONFIG.CHARACTER_DRAG_DURATION,
         });
       });
 
@@ -362,7 +390,7 @@ export class CharacterSprite extends PIXI.Container {
           isDragging = false;
           gsap.to(this, {
             alpha: 1,
-            duration: 0.2,
+            duration: GAME_CONFIG.CHARACTER_DRAG_RESTORE_DURATION,
             ease: "back.out",
           });
         }
@@ -372,9 +400,9 @@ export class CharacterSprite extends PIXI.Container {
       this.on("touchstart", () => {
         isHovered = true;
         gsap.to(this.sprite.scale, {
-          x: SPRITE_SCALE * 1.2,
-          y: SPRITE_SCALE * 1.2,
-          duration: 0.15,
+          x: SPRITE_SCALE * GAME_CONFIG.CHARACTER_TOUCH_SCALE,
+          y: SPRITE_SCALE * GAME_CONFIG.CHARACTER_TOUCH_SCALE,
+          duration: GAME_CONFIG.CHARACTER_TOUCH_DURATION,
           ease: "back.out",
         });
       });
@@ -384,7 +412,7 @@ export class CharacterSprite extends PIXI.Container {
         gsap.to(this.sprite.scale, {
           x: SPRITE_SCALE,
           y: SPRITE_SCALE,
-          duration: 0.2,
+          duration: GAME_CONFIG.CHARACTER_HOVER_DURATION,
           ease: "back.out",
         });
       });
@@ -534,17 +562,17 @@ export class CharacterSprite extends PIXI.Container {
 
         // ✨ Squash/stretch effect during movement (simple juice)
         // Slightly stretch in movement direction, squash perpendicular
-        const stretchAmount = 0.08; // Subtle effect
+        const stretchAmount = GAME_CONFIG.CHARACTER_MOVEMENT_STRETCH_AMOUNT;
         if (this.currentDirection === Direction.LEFT || this.currentDirection === Direction.RIGHT) {
           // Horizontal movement: stretch horizontally, squash vertically
           this.sprite.scale.set(
             SPRITE_SCALE * (1 + stretchAmount),
-            SPRITE_SCALE * (1 - stretchAmount * 0.5)
+            SPRITE_SCALE * (1 - stretchAmount * GAME_CONFIG.CHARACTER_MOVEMENT_STRETCH_Y_SCALE)
           );
         } else {
           // Vertical movement: squash horizontally, stretch vertically
           this.sprite.scale.set(
-            SPRITE_SCALE * (1 - stretchAmount * 0.5),
+            SPRITE_SCALE * (1 - stretchAmount * GAME_CONFIG.CHARACTER_MOVEMENT_STRETCH_Y_SCALE),
             SPRITE_SCALE * (1 + stretchAmount)
           );
         }
@@ -639,8 +667,11 @@ export class CharacterSprite extends PIXI.Container {
    * Set character sprite (change appearance)
    */
   public setCharacter(characterId: number): void {
-    // Clamp characterId to valid range (1-83)
-    const clampedId = Math.max(1, Math.min(83, characterId));
+    // Clamp characterId to valid range
+    const clampedId = Math.max(
+      GAME_CONFIG.CHARACTER_MIN_ID,
+      Math.min(GAME_CONFIG.CHARACTER_MAX_ID, characterId)
+    );
 
     // Get preloaded texture from CharacterTextureLoader
     let texture = CharacterTextureLoader.getCharacterTexture(clampedId);

@@ -10,17 +10,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-soft hover:shadow-soft-lg hover:bg-primary/90 active:scale-[0.98]",
+          "bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:bg-primary/90 active:scale-[0.98]",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-soft hover:shadow-soft-lg hover:bg-destructive/90 active:scale-[0.98]",
+          "bg-destructive text-destructive-foreground shadow-sm hover:shadow-md hover:bg-destructive/90 active:scale-[0.98]",
         outline:
           "border-2 border-foreground/10 bg-background hover:bg-foreground/5 hover:border-foreground/20",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-soft hover:shadow-soft-lg hover:bg-secondary/80 active:scale-[0.98]",
+          "bg-secondary text-secondary-foreground shadow-sm hover:shadow-md hover:bg-secondary/80 active:scale-[0.98]",
         ghost: "hover:bg-foreground/5",
         link: "text-primary underline-offset-4 hover:underline",
-        yellow: "bg-[hsl(var(--card-accent))] text-foreground shadow-soft hover:shadow-soft-lg hover:brightness-95 active:scale-[0.98]",
-        blue: "bg-[hsl(var(--card-accent-light))] text-foreground shadow-soft hover:shadow-soft-lg hover:brightness-95 active:scale-[0.98]",
+        yellow: "bg-[hsl(var(--card-accent))] text-foreground shadow-sm hover:shadow-md hover:brightness-95 active:scale-[0.98]",
+        blue: "bg-[hsl(var(--card-accent-light))] text-foreground shadow-sm hover:shadow-md hover:brightness-95 active:scale-[0.98]",
       },
       size: {
         default: "h-11 px-6 py-3",

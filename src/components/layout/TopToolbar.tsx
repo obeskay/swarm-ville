@@ -1,4 +1,4 @@
-import { Wallet, Plus, Sparkles, Zap, Bot } from "lucide-react";
+import { Wallet, Plus, Sparkles, Zap, Bot, Grid3x3 } from "lucide-react";
 import { ThemeToggle } from "../theme-toggle";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
@@ -19,9 +19,17 @@ import { useAchievementStore } from "../../stores/achievementStore";
 import { useState, useEffect } from "react";
 import SpriteGeneratorDialog from "../ai/SpriteGeneratorDialog";
 import { SpaceCreationDialog } from "../space/SpaceCreationDialog";
+import { SpaceGrid } from "../space/SpaceGrid";
 import { useToolbarUIConfig } from "@/hooks/useUIConfig";
 import { useThemeConfig } from "@/hooks/useThemeConfig";
 import { useToolbarConfig } from "@/hooks/useLayoutConfig";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 export function TopToolbar() {
   const { currentSpaceId, spaces, agents } = useSpaceStore();
@@ -37,6 +45,7 @@ export function TopToolbar() {
   const activeMissionsCount = Object.values(missions).filter((m) => !m.completed).length;
   const [showSpriteGenerator, setShowSpriteGenerator] = useState(false);
   const [showSpaceCreation, setShowSpaceCreation] = useState(false);
+  const [showSpaceGrid, setShowSpaceGrid] = useState(false);
 
   // Initialize achievement system
   useEffect(() => {
@@ -70,7 +79,7 @@ export function TopToolbar() {
         className="px-4 flex items-center justify-between"
       >
         {/* Left Section: Space Info + Missions Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {/* Missions Toggle (when collapsed) */}
           {leftSidebarCollapsed && (
             <Tooltip>
@@ -162,6 +171,23 @@ export function TopToolbar() {
 
           <Separator orientation="vertical" className="h-4 mx-1" />
 
+          {/* Spaces Button - Browse all spaces like gather-clone */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSpaceGrid(true)}
+                className="h-8 w-8"
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Browse Spaces</p>
+            </TooltipContent>
+          </Tooltip>
+
           {/* Actions Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -214,6 +240,21 @@ export function TopToolbar() {
       {showSpaceCreation && (
         <SpaceCreationDialog open={showSpaceCreation} onClose={() => setShowSpaceCreation(false)} />
       )}
+
+      {/* Space Grid Modal - Browse all spaces like gather-clone */}
+      <Dialog open={showSpaceGrid} onClose={() => setShowSpaceGrid(false)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto p-0">
+          <div className="p-8">
+            <DialogHeader className="mb-6">
+              <DialogTitle className="text-3xl">Your Spaces</DialogTitle>
+              <DialogDescription>
+                Browse and manage your collaborative workspaces
+              </DialogDescription>
+            </DialogHeader>
+            <SpaceGrid />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Sprite Generator Dialog */}
       {showSpriteGenerator && (

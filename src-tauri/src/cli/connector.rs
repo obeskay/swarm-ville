@@ -25,6 +25,7 @@ impl CLIConnector {
             .iter()
             .any(|cli| match (cli_type, &cli.cli_type) {
                 (CLIType::Claude, CLIType::Claude) => true,
+                (CLIType::ClaudeCode, CLIType::Claude) => true, // ClaudeCode uses Claude CLI
                 (CLIType::Gemini, CLIType::Gemini) => true,
                 (CLIType::OpenAI, CLIType::OpenAI) => true,
                 (CLIType::Custom(a), CLIType::Custom(b)) => a == b,
@@ -42,6 +43,7 @@ impl CLIConnector {
             .iter()
             .find(|c| match (cli_type, &c.cli_type) {
                 (CLIType::Claude, CLIType::Claude) => true,
+                (CLIType::ClaudeCode, CLIType::Claude) => true, // ClaudeCode uses Claude CLI
                 (CLIType::Gemini, CLIType::Gemini) => true,
                 (CLIType::OpenAI, CLIType::OpenAI) => true,
                 (CLIType::Custom(a), CLIType::Custom(b)) => a == b,
@@ -53,6 +55,7 @@ impl CLIConnector {
 
         let output = match cli_type {
             CLIType::Claude => self.execute_claude(cli, &command).await?,
+            CLIType::ClaudeCode => self.execute_claude(cli, &command).await?, // ClaudeCode uses same execution as Claude
             CLIType::Gemini => self.execute_gemini(cli, &command).await?,
             CLIType::OpenAI => self.execute_openai(cli, &command).await?,
             CLIType::Custom(_) => {

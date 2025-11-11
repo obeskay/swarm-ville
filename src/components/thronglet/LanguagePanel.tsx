@@ -87,7 +87,7 @@ export function LanguagePanel({
           <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Vocabulary Stats Grid */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-[calc(var(--radius)*0.66)] bg-background/50 shadow-soft">
+              <div className="p-4 rounded-[calc(var(--radius)*0.66)] bg-background/50 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <BookOpen className="w-4 h-4 text-foreground/70" />
                   <span className="text-xs text-foreground/70">Vocabulary</span>
@@ -95,7 +95,7 @@ export function LanguagePanel({
                 <div className="text-2xl font-bold">{languageState?.vocabulary_size || 0}</div>
               </div>
 
-              <div className="p-4 rounded-[calc(var(--radius)*0.66)] bg-background/50 shadow-soft">
+              <div className="p-4 rounded-[calc(var(--radius)*0.66)] bg-background/50 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4 text-foreground/70" />
                   <span className="text-xs text-foreground/70">Total Taught</span>

@@ -214,7 +214,7 @@ export function TeachingInterface({
                 {associations.map((association, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 rounded-[calc(var(--radius)*0.5)] bg-background/50 hover:bg-background/70 transition-all shadow-soft"
+                    className="flex items-center justify-between p-3 rounded-[calc(var(--radius)*0.5)] bg-background/50 hover:bg-background/70 transition-all shadow-sm"
                   >
                     <span className="text-sm font-medium">{association}</span>
                     <button
