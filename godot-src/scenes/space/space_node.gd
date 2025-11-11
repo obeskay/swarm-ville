@@ -8,6 +8,8 @@ var agent_container: Node2D  # Container for agent nodes
 var camera_zoom: float = 1.0
 var is_panning: bool = false
 var pan_start_pos: Vector2 = Vector2.ZERO
+var player_agent_id: String = ""  # Track player for camera follow
+var camera_follow_speed: float = 0.3  # Smooth follow lag
 
 func _ready() -> void:
 	# Create camera
@@ -15,6 +17,7 @@ func _ready() -> void:
 	camera_node.zoom = Vector2(camera_zoom, camera_zoom)
 	camera_node.limit_left = 0
 	camera_node.limit_top = 0
+	camera_node.global_position = Vector2(640, 360)  # Center of 1920x1080
 	add_child(camera_node)
 
 	# Create grid container for background
@@ -45,6 +48,15 @@ func _ready() -> void:
 	set_process_unhandled_input(true)
 
 	print("[SpaceNode] Ready - Camera initialized")
+
+func _process(_delta: float) -> void:
+	# Update camera follow for player
+	if not player_agent_id.is_empty():
+		for child in agent_container.get_children():
+			if child.agent_id == player_agent_id:
+				var target_pos = child.position
+				camera_node.global_position = camera_node.global_position.lerp(target_pos, camera_follow_speed)
+				break
 
 func _draw() -> void:
 	# Draw grid background
@@ -131,6 +143,11 @@ func _on_agent_spawned(agent_id: String) -> void:
 	var agent_node = load("res://scenes/space/agent_node.tscn").instantiate()
 	agent_node.setup(agent_data)
 	agent_container.add_child(agent_node)
+
+	# Detect if this is the player agent
+	if agent_data.get("name", "").to_lower().contains("player") or agent_data.get("role", "") == "player":
+		player_agent_id = agent_id
+		print("[SpaceNode] Found player agent: %s" % agent_id)
 
 	# Create spawn animation
 	agent_node.scale = Vector2(GameConfig.SPAWN_ANIMATION_START_SCALE, GameConfig.SPAWN_ANIMATION_START_SCALE)

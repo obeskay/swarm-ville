@@ -7,6 +7,7 @@ extends Control
 @onready var bottom_bar = $VBoxContainer/BottomBar
 
 var agent_dialog: Node
+var settings_dialog: Node
 
 func _ready() -> void:
 	# Create agent dialog
@@ -17,6 +18,15 @@ func _ready() -> void:
 		agent_dialog.agent_created.connect(_on_agent_created)
 	else:
 		agent_dialog = $AgentDialog
+
+	# Create settings dialog
+	if not has_node("SettingsDialog"):
+		settings_dialog = load("res://scenes/dialogs/settings_dialog.gd").new()
+		settings_dialog.name = "SettingsDialog"
+		add_child(settings_dialog)
+		settings_dialog.settings_closed.connect(_on_settings_closed)
+	else:
+		settings_dialog = $SettingsDialog
 
 	# Initialize systems immediately for testing
 	_on_backend_connected()
@@ -64,7 +74,11 @@ func _on_websocket_connected() -> void:
 
 func _on_settings_requested() -> void:
 	print("[MainContainer] Settings requested")
-	# Future: show settings dialog
+	if settings_dialog and settings_dialog.has_method("show_dialog"):
+		settings_dialog.show_dialog()
+
+func _on_settings_closed() -> void:
+	print("[MainContainer] Settings closed")
 
 func _on_agent_created(agent_data: Dictionary) -> void:
 	print("[MainContainer] Agent created locally: %s" % agent_data.get("name", "Unknown"))

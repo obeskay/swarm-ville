@@ -70,7 +70,8 @@ func _on_theme_changed(new_theme: String) -> void:
 
 func _on_settings_pressed() -> void:
 	print("[TopBar] Settings requested")
-	# Future: open settings dialog
+	# Emit input event to trigger settings
+	InputManager.settings_requested.emit()
 
 func _on_websocket_connected() -> void:
 	_populate_spaces()
