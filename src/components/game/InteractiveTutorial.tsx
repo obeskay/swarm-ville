@@ -142,7 +142,10 @@ export function InteractiveTutorial() {
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 bg-background/80 z-40 animate-in fade-in duration-300" />
+      <div
+        className="fixed inset-0 z-40 animate-in fade-in duration-300"
+        style={{ backgroundColor: "var(--background-80)" }}
+      />
 
       {/* Tutorial Card */}
       <Card

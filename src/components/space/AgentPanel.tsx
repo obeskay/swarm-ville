@@ -45,7 +45,10 @@ export function AgentPanel({ spaceId = "default" }: AgentPanelProps) {
             size="sm"
             variant="ghost"
             onClick={() => setIsCollapsed(true)}
-            className="h-8 w-8 p-0 hover:bg-muted text-lg leading-none"
+            className="h-8 w-8 p-0 text-lg leading-none"
+            style={{
+              "--hover-bg": "var(--muted)",
+            } as React.CSSProperties}
           >
             ×
           </Button>
