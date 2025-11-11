@@ -40,10 +40,12 @@ var light_mode_colors: Dictionary = {
 	"chart5": Color(0.545, 0.647, 0.553),  # 8ba58d
 
 	# Game element colors
-	"player": Color(0.420, 0.267, 0.137),  # primary
-	"agent_friendly": Color(0.420, 0.267, 0.137),  # primary
-	"agent_neutral": Color(0.925, 0.616, 0.435),  # secondary
-	"agent_hostile": Color(0.227, 0.227, 0.227),  # destructive
+	"player_character": Color(0.0, 1.0, 0.0),  # Bright green
+	"player": Color(0.0, 1.0, 0.0),  # Bright green
+	"agent_friendly": Color(0.0, 1.0, 0.0),  # Bright green
+	"agent_neutral": Color(1.0, 1.0, 0.0),  # Yellow
+	"agent_hostile": Color(1.0, 0.0, 0.0),  # Bright red
+	"agent_enemy": Color(1.0, 0.0, 0.0),  # Bright red
 	"tile_grass": Color(0.545, 0.436, 0.278),  # chart1
 	"tile_dirt": Color(0.667, 0.533, 0.400),  # chart4
 	"tile_water": Color(0.604, 0.561, 0.541),  # chart2
@@ -92,10 +94,12 @@ var dark_mode_colors: Dictionary = {
 	"chart5": Color(0.686, 0.827, 0.698),  # afb3b2
 
 	# Game element colors (dark)
-	"player": Color(0.831, 0.647, 0.435),  # primary
-	"agent_friendly": Color(0.831, 0.647, 0.435),  # primary
-	"agent_neutral": Color(0.671, 0.667, 0.435),  # secondary
-	"agent_hostile": Color(1.0, 0.267, 0.267),  # destructive
+	"player_character": Color(0.0, 1.0, 0.0),  # Bright green
+	"player": Color(0.0, 1.0, 0.0),  # Bright green
+	"agent_friendly": Color(0.0, 1.0, 0.0),  # Bright green
+	"agent_neutral": Color(1.0, 1.0, 0.0),  # Yellow
+	"agent_hostile": Color(1.0, 0.0, 0.0),  # Bright red
+	"agent_enemy": Color(1.0, 0.0, 0.0),  # Bright red
 	"tile_grass": Color(0.804, 0.694, 0.537),  # chart1
 	"tile_dirt": Color(0.855, 0.702, 0.537),  # chart4
 	"tile_water": Color(0.757, 0.714, 0.702),  # chart2

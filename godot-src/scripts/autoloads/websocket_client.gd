@@ -8,6 +8,11 @@ signal agent_moved(agent_id: String, position: Vector2i)
 signal agent_removed(agent_id: String)
 signal message_received(message_data: Dictionary)
 signal space_loaded(space_data: Dictionary)
+signal space_updated(space_data: Dictionary)
+signal tile_updated(tile_data: Dictionary)
+signal batch_update_ack(version: int)
+signal chat_message(sender: String, message: String)
+signal agent_action(agent_id: String, action: String, data: Dictionary)
 
 var ws: WebSocketPeer
 var connected_to_backend: bool = false
@@ -69,10 +74,26 @@ func _on_message_received(message: String) -> void:
 			agent_moved.emit(data.get("id", ""), Vector2i(data.get("x", 0), data.get("y", 0)))
 		"agent_left":
 			agent_removed.emit(data.get("id", ""))
+		"user_joined":
+			agent_spawned.emit(data)
+		"user_left":
+			agent_removed.emit(data.get("id", ""))
+		"position_update":
+			agent_moved.emit(data.get("user_id", ""), Vector2i(data.get("x", 0), data.get("y", 0)))
 		"message":
 			message_received.emit(data)
-		"space_loaded":
-			space_loaded.emit(data.get("space", {}))
+		"chat_message":
+			chat_message.emit(data.get("name", "Unknown"), data.get("message", ""))
+		"space_state":
+			space_loaded.emit(data)
+		"space_updated":
+			space_updated.emit(data)
+		"tile_update":
+			tile_updated.emit(data)
+		"batch_update_ack":
+			batch_update_ack.emit(data.get("version", 0))
+		"agent_action":
+			agent_action.emit(data.get("user_id", ""), data.get("action", ""), data.get("data", {}))
 		_:
 			print("[WebSocketClient] Unknown message type: %s" % msg_type)
 

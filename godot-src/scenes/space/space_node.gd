@@ -44,10 +44,15 @@ func _ready() -> void:
 	AgentRegistry.agent_removed.connect(_on_agent_removed)
 	AgentRegistry.agent_updated.connect(_on_agent_updated)
 
+	# Connect input manager for WASD and agent creation
+	InputManager.wasd_pressed.connect(_on_wasd_pressed)
+	InputManager.agent_creation_requested.connect(_on_agent_creation_requested)
+	InputManager.agent_interaction_requested.connect(_on_agent_interaction_requested)
+
 	# Setup input for camera controls
 	set_process_unhandled_input(true)
 
-	print("[SpaceNode] Ready - Camera initialized")
+	print("[SpaceNode] Ready - Camera initialized with WASD support")
 
 func _process(_delta: float) -> void:
 	# Update camera follow for player
@@ -183,3 +188,55 @@ func _on_theme_changed(new_theme: String) -> void:
 	# Redraw grid with new colors
 	queue_redraw()
 	print("[SpaceNode] Theme changed, updated tile colors")
+
+func _on_wasd_pressed(direction: Vector2) -> void:
+	# Move camera in WASD direction (pannable view)
+	var move_speed = 200.0  # pixels per frame
+	var move_direction = direction * move_speed
+	camera_node.global_position += move_direction
+	print("[SpaceNode] Camera moved by: %s" % move_direction)
+
+func _on_agent_creation_requested() -> void:
+	# Create a new agent at random position
+	var dimensions = space_data.get("dimensions", {})
+	var width = dimensions.get("width", 48)
+	var height = dimensions.get("height", 48)
+
+	var random_x = randi() % width
+	var random_y = randi() % height
+
+	var agent_id = "agent_%d" % randi()
+	var agent_data = {
+		"id": agent_id,
+		"name": "Agent %s" % agent_id.split("_")[1],
+		"position": {"x": random_x, "y": random_y},
+		"role": "assistant"
+	}
+
+	AgentRegistry.create_agent(agent_data)
+	print("[SpaceNode] Agent creation requested: %s at (%d, %d)" % [agent_id, random_x, random_y])
+
+func _on_agent_interaction_requested() -> void:
+	# Send message to nearest agent
+	if agent_container.get_child_count() == 0:
+		print("[SpaceNode] No agents to interact with")
+		return
+
+	var nearest_agent = null
+	var nearest_distance = INF
+
+	for agent_node in agent_container.get_children():
+		var distance = agent_node.position.distance_to(Vector2.ZERO)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_agent = agent_node
+
+	if nearest_agent:
+		var test_message = "Hello from player!"
+		WebSocketClient.send_message({
+			"type": "chat_message",
+			"agent_id": nearest_agent.agent_id,
+			"text": test_message,
+			"timestamp": Time.get_ticks_msec()
+		})
+		print("[SpaceNode] Sent interaction to agent: %s" % nearest_agent.agent_id)

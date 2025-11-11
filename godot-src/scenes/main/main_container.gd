@@ -1,84 +1,73 @@
 extends Control
 ## Main scene controller - orchestrates all subsystems
 
-@onready var viewport_2d = $VBoxContainer/SplitContainer/Viewport2D
-@onready var right_sidebar = $VBoxContainer/SplitContainer/RightSidebar
-@onready var top_bar = $VBoxContainer/TopBar
-@onready var bottom_bar = $VBoxContainer/BottomBar
-
-var agent_dialog: Node
-var settings_dialog: Node
+var ui_panels: Dictionary = {}
 
 func _ready() -> void:
-	# Create agent dialog
-	if not has_node("AgentDialog"):
-		agent_dialog = load("res://scenes/dialogs/agent_dialog.gd").new()
-		agent_dialog.name = "AgentDialog"
-		add_child(agent_dialog)
-		agent_dialog.agent_created.connect(_on_agent_created)
-	else:
-		agent_dialog = $AgentDialog
+	# Create UI panels
+	_create_ui_panels()
 
-	# Create settings dialog
-	if not has_node("SettingsDialog"):
-		settings_dialog = load("res://scenes/dialogs/settings_dialog.gd").new()
-		settings_dialog.name = "SettingsDialog"
-		add_child(settings_dialog)
-		settings_dialog.settings_closed.connect(_on_settings_closed)
-	else:
-		settings_dialog = $SettingsDialog
+	# Initialize systems
+	WebSocketClient.connected.connect(_on_websocket_connected)
+	WebSocketClient.disconnected.connect(_on_websocket_disconnected)
 
-	# Initialize systems immediately for testing
-	_on_backend_connected()
-
-	# Also listen for WebSocket connection
-	if not WebSocketClient.connected_to_backend:
-		WebSocketClient.connected.connect(_on_websocket_connected)
-		print("[MainContainer] Waiting for backend connection...")
-
-	# Connect settings request
-	InputManager.settings_requested.connect(_on_settings_requested)
-
-	print("[MainContainer] Ready!")
-
-func _on_backend_connected() -> void:
-	print("[MainContainer] Backend connected, initializing...")
-
-	# Load test space
-	SpaceManager.load_space("test-space-1")
+	# Load test space when backend connects
+	SpaceManager.space_loaded.connect(_on_space_loaded)
 
 	# Connect agent registry signals
 	AgentRegistry.agent_spawned.connect(_on_agent_spawned)
 	AgentRegistry.agent_removed.connect(_on_agent_removed)
-	AgentRegistry.agent_updated.connect(_on_agent_updated)
 
-	# Connect theme changes
-	ThemeManager.theme_changed.connect(_on_theme_changed)
+	# Load initial space
+	if not WebSocketClient.connected_to_backend:
+		print("[MainContainer] Waiting for backend connection...")
+	else:
+		_on_websocket_connected()
 
 	print("[MainContainer] Ready!")
 
+func _create_ui_panels() -> void:
+	"""Create and register all UI panels"""
+	# Create chat panel
+	var chat_scene = load("res://scenes/ui/chat_panel.tscn").instantiate()
+	add_child(chat_scene)
+	chat_scene.visible = false
+
+	# Create inventory panel
+	var inventory_scene = load("res://scenes/ui/inventory_panel.tscn").instantiate()
+	add_child(inventory_scene)
+	inventory_scene.visible = false
+
+	# Create map panel
+	var map_scene = load("res://scenes/ui/map_panel.tscn").instantiate()
+	add_child(map_scene)
+	map_scene.visible = false
+
+	# Create status panel
+	var status_scene = load("res://scenes/ui/status_panel.tscn").instantiate()
+	add_child(status_scene)
+	status_scene.visible = false
+
+	# Create debug panel
+	var debug_scene = load("res://scenes/ui/debug_panel.tscn").instantiate()
+	add_child(debug_scene)
+	debug_scene.visible = false
+
+	print("[MainContainer] Created all UI panels")
+
+func _on_websocket_connected() -> void:
+	print("[MainContainer] WebSocket connected, loading space...")
+	SpaceManager.load_space("test-space-001")
+
+func _on_websocket_disconnected() -> void:
+	print("[MainContainer] WebSocket disconnected")
+
+func _on_space_loaded(space_id: String) -> void:
+	print("[MainContainer] Space loaded: %s" % space_id)
+
 func _on_agent_spawned(agent_id: String) -> void:
-	print("[MainContainer] Agent spawned: %s" % agent_id)
+	var agent_data = AgentRegistry.get_agent(agent_id)
+	print("[MainContainer] Agent spawned: %s (%s)" % [agent_id, agent_data.get("name", "Unknown")])
 
 func _on_agent_removed(agent_id: String) -> void:
 	print("[MainContainer] Agent removed: %s" % agent_id)
-
-func _on_agent_updated(agent_id: String) -> void:
-	print("[MainContainer] Agent updated: %s" % agent_id)
-
-func _on_theme_changed(new_theme: String) -> void:
-	print("[MainContainer] Theme changed to: %s" % new_theme)
-
-func _on_websocket_connected() -> void:
-	print("[MainContainer] WebSocket connected")
-
-func _on_settings_requested() -> void:
-	print("[MainContainer] Settings requested")
-	if settings_dialog and settings_dialog.has_method("show_dialog"):
-		settings_dialog.show_dialog()
-
-func _on_settings_closed() -> void:
-	print("[MainContainer] Settings closed")
-
-func _on_agent_created(agent_data: Dictionary) -> void:
-	print("[MainContainer] Agent created locally: %s" % agent_data.get("name", "Unknown"))

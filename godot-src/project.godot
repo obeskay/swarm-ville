@@ -10,7 +10,9 @@ config_version=5
 
 [application]
 
+run/main_scene="res://scenes/gameplay/gameplay_demo.tscn"
 config/features=PackedStringArray("4.5")
+config/project_name="SwarmVille"
 
 [autoload]
 
@@ -20,6 +22,11 @@ WebSocketClient="*res://scripts/autoloads/websocket_client.gd"
 AgentRegistry="*res://scripts/autoloads/agent_registry.gd"
 SpaceManager="*res://scripts/autoloads/space_manager.gd"
 InputManager="*res://scripts/autoloads/input_manager.gd"
+SyncManager="*res://scripts/autoloads/sync_manager.gd"
+TileMapManager="*res://scripts/autoloads/tilemap_manager.gd"
+UISystem="*res://scripts/autoloads/ui_system.gd"
+GameState="*res://scripts/autoloads/game_state.gd"
+ClaudeMCPAgent="*res://scripts/autoloads/claude_mcp_agent.gd"
 
 [display]
 
@@ -29,7 +36,5 @@ window/size/viewport_height=1080
 [gd_project]
 
 config_version=5
-run/main_scene="res://scenes/main/main_container.tscn"
-config/project_name="SwarmVille"
-config/features=PackedStringArray("4.2")
+config/features=PackedStringArray("4.5")
 config/icon="res://icon.svg"

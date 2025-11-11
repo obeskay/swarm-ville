@@ -11,7 +11,7 @@ var pixel_position: Vector2 = Vector2.ZERO
 
 var sprite: Sprite2D
 var name_label: Label
-var proximity_circle: CanvasItem
+var proximity_circle: Node
 var collision_shape: CollisionShape2D
 
 func _ready() -> void:
@@ -27,12 +27,11 @@ func _ready() -> void:
 	name_label.position.y = GameConfig.CHARACTER_NAME_TEXT_OFFSET_Y
 	add_child(name_label)
 
-	# Create proximity circle
-	proximity_circle = Node.new()
-	proximity_circle = load("res://scripts/utils/circle_2d.gd").new()
-	proximity_circle.radius = GameConfig.PROXIMITY_CIRCLE_RADIUS * GameConfig.TILE_SIZE
-	proximity_circle.visible = false
-	add_child(proximity_circle)
+	# Create proximity circle (disabled for now - uses CanvasItem which can't be instantiated)
+	# proximity_circle = load("res://scripts/utils/circle_2d.gd").new()
+	# proximity_circle.radius = GameConfig.PROXIMITY_CIRCLE_RADIUS * GameConfig.TILE_SIZE
+	# proximity_circle.visible = false
+	# add_child(proximity_circle)
 
 	# Create collision shape for mouse interaction
 	collision_shape = CollisionShape2D.new()
@@ -55,15 +54,21 @@ func setup(data: Dictionary) -> void:
 	grid_position = Vector2i(data.get("position", {}).get("x", 0), data.get("position", {}).get("y", 0))
 	pixel_position = grid_position * GameConfig.TILE_SIZE
 
+	# Ensure _ready() has been called
+	if not is_node_ready():
+		await tree_entered
+
 	# Update label
-	name_label.text = data.get("name", "Unknown")
+	if name_label:
+		name_label.text = data.get("name", "Unknown")
 
 	# Set position
 	position = pixel_position
 
 	# Load sprite (placeholder)
 	# In real implementation, load from character spritesheets
-	sprite.modulate = ThemeManager.get_color("agent_friendly")
+	if sprite:
+		sprite.modulate = ThemeManager.get_color("agent_friendly")
 
 	print("[AgentNode] Setup: %s at %s" % [agent_id, grid_position])
 
