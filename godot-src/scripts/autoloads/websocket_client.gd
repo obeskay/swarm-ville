@@ -76,15 +76,18 @@ func _on_message_received(message: String) -> void:
 		_:
 			print("[WebSocketClient] Unknown message type: %s" % msg_type)
 
-func send_action(action: String, data: Dictionary) -> void:
+func send_action(action: String, data: Dictionary = {}) -> void:
 	if not connected_to_backend:
-		print("[WebSocketClient] Not connected, queuing action: %s" % action)
+		print("[WebSocketClient] Not connected, cannot send: %s" % action)
 		return
 
-	var message = {"type": action, "data": data}
+	var message = {"type": action}
+	if not data.is_empty():
+		message["data"] = data
+
 	var json_str = JSON.stringify(message)
 	ws.send_text(json_str)
-	print("[WebSocketClient] Sent: %s" % action)
+	print("[WebSocketClient] Sent: %s with %d params" % [action, data.size()])
 
 func schedule_reconnect() -> void:
 	if reconnect_attempts >= GameConfig.WS_MAX_RECONNECT_ATTEMPTS:
