@@ -542,9 +542,9 @@ export class CharacterSprite extends PIXI.Container {
       const dy = this.targetPixelPosition.y - this.pixelPosition.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      // movementSpeed is already in pixels per frame (deltaTime is frame count at 60fps)
-      // No need to multiply by deltaTime - it's already accounted for
-      const actualSpeed = this.movementSpeed;
+      // Normalize speed to deltaTime for consistent movement regardless of FPS
+      // deltaTime is in frames (1 = 60fps), so multiply by deltaTime to get actual pixels per frame
+      const actualSpeed = this.movementSpeed * deltaTime;
 
       if (distance < actualSpeed) {
         // Snap to target

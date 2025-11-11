@@ -30,7 +30,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   const containerRef = useRef<HTMLDivElement>(null);
   const { app, stage, isLoading, error, setGameLoop } = usePixiApp(containerRef);
 
-  const { spaces, userPosition, setUserPosition, agents: agentsMap } = useSpaceStore();
+  const { spaces, userPosition, setUserPosition, agents: agentsMap, updateSpaceVersion } = useSpaceStore();
 
   const { updateMissionProgress } = useGameStore();
 
@@ -197,13 +197,36 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         // FIXED: Find a walkable spawn position near center of map (not corner)
         let spawnPosition = userPosition;
         if (loadedTilemap && typeof loadedTilemap === "object" && space) {
-          // Try to spawn near center of map first
-          const centerX = Math.floor(space.dimensions.width / 2);
-          const centerY = Math.floor(space.dimensions.height / 2);
+          // Calculate actual map bounds from tilemap data
+          const tileKeys = Object.keys(loadedTilemap);
+          let minX = Infinity,
+            maxX = -Infinity,
+            minY = Infinity,
+            maxY = -Infinity;
+
+          tileKeys.forEach((key) => {
+            const [x, y] = key.split(",").map(Number);
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+          });
+
+          // Calculate actual center of the tilemap
+          const centerX = Math.floor((minX + maxX) / 2);
+          const centerY = Math.floor((minY + maxY) / 2);
+
+          if (import.meta.env.DEV) {
+            console.log("[SpaceContainer] Spawn logic:", {
+              mapBounds: { minX, maxX, minY, maxY },
+              center: { centerX, centerY },
+              spaceDimensions: { width: space.dimensions.width, height: space.dimensions.height },
+            });
+          }
 
           // Search in expanding circles from center for a walkable tile
           let found = false;
-          for (let radius = 0; radius <= 10 && !found; radius++) {
+          for (let radius = 0; radius <= 15 && !found; radius++) {
             for (let dx = -radius; dx <= radius && !found; dx++) {
               for (let dy = -radius; dy <= radius && !found; dy++) {
                 if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
@@ -222,6 +245,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
                 ) {
                   spawnPosition = { x: candidateX, y: candidateY };
                   found = true;
+                  if (import.meta.env.DEV) {
+                    console.log("[SpaceContainer] Spawn position found:", spawnPosition);
+                  }
                 }
               }
             }
@@ -238,6 +264,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
               ) {
                 const [x, y] = tilePoint.split(",").map(Number);
                 spawnPosition = { x, y };
+                if (import.meta.env.DEV) {
+                  console.log("[SpaceContainer] Using fallback spawn position:", spawnPosition);
+                }
                 break;
               }
             }
@@ -407,9 +436,19 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         }
       }
 
+      // Track if any sprite moved this frame
+      let spritesMoved = false;
+
       // Update all agent sprites
       if (userAvatarRef.current) {
+        const wasMoving = userAvatarRef.current.isMoving();
         userAvatarRef.current.update(deltaTime);
+        const isNowMoving = userAvatarRef.current.isMoving();
+
+        // If movement state changed, we need to re-sort
+        if (wasMoving !== isNowMoving) {
+          spritesMoved = true;
+        }
 
         // Follow path automatically when close to next waypoint (smooth Gather-clone movement)
         if (pathQueueRef.current.length > 0) {
@@ -425,6 +464,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
                 userAvatarRef.current.setTargetGridPosition(nextPos);
                 setUserPosition(nextPos);
                 proximityCircleRef.current?.update(nextPos);
+                spritesMoved = true;
               } else {
                 // Path blocked or invalid, clear queue and stop movement
                 pathQueueRef.current = [];
@@ -443,7 +483,11 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         // Guard: Skip if sprite is null/undefined
         if (!sprite) return;
 
+        const wasMoving = sprite.isMoving();
         sprite.update(deltaTime);
+        if (wasMoving !== sprite.isMoving()) {
+          spritesMoved = true;
+        }
 
         // Highlight agents within proximity radius
         if (sprite.isInProximity(userPos, PROXIMITY_RADIUS)) {
@@ -470,8 +514,9 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         );
       }
 
-      // Update depth sorting if needed
-      if (gridRendererRef.current) {
+      // OPTIMIZED: Only sort when sprites actually move
+      // This significantly reduces lag by avoiding expensive sorting every frame
+      if (spritesMoved && gridRendererRef.current) {
         gridRendererRef.current.sortObjectsByY();
       }
     });
@@ -714,6 +759,31 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
       window.removeEventListener("dialog-state-changed", handleDialogStateChanged as EventListener);
     };
   }, []);
+
+  /**
+   * Listen for space version updates from WebSocket
+   */
+  useEffect(() => {
+    const handleSpaceVersionUpdate = (event: CustomEvent) => {
+      const { spaceId, version, updatedAt } = event.detail;
+      if (spaceId === space?.id) {
+        updateSpaceVersion(spaceId, version);
+        if (import.meta.env.DEV) {
+          console.log(`[SpaceContainer] Space ${spaceId} updated to version ${version}`, {
+            previousVersion: space?.version,
+            newVersion: version,
+            updatedAt: updatedAt ? new Date(updatedAt).toISOString() : 'now',
+          });
+        }
+      }
+    };
+
+    window.addEventListener("space-version-update", handleSpaceVersionUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener("space-version-update", handleSpaceVersionUpdate as EventListener);
+    };
+  }, [space?.id, space?.version, updateSpaceVersion]);
 
   /**
    * Listen for minimap clicks from SpaceUI
@@ -1353,7 +1423,7 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     <div
       ref={containerRef}
       tabIndex={0}
-      className="w-full h-full relative overflow-hidden bg-background select-none touch-none cursor-default focus:outline-none"
+      className="space-container w-full h-full relative overflow-hidden bg-background text-foreground select-none touch-none cursor-default focus:outline-none"
       style={{ touchAction: "none" }}
       onContextMenu={(e) => e.preventDefault()}
       onDoubleClick={(e) => e.preventDefault()}

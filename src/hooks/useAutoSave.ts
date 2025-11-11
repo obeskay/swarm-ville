@@ -156,6 +156,7 @@ export function useLoadPersisted() {
               },
               createdAt: space.created_at,
               updatedAt: space.updated_at,
+              version: space.version || 1,
             });
           });
 

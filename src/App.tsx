@@ -83,6 +83,7 @@ function App() {
         settings: spaceConfig.settings,
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        version: 1,
       });
 
       // Auto-navigate to the new space

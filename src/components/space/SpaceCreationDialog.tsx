@@ -137,6 +137,7 @@ export function SpaceCreationDialog({ open, onClose }: SpaceCreationDialogProps)
         settings: spaceConfig.settings,
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        version: 1,
       });
 
       toast.success(`${spaceName} created! 🎉`, {

@@ -16,6 +16,7 @@ interface SpaceState {
   removeAgent: (agentId: string) => void;
   setUserPosition: (position: Position) => void;
   loadSpace: (space: Space) => void;
+  updateSpaceVersion: (spaceId: string, version: number) => void;
 }
 
 export const useSpaceStore = create<SpaceState>((set) => ({
@@ -82,4 +83,15 @@ export const useSpaceStore = create<SpaceState>((set) => ({
       spaces: [space],
       currentSpaceId: space.id,
     }),
+
+  updateSpaceVersion: (spaceId, version) =>
+    set((state) => ({
+      spaces: state.spaces.map((s) =>
+        s.id === spaceId ? { ...s, version, updatedAt: Date.now() } : s
+      ),
+      selectedSpace:
+        state.selectedSpace?.id === spaceId
+          ? { ...state.selectedSpace, version, updatedAt: Date.now() }
+          : state.selectedSpace,
+    })),
 }));

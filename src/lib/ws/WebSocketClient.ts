@@ -6,12 +6,13 @@ export type ClientMessage =
   | { type: "agent_action"; action: string; target?: string; data?: any };
 
 export type ServerMessage =
-  | { type: "space_state"; space_id: string; users: UserState[] }
+  | { type: "space_state"; space_id: string; users: UserState[]; version: number }
   | { type: "user_joined"; user: UserState }
   | { type: "user_left"; user_id: string }
   | { type: "position_update"; user_id: string; x: number; y: number; direction: string }
   | { type: "chat_broadcast"; user_id: string; name: string; message: string }
   | { type: "agent_broadcast"; agent_id: string; action: string; data?: any }
+  | { type: "space_updated"; space_id: string; version: number; updated_at: number }
   | { type: "error"; message: string };
 
 export interface UserState {

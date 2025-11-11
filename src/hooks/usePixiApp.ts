@@ -49,12 +49,32 @@ export function usePixiApp(
           `[usePixiApp] ✅ Character textures preloaded: ${stats.loadedCount}/${stats.totalCharacters}`,
         );
 
+        // Get background color from CSS theme (supports both light and dark mode)
+        const getBackgroundColor = () => {
+          // Read computed style from root element
+          const computedStyle = window.getComputedStyle(document.documentElement);
+          const bgColorVar = computedStyle.getPropertyValue('--background').trim();
+
+          console.log("[usePixiApp] Background color from CSS:", bgColorVar);
+
+          // Parse OKLCH or fallback to light color
+          // Light mode: OKLCH(0.9818 0.0054 95.0986) ≈ #f5f5f0
+          // Dark mode: OKLCH(0.2679 0.0036 106.6427) ≈ #443d3a
+          if (bgColorVar.includes('0.26') || bgColorVar.includes('0.267')) {
+            // Dark mode color
+            return 0x443d3a;
+          }
+
+          // Light mode (default)
+          return 0xf5f5f0;
+        };
+
         // Create app following Gather Clone's pattern
         const app = new PIXI.Application();
 
         await app.init({
           resizeTo: container,
-          backgroundColor: 0x1a1a2e, // Dark blue for visibility
+          backgroundColor: getBackgroundColor(),
           roundPixels: true,
           antialias: false,
         });

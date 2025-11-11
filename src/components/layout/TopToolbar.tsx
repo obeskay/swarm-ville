@@ -8,7 +8,9 @@ import { InfoBadge } from "../ui/info-badge";
 import { StatusIndicator } from "../ui/status-indicator";
 
 // Version from package.json
-const APP_VERSION = "0.1.0";
+// Version is injected by Vite at build time from package.json
+declare const __APP_VERSION__: string;
+const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.1.0";
 import {
   DropdownMenu,
   DropdownMenuContent,

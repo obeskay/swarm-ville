@@ -19,6 +19,13 @@ export function useWebSocket(url?: string) {
       switch (msg.type) {
         case "space_state":
           setUsers(msg.users);
+          if (msg.version !== undefined) {
+            window.dispatchEvent(
+              new CustomEvent("space-version-update", {
+                detail: { spaceId: msg.space_id, version: msg.version },
+              })
+            );
+          }
           break;
 
         case "user_joined":
@@ -45,6 +52,18 @@ export function useWebSocket(url?: string) {
 
         case "agent_broadcast":
           console.log(`Agent ${msg.agent_id} performed: ${msg.action}`);
+          break;
+
+        case "space_updated":
+          window.dispatchEvent(
+            new CustomEvent("space-version-update", {
+              detail: {
+                spaceId: msg.space_id,
+                version: msg.version,
+                updatedAt: msg.updated_at
+              },
+            })
+          );
           break;
 
         case "error":

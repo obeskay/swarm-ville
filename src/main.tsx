@@ -3,10 +3,13 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+// Version is injected by Vite at build time from package.json
+declare const __APP_VERSION__: string;
+
 // Cache busting: Check for version updates and reload if needed
 const checkForUpdates = () => {
   const CACHE_KEY = "swarmville_version";
-  const CURRENT_VERSION = "0.1.0"; // Must match package.json version
+  const CURRENT_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.1.0";
 
   const storedVersion = localStorage.getItem(CACHE_KEY);
 

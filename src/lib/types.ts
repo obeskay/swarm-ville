@@ -13,6 +13,7 @@ export interface Space {
   ownerId: string;
   createdAt: number;
   updatedAt: number;
+  version: number;
   dimensions: {
     width: number;
     height: number;
