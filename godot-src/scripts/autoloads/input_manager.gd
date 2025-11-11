@@ -8,6 +8,7 @@ signal settings_requested
 signal wasd_pressed(direction: Vector2)
 signal agent_creation_requested
 signal agent_interaction_requested
+signal zoom_requested(delta: float)  # Positive = zoom in, negative = zoom out
 
 var is_shift_pressed: bool = false
 var is_ctrl_pressed: bool = false
@@ -61,6 +62,15 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		mouse_position = event.position
 		mouse_position_changed.emit(mouse_position)
+
+	# Handle scroll wheel zoom
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			zoom_requested.emit(0.1)  # Zoom in
+			get_tree().root.set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			zoom_requested.emit(-0.1)  # Zoom out
+			get_tree().root.set_input_as_handled()
 
 func request_player_move(world_position: Vector2) -> void:
 	player_move_requested.emit(world_position)
