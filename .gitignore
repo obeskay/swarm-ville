@@ -85,3 +85,16 @@ Thumbs.db
 *_OLD/
 archive/
 legacy/
+
+# Godot Engine
+godot-src/.godot/
+godot-src/builds/
+godot-src/user_data/
+godot-src/*.exe
+godot-src/*.so
+godot-src/*.dylib
+godot-src/*.lib
+godot-src/*.dll
+godot-src/export_presets.cfg
+godot-src/.godot/editor/
+godot-src/.godot/imported/

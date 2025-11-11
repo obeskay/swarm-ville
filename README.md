@@ -15,45 +15,69 @@
 
 ## Quick Start
 
+### Frontend (Godot 4.x)
 ```bash
-# Install
-npm install
+# Open Godot project
+godot godot-src/project.godot
 
-# Run development
-npm run tauri dev
-
-# Build production
-npm run tauri build
+# Run (F5) - requires backend running
 ```
 
-**Environment**: Add `VITE_GEMINI_API_KEY` to `.env`
+### Backend (Rust + Tauri)
+```bash
+cd src-tauri
+cargo run  # Starts WebSocket at ws://localhost:8765
+```
+
+**Environment**: Add `VITE_GEMINI_API_KEY` to `.env.local` (for backend AI features)
+
+See [godot-src/DEVELOPMENT.md](./godot-src/DEVELOPMENT.md) for detailed setup.
 
 ## Tech Stack
 
-| Layer    | Technology                  |
-| -------- | --------------------------- |
-| Frontend | React + PixiJS + TypeScript |
-| Backend  | Rust (Tauri) + SQLite       |
-| AI       | Google Gemini 2.0 Flash     |
-| Sync     | WebSocket (port 8765)       |
+| Layer    | Technology                        |
+| -------- | --------------------------------- |
+| Frontend | Godot 4.x + GDScript (2D)         |
+| Backend  | Rust (Tauri) + SQLite + WebSocket |
+| AI       | Claude API (via backend)          |
+| Sync     | WebSocket (port 8765)             |
+| Specs    | OpenSpec (change tracking)        |
 
 ## Architecture
 
 Clean, modular, OpenSpec-driven:
 
-- **Frontend** (`src/`): React components, PixiJS rendering, Zustand stores
-- **Backend** (`src-tauri/`): Rust CLI, SQLite persistence, AI generation
-- **Specs** (`openspec/`): All changes tracked and validated
+- **Frontend** (`godot-src/`): Godot engine, GDScript, AutoLoad singletons for global services
+- **Backend** (`src-tauri/`): Rust CLI, SQLite persistence, WebSocket server
+- **Specs** (`openspec/`): All changes tracked and validated via OpenSpec
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for details.
+### Frontend Architecture (Godot)
+- **AutoLoad Services**: GameConfig, ThemeManager, WebSocketClient, AgentRegistry, SpaceManager, InputManager
+- **Scenes**: MainContainer (root) → TopBar, SplitContainer (Viewport2D + RightSidebar), BottomBar
+- **Rendering**: Camera follow, grid visualization, agent sprites with proximity indicators
+- **Effects**: Spawn animations, ripple effects, blocked tile indicators, selection rings
+
+See [godot-src/DEVELOPMENT.md](./godot-src/DEVELOPMENT.md) for architecture details.
 
 ## Project Status
 
-- ✅ Core game engine (PixiJS, collision, rendering)
+### Godot Migration (Complete ✅)
+- ✅ **Phase 0**: Foundation (6 AutoLoad services, project setup)
+- ✅ **Phase 1**: Core Rendering (grid, agents, camera, effects)
+- ✅ **Phase 2**: UI & State Sync (dialogs, sidebars, WebSocket integration)
+- ✅ **Phase 3**: Features & Polish (camera follow, visual effects, settings, shortcuts)
+- ✅ **Phase 4**: Cleanup & Documentation (removed React code, dev guide, README)
+
+### Feature Status
+- ✅ Core game engine (Godot 2D rendering)
 - ✅ Map generation (AI + procedural, cached)
-- ✅ Sprite system (template-based, reusable)
+- ✅ Agent spawning/deletion with animations
 - ✅ Realtime collaboration (WebSocket server + client)
-- 🚧 AI agent system (autonomous behavior)
+- ✅ Theme system (light/dark mode)
+- ✅ UI framework (top bar, sidebars, dialogs)
+- 🚧 AI agent autonomous behavior
+- ⏳ Desktop exports (Windows, macOS, Linux)
+- ⏳ Mobile support (iOS/Android)
 
 See [ROADMAP.md](./ROADMAP.md) for full plan.
 
