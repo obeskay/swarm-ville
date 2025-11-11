@@ -7,12 +7,15 @@ pub enum SwarmvilleError {
     Database(String),
 
     #[error("Audio error: {0}")]
+    #[allow(dead_code)]
     Audio(String),
 
     #[error("CLI error: {0}")]
+    #[allow(dead_code)]
     Cli(String),
 
     #[error("Agent error: {0}")]
+    #[allow(dead_code)]
     Agent(String),
 
     #[error("IO error: {0}")]
@@ -22,6 +25,7 @@ pub enum SwarmvilleError {
     Serialization(#[from] serde_json::Error),
 
     #[error("Unknown error")]
+    #[allow(dead_code)]
     Unknown,
 }
 

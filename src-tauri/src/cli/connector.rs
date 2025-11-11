@@ -16,6 +16,7 @@ impl CLIConnector {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_detected_clis(&self) -> &[DetectedCLI] {
         &self.detected_clis
     }

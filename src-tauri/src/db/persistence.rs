@@ -43,6 +43,7 @@ pub struct PersistenceLayer {
     conn: Arc<Mutex<Connection>>,
 }
 
+#[allow(dead_code)]
 impl PersistenceLayer {
     pub fn new(db_path: &str) -> DbResult<Self> {
         let conn = Connection::open(db_path)?;

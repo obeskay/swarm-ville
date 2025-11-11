@@ -54,7 +54,7 @@ export function AchievementNotifications() {
                   repeat: Infinity,
                   ease: "linear",
                 }}
-                className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-foreground/20 to-transparent"
               />
 
               <div className="relative flex items-start gap-3">
@@ -74,7 +74,7 @@ export function AchievementNotifications() {
                 {/* Dismiss Button */}
                 <button
                   onClick={() => dismissNotification(notification.id)}
-                  className="shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors"
+                  className="shrink-0 p-1 rounded-full hover:bg-foreground/20 transition-colors"
                 >
                   <X className="w-4 h-4 text-white" />
                 </button>

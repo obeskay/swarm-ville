@@ -9,9 +9,11 @@ pub enum DbError {
     Serialization(#[from] serde_json::Error),
 
     #[error("Not found: {0}")]
+    #[allow(dead_code)]
     NotFound(String),
 
     #[error("Invalid data: {0}")]
+    #[allow(dead_code)]
     InvalidData(String),
 
     #[error("IO error: {0}")]

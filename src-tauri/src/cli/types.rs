@@ -73,15 +73,18 @@ pub struct ResponseMetadata {
 #[derive(Debug, thiserror::Error)]
 pub enum CLIError {
     #[error("CLI not found: {0}")]
+    #[allow(dead_code)]
     NotFound(String),
 
     #[error("CLI execution failed: {0}")]
     ExecutionFailed(String),
 
     #[error("Invalid response format: {0}")]
+    #[allow(dead_code)]
     InvalidResponse(String),
 
     #[error("Permission denied: {0}")]
+    #[allow(dead_code)]
     PermissionDenied(String),
 
     #[error("Timeout: command took longer than {0}ms")]

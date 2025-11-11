@@ -77,9 +77,7 @@ pub fn load_generated_map(conn: &Connection, map_id: &str) -> Result<String> {
 }
 
 pub fn list_generated_maps(conn: &Connection) -> Result<Vec<MapListItem>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, name FROM generated_maps ORDER BY created_at DESC"
-    )?;
+    let mut stmt = conn.prepare("SELECT id, name FROM generated_maps ORDER BY created_at DESC")?;
 
     let maps = stmt
         .query_map([], |row| {
@@ -93,6 +91,7 @@ pub fn list_generated_maps(conn: &Connection) -> Result<Vec<MapListItem>> {
     Ok(maps)
 }
 
+#[allow(dead_code)]
 pub fn increment_map_usage(conn: &Connection, map_id: &str) -> Result<()> {
     conn.execute(
         "UPDATE generated_maps SET usage_count = usage_count + 1 WHERE id = ?1",
@@ -102,21 +101,16 @@ pub fn increment_map_usage(conn: &Connection, map_id: &str) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn delete_generated_map(conn: &Connection, map_id: &str) -> Result<()> {
-    conn.execute(
-        "DELETE FROM generated_maps WHERE id = ?1",
-        params![map_id],
-    )?;
+    conn.execute("DELETE FROM generated_maps WHERE id = ?1", params![map_id])?;
 
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn get_map_count(conn: &Connection) -> Result<i32> {
-    let count: i32 = conn.query_row(
-        "SELECT COUNT(*) FROM generated_maps",
-        [],
-        |row| row.get(0),
-    )?;
+    let count: i32 = conn.query_row("SELECT COUNT(*) FROM generated_maps", [], |row| row.get(0))?;
 
     Ok(count)
 }

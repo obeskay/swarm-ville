@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio_tungstenite::tungstenite::protocol::Message as WsMessage;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -107,5 +106,4 @@ impl Default for ConnectionInfo {
     }
 }
 
-pub type Message = WsMessage;
 pub type SharedConnectionInfo = Arc<Mutex<ConnectionInfo>>;

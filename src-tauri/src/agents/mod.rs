@@ -30,6 +30,7 @@ pub enum AgentState {
 }
 
 impl Agent {
+    #[allow(dead_code)]
     pub fn new(
         name: String,
         space_id: String,

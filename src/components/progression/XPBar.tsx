@@ -76,7 +76,7 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
                   className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-primary/90 to-primary/80 rounded-full"
                 >
                   {/* Shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/20 to-transparent animate-shimmer" />
                 </motion.div>
               </div>
             </div>
@@ -162,7 +162,7 @@ export function XPBar({ variant = "compact", className = "" }: XPBarProps) {
                     repeat: Infinity,
                     ease: "linear",
                   }}
-                  className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-foreground/30 to-transparent"
                 />
               </motion.div>
             </div>
