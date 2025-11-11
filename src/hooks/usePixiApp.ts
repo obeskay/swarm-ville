@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as PIXI from "pixi.js";
 import { CharacterTextureLoader } from "../lib/pixi/CharacterTextureLoader";
+import { useThemeColors } from "./useThemeColors";
 
 export type GameLoopCallback = (deltaTime: number) => void;
 
@@ -21,6 +22,7 @@ export function usePixiApp(
 ): PixiAppState {
   const appRef = useRef<PIXI.Application | null>(null);
   const gameLoopCallbackRef = useRef<GameLoopCallback | null>(null);
+  const themeColors = useThemeColors();
   const [state, setState] = useState<PixiAppState>({
     app: null,
     stage: null,
@@ -49,32 +51,17 @@ export function usePixiApp(
           `[usePixiApp] ✅ Character textures preloaded: ${stats.loadedCount}/${stats.totalCharacters}`,
         );
 
-        // Get background color from CSS theme (supports both light and dark mode)
-        const getBackgroundColor = () => {
-          // Read computed style from root element
-          const computedStyle = window.getComputedStyle(document.documentElement);
-          const bgColorVar = computedStyle.getPropertyValue('--background').trim();
-
-          console.log("[usePixiApp] Background color from CSS:", bgColorVar);
-
-          // Parse OKLCH or fallback to light color
-          // Light mode: OKLCH(0.9818 0.0054 95.0986) ≈ #f5f5f0
-          // Dark mode: OKLCH(0.2679 0.0036 106.6427) ≈ #443d3a
-          if (bgColorVar.includes('0.26') || bgColorVar.includes('0.267')) {
-            // Dark mode color
-            return 0x443d3a;
-          }
-
-          // Light mode (default)
-          return 0xf5f5f0;
-        };
-
         // Create app following Gather Clone's pattern
         const app = new PIXI.Application();
 
+        const bgColor = themeColors.background;
+        console.log(
+          `[usePixiApp] 🎨 Using theme background color: 0x${bgColor.toString(16).padStart(6, '0')}`,
+        );
+
         await app.init({
           resizeTo: container,
-          backgroundColor: getBackgroundColor(),
+          backgroundColor: bgColor,
           roundPixels: true,
           antialias: false,
         });

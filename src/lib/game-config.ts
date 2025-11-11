@@ -37,9 +37,9 @@ export const GAME_CONFIG = {
   MAX_PARTICLES: 50,
   CULL_PADDING: 200, // Extra pixels around viewport for culling
 
-  // Throttling
-  MOVEMENT_THROTTLE_MS: 100, // Max 10 moves per second
-  DRAG_THROTTLE_MS: 150, // Throttle drag movement
+  // Throttling (gather-clone optimized)
+  MOVEMENT_THROTTLE_MS: 16, // ~60fps for responsive input (gather-clone doesn't throttle)
+  DRAG_THROTTLE_MS: 50, // Reduced for smoother drag
   POSITION_SYNC_THROTTLE_MS: 100, // WebSocket position sync throttle
 
   // Grid & Tiles
@@ -57,7 +57,7 @@ export const GAME_CONFIG = {
 
   // Proximity & Detection
   PROXIMITY_CIRCLE_RADIUS_TILES: 5, // Radius in tiles
-  WAYPOINT_REACHED_DISTANCE: 10, // Pixels - distance to consider waypoint reached
+  WAYPOINT_REACHED_DISTANCE: 3.5, // Pixels - match MOVEMENT_SPEED for smooth transitions
 
   // Colors
   COLORS: {

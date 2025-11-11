@@ -72,8 +72,8 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
   const isDraggingRef = useRef<boolean>(false);
   const lastMouseMoveRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // CRITICAL: Track pressed keys to reduce lag from rapid key presses
-  const pressedKeysRef = useRef<Set<string>>(new Set());
+  // GATHER-CLONE PATTERN: Track pressed keys array to get last-pressed key
+  const pressedKeysRef = useRef<string[]>([]); // Changed from Set to Array for order tracking
   const lastMovementTimeRef = useRef<number>(0);
   const MOVEMENT_THROTTLE_MS = GAME_CONFIG.MOVEMENT_THROTTLE_MS;
   const lastDragMoveRef = useRef<number>(0);
@@ -395,22 +395,23 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
     if (!initialized || !setGameLoop) return;
 
     setGameLoop((deltaTime: number) => {
-      // OPTIMIZED: Process pressed keys with throttling to reduce lag
+      // GATHER-CLONE PATTERN: Process last-pressed key for responsive movement
       const now = Date.now();
       if (
         now - lastMovementTimeRef.current >= MOVEMENT_THROTTLE_MS &&
-        pressedKeysRef.current.size > 0
+        pressedKeysRef.current.length > 0
       ) {
         lastMovementTimeRef.current = now;
 
         let dx = 0;
         let dy = 0;
 
-        // Process all pressed movement keys
-        if (pressedKeysRef.current.has("arrowup") || pressedKeysRef.current.has("w")) dy -= 1;
-        if (pressedKeysRef.current.has("arrowdown") || pressedKeysRef.current.has("s")) dy += 1;
-        if (pressedKeysRef.current.has("arrowleft") || pressedKeysRef.current.has("a")) dx -= 1;
-        if (pressedKeysRef.current.has("arrowright") || pressedKeysRef.current.has("d")) dx += 1;
+        // Get the LAST pressed key (most recent input wins)
+        const lastKey = pressedKeysRef.current[pressedKeysRef.current.length - 1];
+        if (lastKey === "arrowup" || lastKey === "w") dy -= 1;
+        else if (lastKey === "arrowdown" || lastKey === "s") dy += 1;
+        else if (lastKey === "arrowleft" || lastKey === "a") dx -= 1;
+        else if (lastKey === "arrowright" || lastKey === "d") dx += 1;
 
         // Only move if there's a direction
         if ((dx !== 0 || dy !== 0) && userAvatarRef.current && gridRendererRef.current) {
@@ -1189,10 +1190,16 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
         "d",
       ].includes(key);
 
-      // Track pressed keys
+      // GATHER-CLONE PATTERN: Track key in array, remove if exists, then add to end
       if (isMovementKey) {
         event.preventDefault();
-        pressedKeysRef.current.add(key);
+        // Remove key if already in array
+        const index = pressedKeysRef.current.indexOf(key);
+        if (index > -1) {
+          pressedKeysRef.current.splice(index, 1);
+        }
+        // Add to end (most recent)
+        pressedKeysRef.current.push(key);
       }
 
       // Space to recenter camera
@@ -1231,7 +1238,11 @@ export default function SpaceContainer({ spaceId, onSpaceChange }: SpaceContaine
 
     const handleKeyUp = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
-      pressedKeysRef.current.delete(key);
+      // Remove key from array
+      const index = pressedKeysRef.current.indexOf(key);
+      if (index > -1) {
+        pressedKeysRef.current.splice(index, 1);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
