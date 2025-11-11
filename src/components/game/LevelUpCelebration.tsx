@@ -50,12 +50,9 @@ export function LevelUpCelebration({
       {/* Backdrop overlay */}
       <div
         className={cn(
-          "fixed inset-0 transition-opacity duration-300 z-40",
+          "fixed inset-0 bg-background/70 transition-opacity duration-300 z-40",
           isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
-        style={{
-          backgroundColor: "var(--background-70)",
-        }}
         onClick={() => {
           setIsVisible(false);
           setTimeout(onClose, 300);
@@ -130,10 +127,7 @@ export function LevelUpCelebration({
             </div>
 
             {/* XP earned */}
-            <div
-              className="border border-purple-400/30 rounded-lg p-4 backdrop-blur animate-in fade-in scale-95 duration-500 delay-200"
-              style={{ backgroundColor: "var(--foreground-5)" }}
-            >
+            <div className="bg-foreground/5 border border-purple-400/30 rounded-lg p-4 backdrop-blur animate-in fade-in scale-95 duration-500 delay-200">
               <div className="flex items-center justify-center gap-2 text-yellow-300 mb-1">
                 <Zap className="w-5 h-5" />
                 <span className="font-bold text-lg">{xpEarned} XP Earned</span>

@@ -10,16 +10,8 @@ export default defineConfig({
     },
   },
   server: {
-    strictPort: true,
-    // Enable HMR (Hot Module Replacement) for instant reloads
-    hmr: {
-      protocol: "ws",
-      host: "localhost",
-      port: 5173,
-    },
+    strictPort: false,
     // Disable caching in dev mode - always serve fresh files
-    middlewareMode: false,
-    // Force no caching
     headers: {
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
       Pragma: "no-cache",

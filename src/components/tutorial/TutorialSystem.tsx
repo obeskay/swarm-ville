@@ -116,10 +116,7 @@ export function TutorialSystem({ onComplete, onSkip }: TutorialSystemProps) {
   const Icon = step.icon;
 
   return (
-    <div
-      className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "var(--background-70)" }}
-    >
+    <div className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       {/* Celebration overlay */}
       {showCelebration && (
         <div className="absolute inset-0 flex items-center justify-center z-60 pointer-events-none">

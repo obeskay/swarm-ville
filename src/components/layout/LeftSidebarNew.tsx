@@ -27,8 +27,11 @@ export function LeftSidebarNew() {
         color: theme.colors.text.dark.primary,
         borderRightColor: theme.colors.border.dark,
         borderRightWidth: 1,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
       }}
-      className="h-full flex flex-col overflow-hidden"
     >
       {/* Header: Player Level & Progress */}
       <div
@@ -36,6 +39,7 @@ export function LeftSidebarNew() {
           padding: `${missionsConfig.itemPadding}px`,
           borderBottomColor: theme.colors.border.dark,
           borderBottomWidth: 1,
+          flexShrink: 0,
         }}
       >
         <div className="flex items-center gap-2 mb-3">
