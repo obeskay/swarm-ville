@@ -1,7 +1,8 @@
-# Rendering: Dynamic Theme Color System
+# rendering Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-pixi-theme-color-system. Update Purpose after archive.
+## Requirements
 ### Requirement: Theme Color Access in PixiJS
 
 The system SHALL provide a hook-based API for accessing CSS theme colors in PixiJS code, supporting all theme variables (primary, secondary, accent, destructive, muted, border, ring, sidebar, chart colors, and background) automatically converted to hexadecimal format.
@@ -70,3 +71,4 @@ The system SHALL provide clear documentation on how to use theme colors in PixiJ
 - **THEN** find `THEME_COLORS.md` guide in project documentation
 - **AND** guide shows examples of using `useThemeColors()` in components
 - **AND** guide lists all available color names and their CSS variable origins
+
