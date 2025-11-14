@@ -23,19 +23,21 @@ func _ready() -> void:
 	print("[InputManager] Initialized with WASD support")
 
 func _process(_delta: float) -> void:
-	# Handle WASD movement - only emit when input changes (not every frame)
+	# Handle WASD/Arrow movement - emit every frame while key is held
 	var input_vector = Vector2.ZERO
-	if Input.is_action_pressed("ui_up"):    # W key
+
+	# Check both action names (ui_*) AND direct key presses (WASD)
+	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
 		input_vector.y -= 1
-	if Input.is_action_pressed("ui_down"):  # S key (but skip if ctrl)
+	if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
 		input_vector.y += 1
-	if Input.is_action_pressed("ui_left"):  # A key
+	if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
 		input_vector.x -= 1
-	if Input.is_action_pressed("ui_right"): # D key
+	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
 		input_vector.x += 1
 
-	# Only emit when input state changes (new input pressed)
-	if input_vector != last_input_vector and input_vector != Vector2.ZERO:
+	# Emit every frame while input is active (continuous movement support)
+	if input_vector != Vector2.ZERO:
 		movement_input = input_vector.normalized()
 		wasd_pressed.emit(movement_input)
 

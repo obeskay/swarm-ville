@@ -14,10 +14,14 @@ var animation_timer: float = 0.0
 var animation_speed: float = 0.15  # seconds per frame
 var base_texture: Texture2D = null
 
+# Simplified movement - no queue complexity
+var frame_size: Vector2i = Vector2i(48, 48)
+
 var sprite: Sprite2D
 var name_label: Label
 var health: int = 100
 var is_player: bool = true
+var gameplay_scene: Node2D = null  # Reference to gameplay scene for collision checks
 
 signal player_moved(grid_pos: Vector2i)
 signal player_interacted(target_id: String)
@@ -28,10 +32,11 @@ func _ready() -> void:
 	sprite = Sprite2D.new()
 	sprite.centered = true
 	base_texture = load("res://assets/sprites/characters/Character_001.png")
-	# Don't tint the sprite, use original colors
+	sprite.texture = base_texture
 	sprite.self_modulate = Color.WHITE
-	sprite.scale = Vector2(2.0, 2.0)  # Large visible sprite
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # Pixel perfect rendering
+	sprite.scale = Vector2(2.0, 2.0)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.region_enabled = true  # Enable region cropping
 	add_child(sprite)
 
 	# Initialize animation
@@ -77,23 +82,29 @@ func _physics_process(delta: float) -> void:
 
 func _on_wasd_input(direction: Vector2) -> void:
 	if is_moving:
-		return
+		return  # Ignore input durante movimiento
 
-	# Convert direction to grid movement
-	var grid_direction = Vector2i.ZERO
-	if direction.x > 0.5:
-		grid_direction.x = 1
-	elif direction.x < -0.5:
-		grid_direction.x = -1
+	# Solo 4 direcciones, no diagonales
+	var grid_dir = Vector2i.ZERO
 
-	if direction.y > 0.5:
-		grid_direction.y = 1
-	elif direction.y < -0.5:
-		grid_direction.y = -1
+	# Priorizar vertical sobre horizontal
+	if abs(direction.y) > abs(direction.x):
+		if direction.y > 0:
+			grid_dir = Vector2i(0, 1)
+			current_direction = "down"
+		else:
+			grid_dir = Vector2i(0, -1)
+			current_direction = "up"
+	else:
+		if direction.x > 0:
+			grid_dir = Vector2i(1, 0)
+			current_direction = "right"
+		else:
+			grid_dir = Vector2i(-1, 0)
+			current_direction = "left"
 
-	if grid_direction != Vector2i.ZERO:
-		print("[PlayerController] Input received: %s, moving to %s" % [direction, position_grid + grid_direction])
-		move_to(position_grid + grid_direction)
+	if grid_dir != Vector2i.ZERO:
+		move_to(position_grid + grid_dir)
 
 func move_to(new_grid_pos: Vector2i) -> void:
 	# Validate position (simple bounds check)
@@ -101,6 +112,12 @@ func move_to(new_grid_pos: Vector2i) -> void:
 		return
 	if new_grid_pos.x > 48 or new_grid_pos.y > 48:
 		return
+
+	# Check collision with blocked tiles (walls, furniture)
+	if gameplay_scene and gameplay_scene.has_method("is_tile_blocked"):
+		if gameplay_scene.is_tile_blocked(new_grid_pos):
+			print("[PlayerController] Blocked by wall/object at (%d, %d)" % [new_grid_pos.x, new_grid_pos.y])
+			return
 
 	# Determine direction
 	var diff = new_grid_pos - position_grid
@@ -132,12 +149,12 @@ func move_to(new_grid_pos: Vector2i) -> void:
 		_update_animation_frame()
 		update_position(position_grid)
 	)
+	# Wait for tween to finish
+	await tween.finished
 
 	# Update network
 	SyncManager.queue_position_update(player_agent_id, position_grid, "move")
 	player_moved.emit(position_grid)
-
-	print("[PlayerController] Moved to %s" % position_grid)
 
 func update_position(grid_pos: Vector2i) -> void:
 	position_grid = grid_pos
@@ -166,27 +183,21 @@ func _update_animation_frame() -> void:
 	if not sprite or not base_texture:
 		return
 
-	# Map direction to row in spritesheet (assuming 4x4 grid)
-	# Row 0: right, Row 1: left, Row 2: down, Row 3: up
-	var direction_row = 2  # default down
+	# Dirección a row (192x192 spritesheet, 4x4 grid de 48x48)
+	var row = 0
 	match current_direction:
-		"right":
-			direction_row = 0
-		"left":
-			direction_row = 1
-		"down":
-			direction_row = 2
-		"up":
-			direction_row = 3
+		"down": row = 0
+		"left": row = 1
+		"right": row = 2
+		"up": row = 3
 
-
-
-	# Create AtlasTexture to crop 48x48 from 192x192 spritesheet
-	var atlas = AtlasTexture.new()
-	atlas.atlas = base_texture
-	atlas.region = Rect2(animation_frame * 48, direction_row * 48, 48, 48)
-	atlas.filter_clip = true
-	sprite.texture = atlas
+	# Simple region_rect - NO usar AtlasTexture
+	sprite.region_rect = Rect2(
+		animation_frame * frame_size.x,
+		row * frame_size.y,
+		frame_size.x,
+		frame_size.y
+	)
 
 func _on_interaction_requested() -> void:
 	# Find nearest agent and interact

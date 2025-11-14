@@ -5,6 +5,7 @@ signal agent_task_started(agent_id: String, task: String)
 signal agent_task_completed(agent_id: String, result: Dictionary)
 signal swarm_initialized(swarm_id: String)
 signal collaboration_updated(status: Dictionary)
+signal agent_behavior_changed(agent_id: String, behavior: String, zone_type: String)
 
 var active_agents: Dictionary = {}
 var claude_cli_available: bool = false
@@ -13,6 +14,11 @@ var max_agents: int = 8
 
 func _ready() -> void:
 	_check_claude_cli()
+
+	# Connect to collaboration manager for zone-based behaviors
+	CollaborationManager.zone_entered.connect(_on_agent_zone_entered)
+	CollaborationManager.zone_exited.connect(_on_agent_zone_exited)
+
 	print("[AgentCoordinator] Initialized - Multi-agent system ready")
 
 func _check_claude_cli() -> void:
@@ -243,3 +249,196 @@ func get_swarm_status() -> Dictionary:
 			status["working_agents"] += 1
 
 	return status
+
+# ========================================
+# ZONE-BASED AGENT BEHAVIORS (Gather-clone pattern)
+# ========================================
+
+func _on_agent_zone_entered(user_id: String, zone_data: Dictionary) -> void:
+	"""Adjust agent behavior when entering a zone"""
+	# Only process for actual AI agents, not all users
+	if not active_agents.has(user_id):
+		return
+
+	var zone_type = zone_data.get("zone_type", "")
+	var zone_name = zone_data.get("name", "Unknown Zone")
+	var agent = active_agents[user_id]
+
+	# Apply zone-specific behavior
+	var behavior = _get_zone_behavior(zone_type)
+	agent["current_behavior"] = behavior
+	agent["current_zone"] = zone_data
+
+	agent_behavior_changed.emit(user_id, behavior, zone_type)
+
+	print("[AgentCoordinator] Agent %s entered %s - behavior: %s" % [user_id, zone_name, behavior])
+
+	# Trigger zone-specific tasks
+	match zone_type:
+		"meeting":
+			_trigger_meeting_behavior(user_id, zone_data)
+		"desk":
+			_trigger_work_behavior(user_id, zone_data)
+		"lounge":
+			_trigger_social_behavior(user_id, zone_data)
+		"kitchen":
+			_trigger_casual_behavior(user_id, zone_data)
+		"focus":
+			_trigger_deep_work_behavior(user_id, zone_data)
+
+func _on_agent_zone_exited(user_id: String, zone_data: Dictionary) -> void:
+	"""Reset agent behavior when exiting zone"""
+	if not active_agents.has(user_id):
+		return
+
+	var agent = active_agents[user_id]
+	agent["current_behavior"] = "idle"
+	agent["current_zone"] = null
+
+	# Cancel zone-specific tasks
+	if agent.get("current_task") and agent["current_task"].get("zone_specific", false):
+		agent["current_task"] = null
+		agent["status"] = "idle"
+
+	print("[AgentCoordinator] Agent %s exited zone - returning to idle" % user_id)
+
+func _get_zone_behavior(zone_type: String) -> String:
+	"""Map zone type to agent behavior"""
+	match zone_type:
+		"reception":
+			return "greeting"
+		"meeting":
+			return "collaborative"
+		"desk":
+			return "focused_work"
+		"lounge":
+			return "social"
+		"kitchen":
+			return "casual"
+		"focus":
+			return "deep_work"
+		_:
+			return "idle"
+
+func _trigger_meeting_behavior(agent_id: String, zone_data: Dictionary) -> void:
+	"""Trigger collaborative tasks in meeting rooms"""
+	var task = {
+		"description": "Participate in collaborative meeting",
+		"zone_specific": true,
+		"zone_type": "meeting",
+		"behavior": "collaborative",
+		"use_ai": true,
+		"subtasks": [
+			"Share ideas with nearby agents",
+			"Brainstorm solutions",
+			"Document meeting outcomes"
+		]
+	}
+
+	assign_task_to_agent(agent_id, task)
+
+	# Check if other agents in same zone for group collaboration
+	var nearby_agents = _get_agents_in_zone(zone_data)
+	if nearby_agents.size() > 1:
+		print("[AgentCoordinator] %d agents in meeting - enabling group collaboration" % nearby_agents.size())
+		_enable_group_collaboration(nearby_agents, zone_data)
+
+func _trigger_work_behavior(agent_id: String, zone_data: Dictionary) -> void:
+	"""Trigger focused work tasks at desks"""
+	var task = {
+		"description": "Complete focused work assignment",
+		"zone_specific": true,
+		"zone_type": "desk",
+		"behavior": "focused_work",
+		"use_ai": true,
+		"subtasks": [
+			"Process assigned tasks",
+			"Minimal interruptions",
+			"Produce deliverables"
+		]
+	}
+
+	assign_task_to_agent(agent_id, task)
+
+func _trigger_social_behavior(agent_id: String, zone_data: Dictionary) -> void:
+	"""Trigger social/networking behavior in lounge"""
+	var task = {
+		"description": "Engage in social interaction",
+		"zone_specific": true,
+		"zone_type": "lounge",
+		"behavior": "social",
+		"use_ai": false,
+		"subtasks": [
+			"Chat with nearby agents",
+			"Share casual updates",
+			"Build team rapport"
+		]
+	}
+
+	assign_task_to_agent(agent_id, task)
+
+func _trigger_casual_behavior(agent_id: String, zone_data: Dictionary) -> void:
+	"""Trigger casual interaction in kitchen"""
+	var task = {
+		"description": "Take casual break",
+		"zone_specific": true,
+		"zone_type": "kitchen",
+		"behavior": "casual",
+		"use_ai": false,
+		"subtasks": [
+			"Informal conversation",
+			"Quick status updates",
+			"Recharge energy"
+		]
+	}
+
+	assign_task_to_agent(agent_id, task)
+
+func _trigger_deep_work_behavior(agent_id: String, zone_data: Dictionary) -> void:
+	"""Trigger deep work mode in focus booths"""
+	var task = {
+		"description": "Enter deep work mode - no interruptions",
+		"zone_specific": true,
+		"zone_type": "focus",
+		"behavior": "deep_work",
+		"use_ai": true,
+		"priority": 10.0,  # High priority
+		"subtasks": [
+			"Complete complex analysis",
+			"Block all interruptions",
+			"Deep concentration task"
+		]
+	}
+
+	assign_task_to_agent(agent_id, task)
+
+func _get_agents_in_zone(zone_data: Dictionary) -> Array:
+	"""Get all agents currently in a specific zone"""
+	var agents_in_zone = []
+	var zone_id = zone_data.get("zone_id", "")
+
+	for agent_id in active_agents:
+		var agent = active_agents[agent_id]
+		if agent.get("current_zone") and agent["current_zone"].get("zone_id") == zone_id:
+			agents_in_zone.append(agent_id)
+
+	return agents_in_zone
+
+func _enable_group_collaboration(agent_ids: Array, zone_data: Dictionary) -> void:
+	"""Enable group collaboration for multiple agents in same zone"""
+	var group_task = {
+		"description": "Group collaboration in %s" % zone_data.get("name", "zone"),
+		"zone_specific": true,
+		"zone_type": zone_data.get("zone_type", ""),
+		"behavior": "group_collaborative",
+		"participants": agent_ids,
+		"use_ai": claude_cli_available
+	}
+
+	# Broadcast to all agents in group
+	for agent_id in agent_ids:
+		if active_agents.has(agent_id):
+			var agent = active_agents[agent_id]
+			agent["group_task"] = group_task
+
+	print("[AgentCoordinator] Group collaboration enabled for %d agents" % agent_ids.size())
