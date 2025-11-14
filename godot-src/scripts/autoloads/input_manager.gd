@@ -15,6 +15,7 @@ var is_ctrl_pressed: bool = false
 var mouse_position: Vector2 = Vector2.ZERO
 var selected_agent_id: String = ""
 var movement_input: Vector2 = Vector2.ZERO
+var last_input_vector: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	set_process_input(true)
@@ -22,7 +23,7 @@ func _ready() -> void:
 	print("[InputManager] Initialized with WASD support")
 
 func _process(_delta: float) -> void:
-	# Handle WASD movement every frame
+	# Handle WASD movement - only emit when input changes (not every frame)
 	var input_vector = Vector2.ZERO
 	if Input.is_action_pressed("ui_up"):    # W key
 		input_vector.y -= 1
@@ -33,9 +34,12 @@ func _process(_delta: float) -> void:
 	if Input.is_action_pressed("ui_right"): # D key
 		input_vector.x += 1
 
-	if input_vector != Vector2.ZERO:
+	# Only emit when input state changes (new input pressed)
+	if input_vector != last_input_vector and input_vector != Vector2.ZERO:
 		movement_input = input_vector.normalized()
 		wasd_pressed.emit(movement_input)
+
+	last_input_vector = input_vector
 
 func _input(event: InputEvent) -> void:
 	# Track modifiers

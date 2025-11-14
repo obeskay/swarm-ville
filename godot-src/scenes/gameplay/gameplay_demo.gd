@@ -289,8 +289,8 @@ func _place_tile(grid_x: int, grid_y: int, world_x: int, world_y: int, _tile_nam
 		var atlas = AtlasTexture.new()
 		atlas.atlas = tileset_texture
 
-		# Assuming 16x16 tiles in spritesheet (adjust if needed)
-		var tile_frame_size = 16
+		# Grasslands spritesheet is 1024x1024 with 64px tiles (16x16 grid)
+		var tile_frame_size = 64
 		atlas.region = Rect2(
 			(frame_index % 16) * tile_frame_size,
 			(frame_index / 16) * tile_frame_size,
@@ -299,7 +299,8 @@ func _place_tile(grid_x: int, grid_y: int, world_x: int, world_y: int, _tile_nam
 		)
 		atlas.filter_clip = true
 		sprite.texture = atlas
-		sprite.scale = Vector2(GameConfig.TILE_SIZE / float(tile_frame_size), GameConfig.TILE_SIZE / float(tile_frame_size))
+		# No scaling needed - tile_frame_size (64) matches GameConfig.TILE_SIZE (64)
+		sprite.scale = Vector2(1.0, 1.0)
 
 		tile_layers[layer].add_child(sprite)
 
@@ -308,14 +309,24 @@ func _place_tile(grid_x: int, grid_y: int, world_x: int, world_y: int, _tile_nam
 			tilemap_sprites[key] = {}
 		tilemap_sprites[key][layer] = sprite
 	else:
-		# Fallback: use ColorRect with colors
-		var tile_color = Color(0.2, 0.6, 0.2, 1.0)  # Default grass green
-		if _tile_name == "water":
-			tile_color = Color(0.0, 0.3, 0.8, 1.0)  # Water blue
-		elif _tile_name == "tree":
-			tile_color = Color(0.0, 0.4, 0.0, 1.0)  # Dark green
-		elif _tile_name == "stone":
-			tile_color = Color(0.5, 0.5, 0.5, 1.0)  # Gray
+		# Fallback: use ColorRect with colors - vibrant palette
+		var tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Grass green (brighter)
+
+		match _tile_name:
+			"grass":
+				tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Bright grass green
+			"water":
+				tile_color = Color(0.2, 0.6, 0.95, 1.0)  # Bright water blue
+			"tree":
+				tile_color = Color(0.1, 0.5, 0.1, 1.0)  # Dark forest green
+			"stone":
+				tile_color = Color(0.6, 0.6, 0.6, 1.0)  # Light gray stone
+			"rocky":
+				tile_color = Color(0.5, 0.45, 0.35, 1.0)  # Brown rocky
+			"sand":
+				tile_color = Color(0.9, 0.85, 0.5, 1.0)  # Sandy yellow
+			_:
+				tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Default to grass
 
 		var tile_rect = ColorRect.new()
 		tile_rect.color = tile_color
@@ -330,22 +341,46 @@ func _place_tile(grid_x: int, grid_y: int, world_x: int, world_y: int, _tile_nam
 		tilemap_sprites[key][layer] = tile_rect
 
 func _get_frame_index_for_tile(tile_name: String) -> int:
-	"""Map tile names to spritesheet frame indices"""
-	# Simple mapping - extend based on actual tile names in your tileset
+	"""Map tile names to spritesheet frame indices - using simple 4x4 base tiles"""
+	# Grasslands spritesheet 1024x1024, 64px tiles = 16x16 grid
+	# Keep it simple - use only first 16 frames (4x4) from top-left
+
 	match tile_name:
 		"grass":
-			return 0
-		"tree":
-			return 1
+			# Frames 0-3: grass variants in row 0
+			var grass_options = [0, 1, 2, 3]
+			return grass_options[randi() % grass_options.size()]
+
 		"water":
-			return 2
+			# Frames 4-7: water in row 0, cols 4-7
+			var water_options = [4, 5, 6, 7]
+			return water_options[randi() % water_options.size()]
+
+		"tree":
+			# Frames 8-11: trees in row 0, cols 8-11
+			var tree_options = [8, 9, 10, 11]
+			return tree_options[randi() % tree_options.size()]
+
 		"stone":
-			return 3
+			# Frames 12-15: stone/paths in row 0, cols 12-15
+			var stone_options = [12, 13, 14, 15]
+			return stone_options[randi() % stone_options.size()]
+
+		"rocky":
+			# Same as stone for now
+			var rocky_options = [12, 13, 14, 15]
+			return rocky_options[randi() % rocky_options.size()]
+
+		"sand":
+			# Use water tiles for sand (similar appearance)
+			var sand_options = [4, 5, 6, 7]
+			return sand_options[randi() % sand_options.size()]
+
 		_:
-			return 0  # Default to grass
+			return 0  # Default to grass (frame 0)
 
 func _generate_sample_tilemap() -> Dictionary:
-	"""Generate a sample tilemap with grass, trees, and water for testing"""
+	"""Generate a detailed sample tilemap with grass, trees, water, and structures"""
 	var tilemap = {}
 	var width = 48
 	var height = 48
@@ -360,32 +395,79 @@ func _generate_sample_tilemap() -> Dictionary:
 				"object": null
 			}
 
-	# Add some trees as objects (scattered randomly)
-	for i in range(30):
-		var x = randi() % width
-		var y = randi() % height
-		# Avoid placing trees near center where player spawns
-		if abs(x - 5) < 3 and abs(y - 5) < 3:
-			continue
-		var key = "%d,%d" % [x, y]
-		tilemap[key]["object"] = "tree"
+	# Add water patches (lakes and rivers for visual interest)
+	var water_areas = [
+		{"x": 10, "y": 10, "size": 4},  # Lake 1
+		{"x": 35, "y": 35, "size": 3},  # Lake 2
+		{"x": 20, "y": 5, "size": 2}    # Pond
+	]
 
-	# Add water patches
-	for i in range(10):
+	for area in water_areas:
+		for dx in range(-area["size"], area["size"] + 1):
+			for dy in range(-area["size"], area["size"] + 1):
+				var x = area["x"] + dx
+				var y = area["y"] + dy
+				if x >= 0 and x < width and y >= 0 and y < height:
+					var key = "%d,%d" % [x, y]
+					tilemap[key]["floor"] = "water"
+
+	# Add forest areas with clusters of trees
+	var forest_areas = [
+		{"cx": 8, "cy": 8, "radius": 6},
+		{"cx": 40, "cy": 40, "radius": 5},
+		{"cx": 30, "cy": 12, "radius": 4}
+	]
+
+	for forest in forest_areas:
+		for x in range(forest["cx"] - forest["radius"], forest["cx"] + forest["radius"]):
+			for y in range(forest["cy"] - forest["radius"], forest["cy"] + forest["radius"]):
+				if x >= 0 and x < width and y >= 0 and y < height:
+					var dist = Vector2(x - forest["cx"], y - forest["cy"]).length()
+					if dist < forest["radius"] and randf() > 0.3:  # 70% chance of tree in forest
+						var key = "%d,%d" % [x, y]
+						# Don't place trees near player spawn
+						if not (abs(x - 5) < 5 and abs(y - 5) < 5):
+							tilemap[key]["object"] = "tree"
+
+	# Add scattered trees outside forests
+	for i in range(20):
 		var x = randi() % width
 		var y = randi() % height
 		var key = "%d,%d" % [x, y]
-		tilemap[key]["floor"] = "water"
+		if tilemap[key].get("object") == null and tilemap[key].get("floor") != "water":
+			# 60% chance to add scattered tree
+			if randf() > 0.4:
+				tilemap[key]["object"] = "tree"
 
-	# Add some stone tiles scattered around
-	for i in range(15):
-		var x = randi() % width
-		var y = randi() % height
+	# Add stone paths/roads
+	# Horizontal path
+	for x in range(0, width):
+		var y = 20
 		var key = "%d,%d" % [x, y]
 		if tilemap[key].get("object") == null:
 			tilemap[key]["above_floor"] = "stone"
 
-	print("[GameplayDemo] Generated sample tilemap with %d tiles" % tilemap.size())
+	# Vertical path
+	for y in range(0, height):
+		var x = 24
+		var key = "%d,%d" % [x, y]
+		if tilemap[key].get("object") == null:
+			tilemap[key]["above_floor"] = "stone"
+
+	# Add rocky areas
+	for i in range(12):
+		var cx = randi() % width
+		var cy = randi() % height
+		for dx in range(-2, 3):
+			for dy in range(-2, 3):
+				var x = cx + dx
+				var y = cy + dy
+				if x >= 0 and x < width and y >= 0 and y < height:
+					var key = "%d,%d" % [x, y]
+					if tilemap[key].get("object") == null and randf() > 0.5:
+						tilemap[key]["above_floor"] = "rocky"
+
+	print("[GameplayDemo] Generated enhanced tilemap with %d tiles" % tilemap.size())
 	return tilemap
 
 func _on_zoom_requested(delta: float) -> void:
