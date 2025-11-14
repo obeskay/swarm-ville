@@ -27,6 +27,7 @@ TileMapManager="*res://scripts/autoloads/tilemap_manager.gd"
 UISystem="*res://scripts/autoloads/ui_system.gd"
 GameState="*res://scripts/autoloads/game_state.gd"
 ClaudeMCPAgent="*res://scripts/autoloads/claude_mcp_agent.gd"
+AgentCoordinator="*res://scripts/autoloads/agent_coordinator.gd"
 CoordinateUtils="*res://scripts/utils/coordinate_utils.gd"
 
 [display]

@@ -65,6 +65,10 @@ func _ready() -> void:
 	InputManager.agent_creation_requested.connect(_on_spawn_agent_demo)
 	InputManager.zoom_requested.connect(_on_zoom_requested)
 
+	# Connect agent coordinator
+	AgentCoordinator.agent_task_completed.connect(_on_agent_task_completed)
+	AgentCoordinator.swarm_initialized.connect(_on_swarm_initialized)
+
 	# Load all character spritesheet textures (cache them)
 	_load_character_textures()
 
@@ -77,6 +81,10 @@ func _ready() -> void:
 	_render_tilemap(initial_space_data)
 
 	print("[GameplayDemo] Ready! Press SPACE to spawn enemies, WASD to move")
+
+	# Initialize agent swarm for multi-agent collaboration
+	var swarm = AgentCoordinator.initialize_swarm("mesh", 4)
+	print("[GameplayDemo] Multi-agent swarm ready: %d AI agents" % swarm["agent_count"])
 
 func _process(delta: float) -> void:
 	# Update camera to follow player
@@ -274,71 +282,37 @@ func _render_tilemap(space_data: Dictionary) -> void:
 	print("[GameplayDemo] Rendered tiles - Floor: %d, Above: %d, Object: %d (Total keys: %d)" % [floor_count, above_count, object_count, tilemap_sprites.size()])
 
 func _place_tile(grid_x: int, grid_y: int, world_x: int, world_y: int, _tile_name: String, layer: String) -> void:
-	"""Place a single tile sprite using spritesheet or fallback to colored rect"""
-	# Try to use spritesheet if available
-	if tileset_texture:
-		# Create sprite with atlas texture for tileset
-		var sprite = Sprite2D.new()
-		sprite.centered = false
-		sprite.position = Vector2(world_x, world_y)
+	"""Place a single tile using ColorRect - simple and reliable"""
+	# Use ColorRect with vibrant colors for different tile types
+	var tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Grass green (brighter)
 
-		# Map tile names to frame indices in spritesheet
-		var frame_index = _get_frame_index_for_tile(_tile_name)
+	match _tile_name:
+		"grass":
+			tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Bright grass green
+		"water":
+			tile_color = Color(0.2, 0.6, 0.95, 1.0)  # Bright water blue
+		"tree":
+			tile_color = Color(0.1, 0.5, 0.1, 1.0)  # Dark forest green
+		"stone":
+			tile_color = Color(0.6, 0.6, 0.6, 1.0)  # Light gray stone
+		"rocky":
+			tile_color = Color(0.5, 0.45, 0.35, 1.0)  # Brown rocky
+		"sand":
+			tile_color = Color(0.9, 0.85, 0.5, 1.0)  # Sandy yellow
+		_:
+			tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Default to grass
 
-		# Create AtlasTexture to crop from tileset
-		var atlas = AtlasTexture.new()
-		atlas.atlas = tileset_texture
+	var tile_rect = ColorRect.new()
+	tile_rect.color = tile_color
+	tile_rect.size = Vector2(GameConfig.TILE_SIZE, GameConfig.TILE_SIZE)
+	tile_rect.position = Vector2(world_x, world_y)
 
-		# Grasslands spritesheet is 1024x1024 with 64px tiles (16x16 grid)
-		var tile_frame_size = 64
-		atlas.region = Rect2(
-			(frame_index % 16) * tile_frame_size,
-			(frame_index / 16) * tile_frame_size,
-			tile_frame_size,
-			tile_frame_size
-		)
-		atlas.filter_clip = true
-		sprite.texture = atlas
-		# No scaling needed - tile_frame_size (64) matches GameConfig.TILE_SIZE (64)
-		sprite.scale = Vector2(1.0, 1.0)
+	tile_layers[layer].add_child(tile_rect)
 
-		tile_layers[layer].add_child(sprite)
-
-		var key = "%d,%d" % [grid_x, grid_y]
-		if not tilemap_sprites.has(key):
-			tilemap_sprites[key] = {}
-		tilemap_sprites[key][layer] = sprite
-	else:
-		# Fallback: use ColorRect with colors - vibrant palette
-		var tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Grass green (brighter)
-
-		match _tile_name:
-			"grass":
-				tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Bright grass green
-			"water":
-				tile_color = Color(0.2, 0.6, 0.95, 1.0)  # Bright water blue
-			"tree":
-				tile_color = Color(0.1, 0.5, 0.1, 1.0)  # Dark forest green
-			"stone":
-				tile_color = Color(0.6, 0.6, 0.6, 1.0)  # Light gray stone
-			"rocky":
-				tile_color = Color(0.5, 0.45, 0.35, 1.0)  # Brown rocky
-			"sand":
-				tile_color = Color(0.9, 0.85, 0.5, 1.0)  # Sandy yellow
-			_:
-				tile_color = Color(0.34, 0.76, 0.2, 1.0)  # Default to grass
-
-		var tile_rect = ColorRect.new()
-		tile_rect.color = tile_color
-		tile_rect.size = Vector2(GameConfig.TILE_SIZE, GameConfig.TILE_SIZE)
-		tile_rect.position = Vector2(world_x, world_y)
-
-		tile_layers[layer].add_child(tile_rect)
-
-		var key = "%d,%d" % [grid_x, grid_y]
-		if not tilemap_sprites.has(key):
-			tilemap_sprites[key] = {}
-		tilemap_sprites[key][layer] = tile_rect
+	var key = "%d,%d" % [grid_x, grid_y]
+	if not tilemap_sprites.has(key):
+		tilemap_sprites[key] = {}
+	tilemap_sprites[key][layer] = tile_rect
 
 func _get_frame_index_for_tile(tile_name: String) -> int:
 	"""Map tile names to spritesheet frame indices - using simple 4x4 base tiles"""
@@ -486,3 +460,11 @@ func _on_zoom_requested(delta: float) -> void:
 	viewport_camera.zoom = Vector2(new_zoom, new_zoom)
 
 	print("[GameplayDemo] Camera zoom: %.2f" % new_zoom)
+
+func _on_swarm_initialized(swarm_id: String) -> void:
+	"""Called when agent swarm is initialized"""
+	print("[GameplayDemo] Swarm %s initialized - AI collaboration active" % swarm_id)
+
+func _on_agent_task_completed(agent_id: String, result: Dictionary) -> void:
+	"""Called when an AI agent completes a task"""
+	print("[GameplayDemo] Agent %s completed: %s" % [agent_id, result.get("task", "unknown")])
