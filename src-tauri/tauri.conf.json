@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "identifier": "com.swarmville.app",
   "build": {
-    "beforeBuildCommand": "pnpm run build:godot",
-    "beforeDevCommand": "pnpm run build:godot",
-    "devUrl": "http://localhost:8000",
-    "frontendDist": "../godot_build"
+    "beforeBuildCommand": "pnpm run build",
+    "beforeDevCommand": "vite dev",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [

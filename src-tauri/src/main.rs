@@ -200,14 +200,115 @@ async fn create_space(
 }
 
 #[tauri::command]
+async fn execute_shell_command(command: String) -> Result<String, String> {
+    use std::process::Command;
+
+    tracing::info!("Executing shell command: {}", command);
+
+    let output = if cfg!(target_os = "windows") {
+        Command::new("cmd").args(["/C", &command]).output()
+    } else {
+        Command::new("sh").arg("-c").arg(&command).output()
+    };
+
+    match output {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+            let result = serde_json::json!({
+                "success": output.status.success(),
+                "stdout": stdout,
+                "stderr": stderr,
+                "exit_code": output.status.code()
+            });
+
+            Ok(serde_json::to_string(&result).map_err(|e| e.to_string())?)
+        }
+        Err(e) => Err(format!("Failed to execute command: {}", e)),
+    }
+}
+
+#[tauri::command]
 async fn spawn_agent(
-    _space_id: String,
+    app_handle: tauri::AppHandle,
+    space_id: String,
     name: String,
-    _role: String,
-    _cli_type: String,
+    role: String,
+    cli_type: String,
+    x: u32,
+    y: u32,
 ) -> Result<String, String> {
-    // TODO: Create agent in database
-    Ok(format!("Agent spawned: {}", name))
+    use agents::{AgentConfig, Position};
+
+    // Determine model based on cli_type
+    let (provider, model) = match cli_type.to_lowercase().as_str() {
+        "claude" | "claude-haiku" => ("claude", "claude-haiku-4-5-20251001"),
+        "cursor" => ("cursor", "claude-3.5-sonnet"),
+        "cursor-auto" => ("cursor", "auto"),
+        _ => ("mock", "mock"),
+    };
+
+    let config = AgentConfig {
+        name: name.clone(),
+        role,
+        model_provider: provider.to_string(),
+        model_name: model.to_string(),
+        initial_position: Position { x, y },
+        space_id,
+    };
+
+    // Clone runtime to avoid holding lock across await
+    let runtime_state = app_handle.state::<Mutex<agents::AgentRuntime>>();
+    let runtime = {
+        let guard = runtime_state.lock().map_err(|e| e.to_string())?;
+        guard.clone()
+    };
+
+    let agent_id = runtime.spawn_agent(config).await?;
+
+    tracing::info!("Spawned agent '{}' with ID: {}", name, agent_id);
+
+    Ok(agent_id)
+}
+
+#[tauri::command]
+async fn execute_complex_task(
+    app_handle: tauri::AppHandle,
+    task_id: String,
+    description: String,
+    space_id: String,
+    cli_type: String,
+) -> Result<String, String> {
+    use agents::{ComplexTask, TaskOrchestrator};
+
+    tracing::info!("Executing complex task: {}", description);
+
+    let task = ComplexTask {
+        task_id,
+        description,
+        space_id,
+    };
+
+    // Get runtime and create orchestrator
+    let runtime_state = app_handle.state::<Mutex<agents::AgentRuntime>>();
+    let runtime = {
+        let guard = runtime_state.lock().map_err(|e| e.to_string())?;
+        std::sync::Arc::new(guard.clone())
+    };
+
+    let orchestrator = TaskOrchestrator::new(runtime);
+
+    // Execute complex task (spawns multiple specialized agents)
+    let agent_ids = orchestrator.execute_complex_task(task, &cli_type).await?;
+
+    let result = serde_json::json!({
+        "success": true,
+        "agent_ids": agent_ids,
+        "message": format!("Spawned {} specialized agents for complex task", agent_ids.len())
+    });
+
+    Ok(serde_json::to_string(&result).map_err(|e| e.to_string())?)
 }
 
 #[tauri::command]
@@ -454,7 +555,12 @@ fn main() {
                 db: std::sync::Arc::new(persistence),
             });
 
+            // Initialize AgentRuntime for LLM-powered agents
+            let agent_runtime = agents::AgentRuntime::new(100);
+            app.manage(Mutex::new(agent_runtime));
+
             tracing::info!("Persistence layer initialized at {:?}", db_path);
+            tracing::info!("Agent Runtime initialized with LLM providers");
 
             // Start WebSocket server on background thread
             tauri::async_runtime::spawn(async move {
@@ -477,7 +583,9 @@ fn main() {
             start_stt,
             stop_stt,
             create_space,
+            execute_shell_command,
             spawn_agent,
+            execute_complex_task,
             get_sprite_templates,
             get_sprite_template,
             save_generated_sprite,

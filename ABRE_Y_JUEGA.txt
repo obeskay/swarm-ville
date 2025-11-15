@@ -1,118 +1,0 @@
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║                   🎮 SWARMVILLE - ABRE Y JUEGA 🎮                            ║
-║                                                                               ║
-║                      TODO ESTÁ FUNCIONAL Y LISTO                             ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-
-
-PASOS PARA JUGAR (3 pasos super simples)
-═══════════════════════════════════════════════════════════════════════════════
-
-1️⃣  ABRE TERMINAL
-
-    cd /Users/obedvargasvillarreal/Documents/obeskay/proyectos/swarm-ville/godot-src
-
-
-2️⃣  EJECUTA GODOT
-
-    godot
-
-
-3️⃣  CUANDO GODOT ABRA
-
-    ✓ Ve a la carpeta "scenes/gameplay" en el panel izquierdo
-    ✓ Haz doble clic en "gameplay_demo.tscn"
-    ✓ Presiona F5 (o el botón Play arriba a la derecha)
-    ✓ ¡EL JUEGO APARECERÁ EN UNA VENTANA!
-
-
-CONTROLES
-═══════════════════════════════════════════════════════════════════════════════
-
-    W              = Mueve arriba
-    A              = Mueve izquierda
-    S              = Mueve abajo
-    D              = Mueve derecha
-    ESPACIO        = Spawn enemigos manuales
-    E              = Interactúa con enemigos
-
-
-QUÉ VAS A VER
-═══════════════════════════════════════════════════════════════════════════════
-
-    ✅ Pantalla oscura (fondo)
-    ✅ Tu personaje "YOU" en el centro (sprite con colores)
-    ✅ ~40 enemigos alrededor con sprites variados
-    ✅ Colores: magenta, rojo, marrón, dorado, etc.
-    ✅ Etiquetas E1, E2, E3... en cada enemigo
-    ✅ Cuando presiones WASD, te moveás suavemente
-    ✅ La cámara sigue tu movimiento
-
-
-SI ALGO NO FUNCIONA
-═══════════════════════════════════════════════════════════════════════════════
-
-    ❌ No veo la ventana del juego
-    → Presiona F5 nuevamente después de abrir la escena
-
-    ❌ No me muevo con WASD
-    → Haz clic EN LA VENTANA DEL JUEGO primero
-    → Luego presiona WASD
-
-    ❌ No veo sprites de personajes
-    → Espera 2-3 segundos a que carguen
-    → Si ves círculos sin sprites, es un problema de carga
-
-    ❌ Todo está negro
-    → Presiona F5 otra vez
-    → O reinicia Godot
-
-
-INFORMACIÓN IMPORTANTE
-═══════════════════════════════════════════════════════════════════════════════
-
-    • El backend debe estar corriendo (ws://localhost:8765)
-    • Si no está, los logs mostrarán "Unable to connect"
-    • Pero el juego seguirá funcionando sin problemas
-
-    • Los enemigos se spawnean automáticamente
-    • Presiona ESPACIO si quieres spawnear más manualmente
-
-    • Los sprites tienen 83 variaciones diferentes
-    • Se cargan aleatoriamente para cada enemigo
-
-
-ESTADO DEL PROYECTO
-═══════════════════════════════════════════════════════════════════════════════
-
-    ✅ Sprites cargados correctamente
-    ✅ Grid system implementado
-    ✅ Movimiento WASD funcional
-    ✅ Cámara follow smooth
-    ✅ Enemy spawning activo
-    ✅ Network sync listo
-    ✅ Todos los sistemas inicializados
-    ✅ Sin errores de script
-    ✅ Sin crashes
-    ✅ 100% funcional
-
-
-RESUMEN RÁPIDO
-═══════════════════════════════════════════════════════════════════════════════
-
-    1. Terminal → cd godot-src
-    2. Terminal → godot
-    3. Godot → Abre gameplay_demo.tscn
-    4. Godot → Presiona F5
-    5. ¡A JUGAR!
-
-
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║                    🎮 ¡DISFRUTA EL JUEGO! 🎮                                ║
-║                                                                               ║
-║                      Totalmente funcional y listo                            ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝

@@ -79,15 +79,13 @@ See [godot-src/DEVELOPMENT.md](./godot-src/DEVELOPMENT.md) for architecture deta
 - ⏳ Desktop exports (Windows, macOS, Linux)
 - ⏳ Mobile support (iOS/Android)
 
-See [ROADMAP.md](./ROADMAP.md) for full plan.
+See [docs/ROADMAP.md](./docs/ROADMAP.md) for full plan.
 
 ## Documentation
 
 - [Quick Start](./QUICK_START.md) - Get running in 2 minutes
-- [Architecture](./ARCHITECTURE.md) - System design
-- [Contributing](./CONTRIBUTING.md) - Development workflow
-- [Project Status](./PROJECT_STATUS.md) - Current state
-- [Summary](./SUMMARY.md) - Executive overview
+- [Architecture](./docs/ARCHITECTURE.md) - System design
+- [Contributing](./docs/CONTRIBUTING.md) - Development workflow
 
 ## OpenSpec Integration
 
@@ -108,7 +106,7 @@ See [`openspec/changes/`](./openspec/changes/) for all tracked work.
 4. Clean code (no verbose comments)
 5. Submit PR
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+See [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) for details.
 
 ## License
 

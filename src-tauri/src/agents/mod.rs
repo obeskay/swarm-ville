@@ -1,16 +1,35 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+// Core module exports for agent runtime system
+pub mod agent;
+pub mod llm_provider;
+pub mod memory;
+pub mod message_bus;
+pub mod persistence;
+pub mod providers;
+pub mod runtime;
+pub mod state;
+pub mod task_orchestrator;
 
+pub use agent::{Agent, AgentInputMessage};
+pub use llm_provider::{AgentDecisionContext, LLMError, LLMProvider};
+pub use memory::AgentMemory;
+pub use message_bus::{AgentMessage, MessageBus};
+pub use persistence::AgentPersistence;
+pub use providers::{ClaudeProvider, CursorProvider, MockProvider};
+pub use runtime::AgentRuntime;
+pub use state::AgentState;
+pub use task_orchestrator::{ComplexTask, SubTask, TaskOrchestrator};
+
+use serde::{Deserialize, Serialize};
+
+/// Configuration for spawning a new agent
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Agent {
-    pub id: String,
+pub struct AgentConfig {
     pub name: String,
-    pub space_id: String,
     pub role: String,
     pub model_provider: String,
     pub model_name: String,
-    pub position: Position,
-    pub state: AgentState,
+    pub initial_position: Position,
+    pub space_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,34 +38,10 @@ pub struct Position {
     pub y: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum AgentState {
-    Idle,
-    Listening,
-    Thinking,
-    Speaking,
-    Error,
-}
-
-impl Agent {
-    #[allow(dead_code)]
-    pub fn new(
-        name: String,
-        space_id: String,
-        role: String,
-        model_provider: String,
-        model_name: String,
-    ) -> Self {
-        Agent {
-            id: Uuid::new_v4().to_string(),
-            name,
-            space_id,
-            role,
-            model_provider,
-            model_name,
-            position: Position { x: 25, y: 25 },
-            state: AgentState::Idle,
-        }
+impl Position {
+    pub fn distance_to(&self, other: &Position) -> f32 {
+        let dx = (self.x as f32) - (other.x as f32);
+        let dy = (self.y as f32) - (other.y as f32);
+        (dx * dx + dy * dy).sqrt()
     }
 }
