@@ -101,16 +101,16 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <Card className="w-96 p-8 bg-gray-900 border-2 border-cyan-500 shadow-2xl">
+    <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 backdrop-blur-sm">
+      <Card className="w-96 p-8 bg-card border border-border shadow-2xl">
         <div className="space-y-6">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-white font-mono mb-2">SELECCIONAR PERSONAJE</h2>
-            <p className="text-xs text-cyan-400 font-mono">{selectedChar.name}</p>
+            <h2 className="text-2xl font-bold text-foreground font-mono mb-2">SELECCIONAR PERSONAJE</h2>
+            <p className="text-xs text-muted-foreground font-mono">{selectedChar.name}</p>
           </div>
 
           {/* Preview Canvas */}
-          <div className="flex justify-center bg-sky-300 rounded border-2 border-cyan-500 p-2">
+          <div className="flex justify-center bg-muted rounded border border-border p-2">
             <canvas
               ref={canvasRef}
               width={160}
@@ -121,15 +121,15 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
           </div>
 
           {/* Character Grid */}
-          <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-gray-800 p-3 rounded border border-cyan-500/30">
+          <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-muted p-3 rounded border border-border">
             {CHARACTERS.map((char) => (
               <button
                 key={char.id}
                 onClick={() => setSelectedId(char.id)}
                 className={`p-2 rounded text-center text-xs font-mono transition-all ${
                   selectedId === char.id
-                    ? "bg-cyan-500 text-black font-bold border-2 border-cyan-300 scale-105"
-                    : "bg-gray-700 text-cyan-300 hover:bg-gray-600 border border-gray-600"
+                    ? "bg-primary text-primary-foreground font-bold border-2 border-primary scale-105"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent border border-border"
                 }`}
               >
                 #{String(char.id).padStart(2, "0")}
@@ -138,7 +138,7 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
           </div>
 
           {/* Info */}
-          <div className="bg-gray-800 p-3 rounded border border-cyan-500/30 text-xs text-cyan-300 font-mono space-y-1">
+          <div className="bg-muted p-3 rounded border border-border text-xs text-muted-foreground font-mono space-y-1">
             <p>📊 Total: {CHARACTERS.length} personajes</p>
             <p>🎬 Seleccionado: {selectedChar.name}</p>
             <p>🎨 192×192 (4 frames animados)</p>
@@ -149,13 +149,13 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
             <Button
               onClick={onClose}
               variant="ghost"
-              className="flex-1 bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700 font-mono text-sm"
+              className="flex-1 font-mono text-sm"
             >
               ✕ CANCELAR
             </Button>
             <Button
               onClick={handleConfirm}
-              className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-black font-mono font-bold border-2 border-cyan-400 text-sm"
+              className="flex-1 bg-primary text-primary-foreground font-mono font-bold text-sm"
             >
               ✓ USAR ESTE
             </Button>

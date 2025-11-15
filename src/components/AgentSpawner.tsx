@@ -89,7 +89,7 @@ export function AgentSpawner() {
         <div className="border-b border-border pb-3">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-            <h2 className="text-xl font-bold text-primary font-mono tracking-wide">
+            <h2 className="text-xl font-bold text-foreground font-mono tracking-wide">
               AGENT SPAWNER
             </h2>
           </div>
@@ -103,10 +103,10 @@ export function AgentSpawner() {
             Proveedor CLI
           </label>
           <Select value={cliType} onValueChange={(v) => setCLIType(v as CLIType)}>
-            <SelectTrigger className="bg-background border-border text-foreground font-mono hover:border-primary transition-colors">
+            <SelectTrigger className="font-mono">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
+            <SelectContent>
               <SelectItem value="cursor" className="font-mono">
                 <span className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
@@ -137,13 +137,13 @@ export function AgentSpawner() {
             value={taskDescription}
             onChange={(e) => setTaskDescription(e.target.value)}
             placeholder="Describe la tarea que requiere múltiples agentes especializados..."
-            className="bg-background border-border text-foreground font-mono text-sm min-h-24 focus:border-primary transition-colors placeholder:text-muted-foreground"
+            className="font-mono text-sm min-h-24"
           />
           <Button
             onClick={handleQuickTest}
             variant="ghost"
             size="sm"
-            className="text-xs text-primary hover:text-primary font-mono"
+            className="text-xs font-mono"
           >
             📝 Cargar: Página Café Cursor
           </Button>
@@ -152,7 +152,7 @@ export function AgentSpawner() {
         <Button
           onClick={handleSpawnComplexTask}
           disabled={spawning || !taskDescription.trim()}
-          className="w-full bg-primary text-primary-foreground font-mono font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+          className="w-full font-mono font-bold"
         >
           {spawning ? (
             <span className="flex items-center justify-center gap-2">
@@ -175,7 +175,7 @@ export function AgentSpawner() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-primary">⚡</span>
-            <span className="text-foreground">
+            <span>
               {cliType === "cursor"
                 ? "Cursor CLI"
                 : cliType === "claude"

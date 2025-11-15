@@ -12,10 +12,9 @@ function App() {
 
   const handleCharacterSelect = (path: string) => {
     setSelectedCharacter(path);
-    setShowCharacterSelector(false)(
-      // Store in window for GameApp to use
-      window as any
-    ).selectedCharacterPath = path;
+    setShowCharacterSelector(false);
+    // Store in window for GameApp to use
+    (window as any).selectedCharacterPath = path;
   };
 
   return (
@@ -28,10 +27,9 @@ function App() {
         <CharacterSelector
           onSelect={handleCharacterSelect}
           onClose={() => {
-            setShowCharacterSelector(false)(
-              // Use default character if cancelled
-              window as any
-            ).selectedCharacterPath = selectedCharacter;
+            setShowCharacterSelector(false);
+            // Use default character if cancelled
+            (window as any).selectedCharacterPath = selectedCharacter;
           }}
         />
       )}

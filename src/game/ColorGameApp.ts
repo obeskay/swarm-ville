@@ -49,11 +49,17 @@ export class ColorGameApp {
         width: 1200,
         height: 800,
         backgroundColor: themeColors.background,
-        antialias: false,
-        resolution: 1,
-        autoDensity: false,
-        roundPixels: true,
+        antialias: false, // Pixel perfect - no antialiasing
+        resolution: 1, // Pixel perfect - 1:1 resolution
+        autoDensity: false, // Pixel perfect - no auto density
+        roundPixels: true, // Pixel perfect - round pixels
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: false,
       })
+      
+      // Ensure pixel perfect rendering
+      this.app.renderer.resolution = 1
+      this.app.stage.scale.set(1, 1)
 
       this.app.stage.addChild(this.container)
 
@@ -250,48 +256,102 @@ export class ColorGameApp {
   public spawnAgent(id: string, name: string, role: string, x: number, y: number): void {
     if (this.agents.has(id)) return
 
-    const roleToSprite: Record<string, string> = {
-      researcher: 'agent_researcher',
-      designer: 'agent_designer',
-      frontend_developer: 'agent_developer',
-      code_reviewer: 'agent_reviewer',
-    }
-    const spriteName = roleToSprite[role] || 'agent_researcher'
+    // Use selected character from CharacterSelector or default
+    const selectedPath = (window as any).selectedCharacterPath || '/sprites/characters/Character_001.png'
+    
+    // Load character sprite dynamically
+    const loadCharacterSprite = async () => {
+      try {
+        const texture = await PIXI.Assets.load(selectedPath)
+        
+        // Create spritesheet for 48x48 frames (192x192 total, 4 frames horizontal)
+        const spriteSheetData = {
+          frames: {} as Record<string, any>,
+          animations: {} as Record<string, string[]>,
+          meta: {
+            image: selectedPath,
+            format: 'RGBA8888',
+            size: { w: 192, h: 192 },
+            scale: '1',
+          },
+        }
 
-    const sprite = new PIXI.Sprite(this.getSprite(spriteName))
-    sprite.x = x * this.TILE_SIZE
-    sprite.y = y * this.TILE_SIZE
+        // Create frames for idle_down animation (first row, 4 frames)
+        const frames: string[] = []
+        for (let i = 0; i < 4; i++) {
+          const frameName = `idle_down_${i}`
+          spriteSheetData.frames[frameName] = {
+            frame: { x: i * 48, y: 0, w: 48, h: 48 },
+            sourceSize: { w: 48, h: 48 },
+            spriteSourceSize: { x: 0, y: 0, w: 48, h: 48 },
+          }
+          frames.push(frameName)
+        }
+        spriteSheetData.animations['idle_down'] = frames
 
-    const nameLabel = new PIXI.Text({
-      text: name,
-      style: {
-        fontFamily: 'monospace',
-        fontSize: 11,
-        fill: themeColors.foreground,
-        stroke: { color: themeColors.background, width: 2 },
+        const sheet = new PIXI.Spritesheet(texture, spriteSheetData)
+        await sheet.parse()
+
+        const animatedSprite = new PIXI.AnimatedSprite(sheet.animations['idle_down'])
+        animatedSprite.animationSpeed = 0.1
+        
+        // Pixel perfect rendering
+        animatedSprite.texture.source.scaleMode = 'nearest'
+        animatedSprite.roundPixels = true
+        
+        animatedSprite.play()
+        animatedSprite.anchor.set(0.5, 0.8)
+        animatedSprite.x = Math.round(x * this.TILE_SIZE + 16)
+        animatedSprite.y = Math.round(y * this.TILE_SIZE + 16)
+
+        this.worldContainer.addChild(animatedSprite)
+
+        const nameLabel = new PIXI.Text({
+          text: name,
+          style: {
+            fontFamily: 'monospace',
+            fontSize: 11,
+            fill: themeColors.foreground,
+            stroke: { color: themeColors.background, width: 2 },
+          }
+        })
+        nameLabel.anchor.set(0.5, 1)
+        nameLabel.x = animatedSprite.x
+        nameLabel.y = animatedSprite.y - 24
+        this.worldContainer.addChild(nameLabel)
+
+        const agent: Agent = {
+          id,
+          name,
+          role,
+          sprite: animatedSprite as any, // Store animated sprite
+          nameLabel,
+          chatBubble: null,
+          x,
+          y,
+          chatTimeout: null,
+        }
+
+        this.agents.set(id, agent)
+        console.log(`[ColorGameApp] Spawned ${name} (${role}) at (${x}, ${y}) with sprite: ${selectedPath}`)
+      } catch (error) {
+        console.error(`[ColorGameApp] Failed to load character sprite: ${selectedPath}`, error)
+        // Fallback to colored sprite
+        const roleToSprite: Record<string, string> = {
+          researcher: 'agent_researcher',
+          designer: 'agent_designer',
+          frontend_developer: 'agent_developer',
+          code_reviewer: 'agent_reviewer',
+        }
+        const spriteName = roleToSprite[role] || 'agent_researcher'
+        const sprite = new PIXI.Sprite(this.getSprite(spriteName))
+        sprite.x = x * this.TILE_SIZE
+        sprite.y = y * this.TILE_SIZE
+        this.worldContainer.addChild(sprite)
       }
-    })
-    nameLabel.anchor.set(0.5, 1)
-    nameLabel.x = sprite.x + 16
-    nameLabel.y = sprite.y - 4
-
-    this.worldContainer.addChild(sprite)
-    this.worldContainer.addChild(nameLabel)
-
-    const agent: Agent = {
-      id,
-      name,
-      role,
-      sprite,
-      nameLabel,
-      chatBubble: null,
-      x,
-      y,
-      chatTimeout: null,
     }
 
-    this.agents.set(id, agent)
-    console.log(`[ColorGameApp] Spawned ${name} (${role}) at (${x}, ${y})`)
+    loadCharacterSprite()
   }
 
   public showAgentMessage(agentId: string, message: string): void {
