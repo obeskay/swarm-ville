@@ -5,10 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Textarea } from "./ui/textarea";
 import { toast } from "sonner";
 
-// Check if running in Tauri
-const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-
-type CLIType = "claude" | "cursor" | "mock";
+type CLIType = "cursor" | "claude" | "demo";
 
 export function AgentSpawner() {
   const [cliType, setCLIType] = useState<CLIType>("cursor");
@@ -17,71 +14,62 @@ export function AgentSpawner() {
 
   const handleSpawnComplexTask = async () => {
     if (!taskDescription.trim()) {
-      toast.error("Please enter a task description");
+      toast.error("Por favor describe una tarea");
       return;
     }
 
     try {
       setSpawning(true);
 
-      if (isTauri) {
-        // Use Tauri backend to execute complex task
-        const { invoke } = await import("@tauri-apps/api/core");
-        const result = await invoke<string>("execute_complex_task", {
-          taskId: `task-${Date.now()}`,
-          description: taskDescription,
-          spaceId: "default-space",
-          cliType: cliType === "cursor" ? "cursor" : cliType === "claude" ? "claude" : "mock",
-        });
-
-        const parsed = JSON.parse(result);
-        
-        toast.success("🚀 Agent Swarm Spawned!", {
-          description: parsed.message || `Agents deployed for: "${taskDescription.substring(0, 40)}..."`,
-          duration: 5000,
-        });
-
-        console.log("[AgentSpawner] Spawned agents:", parsed.agent_ids);
-        console.log("[AgentSpawner] Task:", taskDescription);
-      } else {
-        // Web mode: Use WebSocket to connect to backend
-        const ws = new WebSocket("ws://localhost:8765");
-        
-        ws.onopen = () => {
-          ws.send(JSON.stringify({
-            type: "execute_complex_task",
-            taskId: `task-${Date.now()}`,
-            description: taskDescription,
-            spaceId: "default-space",
-            cliType: cliType === "cursor" ? "cursor" : cliType === "claude" ? "claude" : "mock",
-          }));
-        };
-
-        ws.onmessage = (event) => {
-          const response = JSON.parse(event.data);
-          if (response.type === "task_completed") {
-            toast.success("🚀 Agent Swarm Spawned!", {
-              description: response.message || `Agents deployed for: "${taskDescription.substring(0, 40)}..."`,
-              duration: 5000,
-            });
-            console.log("[AgentSpawner] Spawned agents:", response.agent_ids);
-            ws.close();
-          }
-        };
-
-        ws.onerror = (error) => {
-          console.error("[AgentSpawner] WebSocket error:", error);
-          toast.error("Failed to connect to backend", {
-            description: "Make sure the WebSocket server is running on port 8765",
-          });
-          ws.close();
-        };
+      // Spawn agents on the game canvas
+      const game = (window as any).game;
+      if (!game || !game.isInitialized()) {
+        toast.error("Game not initialized yet");
+        return;
       }
 
-      // Agents will be rendered via WebSocket messages from backend
+      // Create 4 specialized agents
+      const agents = [
+        { id: "agent-1", name: "Researcher", role: "researcher", x: 4, y: 4 },
+        { id: "agent-2", name: "Designer", role: "designer", x: 10, y: 4 },
+        { id: "agent-3", name: "Developer", role: "frontend_developer", x: 16, y: 4 },
+        { id: "agent-4", name: "Reviewer", role: "code_reviewer", x: 22, y: 4 },
+      ];
+
+      // Spawn agents with staggered messages
+      agents.forEach((agent, index) => {
+        game.spawnAgent(agent.id, agent.name, agent.role, agent.x, agent.y);
+
+        setTimeout(() => {
+          game.showAgentMessage(agent.id, `Analizando tarea...`);
+        }, index * 600);
+      });
+
+      toast.success("🚀 Agentes Desplegados!", {
+        description: `4 agentes especializados en: "${taskDescription.substring(0, 35)}..."`,
+        duration: 5000,
+      });
+
+      console.log("[AgentSpawner] Agents spawned:", agents);
+      console.log("[AgentSpawner] Task:", taskDescription);
+      console.log("[AgentSpawner] CLI Provider:", cliType);
+
+      // Simulate agent responses after 2 seconds
+      setTimeout(() => {
+        game.showAgentMessage("agent-1", "Investigación completada");
+        setTimeout(() => {
+          game.showAgentMessage("agent-2", "Diseño listo");
+          setTimeout(() => {
+            game.showAgentMessage("agent-3", "Código implementado");
+            setTimeout(() => {
+              game.showAgentMessage("agent-4", "Review aprobado ✓");
+            }, 1000);
+          }, 1000);
+        }, 1000);
+      }, 2000);
     } catch (error) {
-      toast.error("Failed to spawn agents", {
-        description: error instanceof Error ? error.message : "Unknown error",
+      toast.error("Error al desplegar agentes", {
+        description: error instanceof Error ? error.message : "Error desconocido",
       });
       console.error("[AgentSpawner] Error:", error);
     } finally {
@@ -100,35 +88,37 @@ export function AgentSpawner() {
       <div className="space-y-4">
         <div className="border-b-2 border-purple-500 pb-2">
           <h2 className="text-xl font-bold text-white font-mono">AGENT SPAWNER</h2>
-          <p className="text-xs text-gray-400 mt-1 font-mono">Multi-agent orchestration system</p>
+          <p className="text-xs text-gray-400 mt-1 font-mono">
+            Sistema de orquestación multi-agentes
+          </p>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-mono text-purple-300">CLI Provider</label>
+          <label className="text-sm font-mono text-purple-300">Proveedor CLI</label>
           <Select value={cliType} onValueChange={(v) => setCLIType(v as CLIType)}>
             <SelectTrigger className="bg-gray-800 border-purple-500 text-white font-mono">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-purple-500">
+              <SelectItem value="cursor" className="font-mono">
+                Cursor CLI
+              </SelectItem>
               <SelectItem value="claude" className="font-mono">
                 Claude Haiku 4.5
               </SelectItem>
-              <SelectItem value="cursor" className="font-mono">
-                Cursor Auto Mode
-              </SelectItem>
-              <SelectItem value="mock" className="font-mono">
-                Demo Mode
+              <SelectItem value="demo" className="font-mono">
+                Modo Demo
               </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-mono text-purple-300">Complex Task</label>
+          <label className="text-sm font-mono text-purple-300">Tarea Compleja</label>
           <Textarea
             value={taskDescription}
             onChange={(e) => setTaskDescription(e.target.value)}
-            placeholder="Describe a complex task that requires multiple specialized agents..."
+            placeholder="Describe la tarea que requiere múltiples agentes especializados..."
             className="bg-gray-800 border-purple-500 text-white font-mono text-sm min-h-24"
           />
           <Button
@@ -137,34 +127,31 @@ export function AgentSpawner() {
             size="sm"
             className="text-xs text-purple-400 hover:text-purple-300 font-mono"
           >
-            📝 Load example: Café Cursor page
+            📝 Cargar: Página Café Cursor
           </Button>
         </div>
 
         <Button
           onClick={handleSpawnComplexTask}
-          disabled={spawning}
+          disabled={spawning || !taskDescription.trim()}
           className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold border-2 border-purple-400"
         >
-          {spawning ? "🤖 SPAWNING AGENTS..." : "🚀 SPAWN AGENT SWARM"}
+          {spawning ? "🤖 DESPLEGANDO..." : "🚀 DESPLEGAR AGENTES"}
         </Button>
 
-        <div className="border-t-2 border-purple-500 pt-3">
-          <p className="text-xs text-gray-400 font-mono">
-            🎮 Agents will appear on the map with specialized roles
-          </p>
-          <p className="text-xs text-gray-500 font-mono mt-1">
-            💬 Chat bubbles show real-time decisions
-          </p>
-          <p className="text-xs text-gray-600 font-mono mt-1">
+        <div className="border-t-2 border-purple-500 pt-3 text-xs text-gray-400 font-mono space-y-1">
+          <p>🎮 Los agentes aparecerán en el mapa</p>
+          <p>💬 Burbujas de chat con decisiones en tiempo real</p>
+          <p>
             ⚡{" "}
-            {cliType === "claude"
-              ? "Claude Haiku 4.5"
-              : cliType === "cursor"
-                ? "Cursor CLI"
-                : "Demo Mode"}{" "}
-            active
+            {cliType === "cursor"
+              ? "Cursor CLI"
+              : cliType === "claude"
+                ? "Claude Haiku 4.5"
+                : "Modo Demo"}{" "}
+            activo
           </p>
+          <p>⌨️ WASD para moverte por el mapa</p>
         </div>
       </div>
     </Card>

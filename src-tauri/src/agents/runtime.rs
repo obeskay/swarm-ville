@@ -27,15 +27,14 @@ impl AgentRuntime {
         }
     }
 
-    /// Create LLM provider based on config
+    /// Create LLM provider based on config - only real providers, no mock
     fn create_provider(provider_name: &str, model_name: &str) -> Arc<dyn LLMProvider> {
         match provider_name.to_lowercase().as_str() {
             "claude" => Arc::new(ClaudeProvider::with_model(model_name)),
             "cursor" => Arc::new(CursorProvider::with_model(model_name)),
-            "mock" => Arc::new(MockProvider::new()),
             _ => {
-                tracing::warn!("Unknown provider '{}', falling back to mock", provider_name);
-                Arc::new(MockProvider::new())
+                // Panic if unknown provider - no mock fallback
+                panic!("Unknown provider '{}'. Only 'claude' and 'cursor' are supported.", provider_name);
             }
         }
     }
@@ -48,23 +47,13 @@ impl AgentRuntime {
         // Create LLM provider based on config
         let provider = Self::create_provider(&config.model_provider, &config.model_name);
 
-        // Check if provider is available
+        // Check if provider is available - fail if not (no mock fallback)
         if !provider.is_available().await {
-            tracing::warn!(
-                "Provider {} not available, using mock provider for agent {}",
+            return Err(format!(
+                "Provider '{}' is not available. Please ensure {} CLI is installed and authenticated.",
                 provider.name(),
-                config.name
-            );
-            let provider = Arc::new(MockProvider::new());
-            let agent = Agent::new(config, rx, message_bus).with_llm_provider(provider);
-            let agent_id = agent.id.clone();
-
-            let handle = tokio::spawn(async move {
-                agent.run().await;
-            });
-
-            self.agents.insert(agent_id.clone(), (handle, tx));
-            return Ok(agent_id);
+                provider.name()
+            ));
         }
 
         let agent = Agent::new(config, rx, message_bus).with_llm_provider(provider);

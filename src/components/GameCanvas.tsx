@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { SpriteGameApp } from "../game/SpriteGameApp";
+import { ColorGameApp } from "../game/ColorGameApp";
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gameRef = useRef<SpriteGameApp | null>(null);
+  const gameRef = useRef<ColorGameApp | null>(null);
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
@@ -12,11 +12,11 @@ export function GameCanvas() {
 
     const initGame = async () => {
       try {
-        const game = new SpriteGameApp();
+        const game = new ColorGameApp();
         await game.init(canvas);
         gameRef.current = game;
         isInitializedRef.current = true;
-        console.log("[GameCanvas] ✅ Game ready with sprites");
+        console.log("[GameCanvas] ✅ Game ready with colored sprites");
 
         // Expose game to window for AgentSpawner
         (window as any).game = game;

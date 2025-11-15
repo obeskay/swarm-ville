@@ -241,12 +241,16 @@ async fn spawn_agent(
 ) -> Result<String, String> {
     use agents::{AgentConfig, Position};
 
-    // Determine model based on cli_type
+    // Determine model based on cli_type - only real providers, no mock
     let (provider, model) = match cli_type.to_lowercase().as_str() {
+        "cursor" | "cursor-auto" => ("cursor", "claude-3.5-sonnet"),
         "claude" | "claude-haiku" => ("claude", "claude-haiku-4-5-20251001"),
-        "cursor" => ("cursor", "claude-3.5-sonnet"),
-        "cursor-auto" => ("cursor", "auto"),
-        _ => ("mock", "mock"),
+        _ => {
+            return Err(format!(
+                "Invalid CLI type: {}. Only 'cursor' or 'claude' are supported.",
+                cli_type
+            ));
+        }
     };
 
     let config = AgentConfig {
