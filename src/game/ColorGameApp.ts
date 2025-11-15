@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js'
+import { themeColors } from './utils/themeColors'
 
 interface Agent {
   id: string
@@ -47,7 +48,7 @@ export class ColorGameApp {
         canvas: canvas,
         width: 1200,
         height: 800,
-        backgroundColor: 0x2c2c2c,
+        backgroundColor: themeColors.background,
         antialias: false,
         resolution: 1,
         autoDensity: false,
@@ -266,8 +267,8 @@ export class ColorGameApp {
       style: {
         fontFamily: 'monospace',
         fontSize: 11,
-        fill: 0xffffff,
-        stroke: { color: 0x000000, width: 2 },
+        fill: themeColors.foreground,
+        stroke: { color: themeColors.background, width: 2 },
       }
     })
     nameLabel.anchor.set(0.5, 1)
@@ -313,22 +314,23 @@ export class ColorGameApp {
     // Truncate message (max 30 chars)
     const truncated = message.length > 30 ? message.substring(0, 27) + '...' : message
 
-    // Background
+    // Background using shadcn card colors
     const bg = new PIXI.Graphics()
     bg.rect(0, 0, Math.min(150, truncated.length * 8), 40)
-    bg.fill(0x333333)
-    bg.stroke({ width: 2, color: 0xffffff })
+    bg.fill({ color: themeColors.card, alpha: 0.98 })
+    bg.stroke({ width: 1.5, color: themeColors.primary, alpha: 0.6 })
     bubble.addChild(bg)
 
-    // Text
+    // Text using shadcn foreground color
     const text = new PIXI.Text({
       text: truncated,
       style: {
         fontFamily: 'monospace',
         fontSize: 9,
-        fill: 0xffffff,
+        fill: themeColors.cardForeground,
         wordWrap: true,
         wordWrapWidth: 140,
+        letterSpacing: 0.5,
       }
     })
     text.x = 5

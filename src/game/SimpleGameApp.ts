@@ -4,6 +4,7 @@ import { GAME_CONFIG } from "./config";
 import { TileMap } from "./world/TileMap";
 import { Agent } from "./entities/Agent";
 import { AgentData, Point } from "./types";
+import { themeColors } from "./utils/themeColors";
 
 export class SimpleGameApp {
   private app: PIXI.Application | null = null;
@@ -17,12 +18,12 @@ export class SimpleGameApp {
       // Create app
       this.app = new PIXI.Application();
 
-      // Initialize with canvas
+      // Initialize with canvas - use shadcn background color
       await this.app.init({
         canvas: canvas,
         width: GAME_CONFIG.viewportWidth,
         height: GAME_CONFIG.viewportHeight,
-        backgroundColor: GAME_CONFIG.backgroundColor,
+        backgroundColor: themeColors.background,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
         antialias: false,

@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js'
 import { AnimationState, Direction, Point, AgentData } from '../types'
 import { GAME_CONFIG } from '../config'
+import { themeColors, getThemeColorWithAlpha } from '../utils/themeColors'
 
 // Format text for chat bubbles - retro style with line breaks and summarization
 function formatText(message: string, maxLength: number): string {
@@ -70,14 +71,14 @@ export class Agent {
     this.container.x = data.position.x * GAME_CONFIG.tileSize
     this.container.y = data.position.y * GAME_CONFIG.tileSize
 
-    // Add name label (always visible)
+    // Add name label (always visible) - using shadcn theme colors
     this.nameText = new PIXI.Text({
       text: this.name,
       style: {
         fontFamily: 'monospace',
         fontSize: 10,
-        fill: 0xffffff,
-        stroke: { color: 0x000000, width: 2 },
+        fill: themeColors.foreground,
+        stroke: { color: themeColors.background, width: 2 },
         align: 'center',
       }
     })
@@ -211,30 +212,50 @@ export class Agent {
     // Format message (max 25 chars per line for minimal retro style)
     const formattedMessage = formatText(message, 25)
 
-    // Create retro-style chat bubble (pixelated, minimalist)
+    // Create retro-style chat bubble using shadcn theme colors
     this.messageText = new PIXI.Text({
       text: formattedMessage,
       style: {
         fontFamily: 'monospace',
-        fontSize: 8,
-        fill: 0x000000,
+        fontSize: 9,
+        fill: themeColors.cardForeground,
         align: 'center',
         wordWrap: true,
         wordWrapWidth: 180,
+        letterSpacing: 0.5,
       }
     })
     this.messageText.anchor.set(0.5, 1)
 
-    // Create bubble background - smaller, more minimal
+    // Create bubble background - improved aesthetic
     this.messageBubble = new PIXI.Graphics()
-    const padding = 4
+    const padding = 6
     const bubbleWidth = Math.min(this.messageText.width + padding * 2, 200)
     const bubbleHeight = this.messageText.height + padding * 2
 
-    // Retro rectangular bubble with thin border (minimalist)
-    this.messageBubble.rect(-bubbleWidth / 2, -bubbleHeight - 8, bubbleWidth, bubbleHeight)
-    this.messageBubble.fill(0xffffff)
-    this.messageBubble.stroke({ width: 1, color: 0x000000 })
+    // Retro rectangular bubble using shadcn theme colors
+    // Add subtle shadow effect first (behind bubble)
+    const shadow = new PIXI.Graphics()
+    shadow.rect(
+      -bubbleWidth / 2 + 1, 
+      -bubbleHeight - 7, 
+      bubbleWidth, 
+      bubbleHeight
+    )
+    shadow.fill({ color: themeColors.background, alpha: 0.3 })
+    this.container.addChildAt(shadow, this.container.children.length - 1)
+    
+    // Main bubble with shadcn card colors
+    this.messageBubble.rect(
+      -bubbleWidth / 2, 
+      -bubbleHeight - 8, 
+      bubbleWidth, 
+      bubbleHeight
+    )
+    // Card background color from shadcn
+    this.messageBubble.fill({ color: themeColors.card, alpha: 0.98 })
+    // Primary color border from shadcn
+    this.messageBubble.stroke({ width: 1.5, color: themeColors.primary, alpha: 0.6 })
 
     // Position above name
     this.messageBubble.y = this.nameText.y - 10

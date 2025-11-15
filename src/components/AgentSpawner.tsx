@@ -84,48 +84,66 @@ export function AgentSpawner() {
   };
 
   return (
-    <Card className="absolute top-4 right-4 w-96 p-6 bg-gray-900/95 border-2 border-purple-500 shadow-2xl z-50">
-      <div className="space-y-4">
-        <div className="border-b-2 border-purple-500 pb-2">
-          <h2 className="text-xl font-bold text-white font-mono">AGENT SPAWNER</h2>
-          <p className="text-xs text-gray-400 mt-1 font-mono">
+    <Card className="absolute top-4 right-4 w-96 p-6 bg-card/95 backdrop-blur-xl border border-border shadow-2xl z-50">
+      <div className="space-y-5">
+        <div className="border-b border-border pb-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+            <h2 className="text-xl font-bold text-primary font-mono tracking-wide">
+              AGENT SPAWNER
+            </h2>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">
             Sistema de orquestación multi-agentes
           </p>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-mono text-purple-300">Proveedor CLI</label>
+        <div className="space-y-2.5">
+          <label className="text-sm font-mono text-foreground font-semibold tracking-wide">
+            Proveedor CLI
+          </label>
           <Select value={cliType} onValueChange={(v) => setCLIType(v as CLIType)}>
-            <SelectTrigger className="bg-gray-800 border-purple-500 text-white font-mono">
+            <SelectTrigger className="bg-background border-border text-foreground font-mono hover:border-primary transition-colors">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-purple-500">
+            <SelectContent className="bg-popover border-border">
               <SelectItem value="cursor" className="font-mono">
-                Cursor CLI
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Cursor CLI
+                </span>
               </SelectItem>
               <SelectItem value="claude" className="font-mono">
-                Claude Haiku 4.5
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Claude Haiku 4.5
+                </span>
               </SelectItem>
               <SelectItem value="demo" className="font-mono">
-                Modo Demo
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></span>
+                  Modo Demo
+                </span>
               </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-mono text-purple-300">Tarea Compleja</label>
+        <div className="space-y-2.5">
+          <label className="text-sm font-mono text-foreground font-semibold tracking-wide">
+            Tarea Compleja
+          </label>
           <Textarea
             value={taskDescription}
             onChange={(e) => setTaskDescription(e.target.value)}
             placeholder="Describe la tarea que requiere múltiples agentes especializados..."
-            className="bg-gray-800 border-purple-500 text-white font-mono text-sm min-h-24"
+            className="bg-background border-border text-foreground font-mono text-sm min-h-24 focus:border-primary transition-colors placeholder:text-muted-foreground"
           />
           <Button
             onClick={handleQuickTest}
             variant="ghost"
             size="sm"
-            className="text-xs text-purple-400 hover:text-purple-300 font-mono"
+            className="text-xs text-primary hover:text-primary font-mono"
           >
             📝 Cargar: Página Café Cursor
           </Button>
@@ -134,24 +152,42 @@ export function AgentSpawner() {
         <Button
           onClick={handleSpawnComplexTask}
           disabled={spawning || !taskDescription.trim()}
-          className="w-full bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold border-2 border-purple-400"
+          className="w-full bg-primary text-primary-foreground font-mono font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
         >
-          {spawning ? "🤖 DESPLEGANDO..." : "🚀 DESPLEGAR AGENTES"}
+          {spawning ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse"></span>
+              DESPLEGANDO...
+            </span>
+          ) : (
+            "🚀 DESPLEGAR AGENTES"
+          )}
         </Button>
 
-        <div className="border-t-2 border-purple-500 pt-3 text-xs text-gray-400 font-mono space-y-1">
-          <p>🎮 Los agentes aparecerán en el mapa</p>
-          <p>💬 Burbujas de chat con decisiones en tiempo real</p>
-          <p>
-            ⚡{" "}
-            {cliType === "cursor"
-              ? "Cursor CLI"
-              : cliType === "claude"
-                ? "Claude Haiku 4.5"
-                : "Modo Demo"}{" "}
-            activo
-          </p>
-          <p>⌨️ WASD para moverte por el mapa</p>
+        <div className="border-t border-border pt-4 text-xs text-muted-foreground font-mono space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-primary">🎮</span>
+            <span>Los agentes aparecerán en el mapa</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-primary">💬</span>
+            <span>Burbujas de chat con decisiones en tiempo real</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-primary">⚡</span>
+            <span className="text-foreground">
+              {cliType === "cursor"
+                ? "Cursor CLI"
+                : cliType === "claude"
+                  ? "Claude Haiku 4.5"
+                  : "Modo Demo"}{" "}
+              activo
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-primary">⌨️</span>
+            <span>WASD para moverte por el mapa</span>
+          </div>
         </div>
       </div>
     </Card>

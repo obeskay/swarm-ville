@@ -7,7 +7,7 @@ export const GAME_CONFIG = {
   worldWidth: 50,
   worldHeight: 50,
   wsUrl: 'ws://localhost:8765',
-  backgroundColor: 0xf5f5f5,
+  backgroundColor: 0x0a0e27, // Will be overridden by themeColors.background
   agentDecisionInterval: 5000, // 5 seconds
   chatBubbleDuration: 3000, // 3 seconds
   animationSpeed: 0.1,

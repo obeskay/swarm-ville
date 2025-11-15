@@ -40,7 +40,7 @@ export function GameCanvas() {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ display: "block" }}
+        style={{ display: "block", zIndex: 0 }}
       />
     </div>
   );
