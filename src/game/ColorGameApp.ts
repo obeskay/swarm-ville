@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js'
 import { themeColors } from './utils/themeColors'
+import characterSpriteSheetData from './utils/CharacterSpriteSheetData'
 
 interface Agent {
   id: string
@@ -260,45 +261,17 @@ export class ColorGameApp {
     const selectedPath = (window as any).selectedCharacterPath || '/sprites/characters/Character_001.png'
     
     // Load character sprite dynamically - ALWAYS use selected spritesheet
+    // Based on gather-clone reference implementation
     const loadCharacterSprite = async () => {
       try {
         console.log(`[ColorGameApp] Loading character sprite from: ${selectedPath}`)
-        const texture = await PIXI.Assets.load(selectedPath)
-        
-        // Create spritesheet for 48x48 frames (192x192 total, 4x4 grid)
-        // Format: 4 frames horizontal per row, 4 rows for different directions
-        const spriteSheetData = {
-          frames: {} as Record<string, any>,
-          animations: {} as Record<string, string[]>,
-          meta: {
-            image: selectedPath,
-            format: 'RGBA8888',
-            size: { w: 192, h: 192 },
-            scale: '1',
-          },
-        }
+        await PIXI.Assets.load(selectedPath)
 
-        // Generate frames for all animations (idle and walk in 4 directions)
-        // Each direction has 4 frames (0-3)
-        const animations = ['idle_down', 'idle_up', 'idle_left', 'idle_right',
-                           'walk_down', 'walk_up', 'walk_left', 'walk_right']
+        // Clone spriteSheetData and set image path (like gather-clone does)
+        const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData))
+        spriteSheetData.meta.image = selectedPath
 
-        animations.forEach((anim, animIdx) => {
-          const frames: string[] = []
-          for (let i = 0; i < 4; i++) {
-            const frameName = `${anim}_${i}`
-            // Each frame is 48x48, arranged in 4x4 grid
-            spriteSheetData.frames[frameName] = {
-              frame: { x: i * 48, y: animIdx * 48, w: 48, h: 48 },
-              sourceSize: { w: 48, h: 48 },
-              spriteSourceSize: { x: 0, y: 0, w: 48, h: 48 },
-            }
-            frames.push(frameName)
-          }
-          spriteSheetData.animations[anim] = frames
-        })
-
-        const sheet = new PIXI.Spritesheet(texture, spriteSheetData)
+        const sheet = new PIXI.Spritesheet(PIXI.Texture.from(selectedPath), spriteSheetData)
         await sheet.parse()
 
         // Create animated sprite with idle_down animation
@@ -310,9 +283,9 @@ export class ColorGameApp {
         animatedSprite.roundPixels = true
         
         animatedSprite.play()
-        animatedSprite.anchor.set(0.5, 0.8)
+        // Anchor is set in spriteSheetData (0.5, 1) - center horizontal, bottom vertical
         animatedSprite.x = Math.round(x * this.TILE_SIZE + 16)
-        animatedSprite.y = Math.round(y * this.TILE_SIZE + 16)
+        animatedSprite.y = Math.round(y * this.TILE_SIZE + 24) // +24 to align with gather-clone positioning
 
         this.worldContainer.addChild(animatedSprite)
 

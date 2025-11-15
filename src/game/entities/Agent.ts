@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js'
 import { AnimationState, Direction, Point, AgentData } from '../types'
 import { GAME_CONFIG } from '../config'
 import { themeColors, getThemeColorWithAlpha } from '../utils/themeColors'
+import characterSpriteSheetData from '../utils/CharacterSpriteSheetData'
 
 // Format text for chat bubbles - retro style with line breaks and summarization
 function formatText(message: string, maxLength: number): string {
@@ -95,39 +96,9 @@ export class Agent {
     try {
       await PIXI.Assets.load(src)
 
-      // Create spritesheet data for 48x48 character sprites (4 frames per animation)
-      // Spritesheet format: 192x192 total, 4 frames horizontal (48x192 each frame)
-      // Each frame is 48x48, arranged in 4 rows for different directions
-      const spriteSheetData = {
-        frames: {} as Record<string, any>,
-        animations: {} as Record<string, string[]>,
-        meta: {
-          image: src,
-          format: 'RGBA8888',
-          size: { w: 192, h: 192 },
-          scale: '1',
-        },
-      }
-
-      // Generate frames for all animations (idle and walk in 4 directions)
-      // Each direction has 4 frames (0-3)
-      const animations = ['idle_down', 'idle_up', 'idle_left', 'idle_right',
-                         'walk_down', 'walk_up', 'walk_left', 'walk_right']
-
-      animations.forEach((anim, animIdx) => {
-        const frames: string[] = []
-        for (let i = 0; i < 4; i++) {
-          const frameName = `${anim}_${i}`
-          // Each frame is 48x48, arranged horizontally
-          spriteSheetData.frames[frameName] = {
-            frame: { x: i * 48, y: animIdx * 48, w: 48, h: 48 },
-            sourceSize: { w: 48, h: 48 },
-            spriteSourceSize: { x: 0, y: 0, w: 48, h: 48 },
-          }
-          frames.push(frameName)
-        }
-        spriteSheetData.animations[anim] = frames
-      })
+      // Clone spriteSheetData and set image path (like gather-clone does)
+      const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData))
+      spriteSheetData.meta.image = src
 
       this.sheet = new PIXI.Spritesheet(
         PIXI.Texture.from(src),
@@ -140,12 +111,12 @@ export class Agent {
         this.sheet.animations['idle_down']
       )
       this.animatedSprite.animationSpeed = GAME_CONFIG.animationSpeed
-      this.animatedSprite.anchor.set(0.5, 0.8)
       
       // Pixel perfect rendering
       this.animatedSprite.texture.source.scaleMode = 'nearest'
       this.animatedSprite.roundPixels = true
       
+      // Anchor is set in spriteSheetData (0.5, 1) - center horizontal, bottom vertical
       this.animatedSprite.play()
 
       this.container.addChildAt(this.animatedSprite, 0)
