@@ -79,9 +79,9 @@ export class ColorGameApp {
   }
 
   private async loadColorSprites(): Promise<void> {
+    // Only load environment sprites, NOT agent sprites (agents use character spritesheets)
     const sprites = [
-      'floor', 'wall', 'desk', 'chair', 'conference_table', 'plant', 'door',
-      'agent_researcher', 'agent_designer', 'agent_developer', 'agent_reviewer', 'player'
+      'floor', 'wall', 'desk', 'chair', 'conference_table', 'plant', 'door', 'player'
     ]
 
     for (const sprite of sprites) {
@@ -93,7 +93,7 @@ export class ColorGameApp {
       }
     }
 
-    console.log('[ColorGameApp] ✅ Loaded all colored sprites')
+    console.log('[ColorGameApp] ✅ Loaded environment sprites (agents use character spritesheets)')
   }
 
   private getSprite(name: string): PIXI.Texture {
@@ -259,12 +259,14 @@ export class ColorGameApp {
     // Use selected character from CharacterSelector or default
     const selectedPath = (window as any).selectedCharacterPath || '/sprites/characters/Character_001.png'
     
-    // Load character sprite dynamically
+    // Load character sprite dynamically - ALWAYS use selected spritesheet
     const loadCharacterSprite = async () => {
       try {
+        console.log(`[ColorGameApp] Loading character sprite from: ${selectedPath}`)
         const texture = await PIXI.Assets.load(selectedPath)
         
-        // Create spritesheet for 48x48 frames (192x192 total, 4 frames horizontal)
+        // Create spritesheet for 48x48 frames (192x192 total, 4x4 grid)
+        // Format: 4 frames horizontal per row, 4 rows for different directions
         const spriteSheetData = {
           frames: {} as Record<string, any>,
           animations: {} as Record<string, string[]>,
@@ -276,22 +278,30 @@ export class ColorGameApp {
           },
         }
 
-        // Create frames for idle_down animation (first row, 4 frames)
-        const frames: string[] = []
-        for (let i = 0; i < 4; i++) {
-          const frameName = `idle_down_${i}`
-          spriteSheetData.frames[frameName] = {
-            frame: { x: i * 48, y: 0, w: 48, h: 48 },
-            sourceSize: { w: 48, h: 48 },
-            spriteSourceSize: { x: 0, y: 0, w: 48, h: 48 },
+        // Generate frames for all animations (idle and walk in 4 directions)
+        // Each direction has 4 frames (0-3)
+        const animations = ['idle_down', 'idle_up', 'idle_left', 'idle_right',
+                           'walk_down', 'walk_up', 'walk_left', 'walk_right']
+
+        animations.forEach((anim, animIdx) => {
+          const frames: string[] = []
+          for (let i = 0; i < 4; i++) {
+            const frameName = `${anim}_${i}`
+            // Each frame is 48x48, arranged in 4x4 grid
+            spriteSheetData.frames[frameName] = {
+              frame: { x: i * 48, y: animIdx * 48, w: 48, h: 48 },
+              sourceSize: { w: 48, h: 48 },
+              spriteSourceSize: { x: 0, y: 0, w: 48, h: 48 },
+            }
+            frames.push(frameName)
           }
-          frames.push(frameName)
-        }
-        spriteSheetData.animations['idle_down'] = frames
+          spriteSheetData.animations[anim] = frames
+        })
 
         const sheet = new PIXI.Spritesheet(texture, spriteSheetData)
         await sheet.parse()
 
+        // Create animated sprite with idle_down animation
         const animatedSprite = new PIXI.AnimatedSprite(sheet.animations['idle_down'])
         animatedSprite.animationSpeed = 0.1
         
@@ -333,21 +343,25 @@ export class ColorGameApp {
         }
 
         this.agents.set(id, agent)
-        console.log(`[ColorGameApp] Spawned ${name} (${role}) at (${x}, ${y}) with sprite: ${selectedPath}`)
+        console.log(`[ColorGameApp] ✅ Spawned ${name} (${role}) at (${x}, ${y}) with sprite: ${selectedPath}`)
       } catch (error) {
-        console.error(`[ColorGameApp] Failed to load character sprite: ${selectedPath}`, error)
-        // Fallback to colored sprite
-        const roleToSprite: Record<string, string> = {
-          researcher: 'agent_researcher',
-          designer: 'agent_designer',
-          frontend_developer: 'agent_developer',
-          code_reviewer: 'agent_reviewer',
-        }
-        const spriteName = roleToSprite[role] || 'agent_researcher'
-        const sprite = new PIXI.Sprite(this.getSprite(spriteName))
-        sprite.x = x * this.TILE_SIZE
-        sprite.y = y * this.TILE_SIZE
-        this.worldContainer.addChild(sprite)
+        console.error(`[ColorGameApp] ❌ Failed to load character sprite: ${selectedPath}`, error)
+        // NO FALLBACK - Show error message instead
+        const errorLabel = new PIXI.Text({
+          text: `❌ Failed to load sprite`,
+          style: {
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fill: 0xff0000,
+          }
+        })
+        errorLabel.anchor.set(0.5, 0.5)
+        errorLabel.x = Math.round(x * this.TILE_SIZE + 16)
+        errorLabel.y = Math.round(y * this.TILE_SIZE + 16)
+        this.worldContainer.addChild(errorLabel)
+        
+        console.error(`[ColorGameApp] Error details:`, error)
+        throw error // Re-throw to prevent silent failures
       }
     }
 
