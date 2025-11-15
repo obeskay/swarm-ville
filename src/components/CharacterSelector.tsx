@@ -40,11 +40,12 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
     img.onload = () => {
       imgRef.current = img;
 
-      // Character sprite: 192x192 with 4 horizontal frames (48x192 each)
+      // Character sprite: 192x192 with 4x4 grid (48x48 each frame)
+      // Format: 4 frames horizontal, 4 rows for different directions
       const FRAMES = 4;
       const FRAME_WIDTH = 48;
-      const FRAME_HEIGHT = 192;
-      const PREVIEW_SCALE = 2.5;
+      const FRAME_HEIGHT = 48; // Each frame is 48x48, not 48x192
+      const PREVIEW_SCALE = 3;
 
       const animateFrame = () => {
         // Fill background with sky blue
@@ -63,13 +64,13 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
         // Disable smoothing for pixel-perfect rendering
         ctx.imageSmoothingEnabled = false;
 
-        // Draw SINGLE frame from spritesheet
+        // Draw SINGLE frame from spritesheet (first row, idle_down)
         ctx.drawImage(
           img,
-          frameIndex * FRAME_WIDTH, // source x
-          0, // source y
-          FRAME_WIDTH, // source width
-          FRAME_HEIGHT, // source height
+          frameIndex * FRAME_WIDTH, // source x (0, 48, 96, 144)
+          0, // source y (first row for idle_down)
+          FRAME_WIDTH, // source width (48)
+          FRAME_HEIGHT, // source height (48)
           x, // dest x
           y, // dest y
           displayWidth, // dest width
@@ -141,7 +142,7 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
           <div className="bg-muted p-3 rounded border border-border text-xs text-muted-foreground font-mono space-y-1">
             <p>📊 Total: {CHARACTERS.length} personajes</p>
             <p>🎬 Seleccionado: {selectedChar.name}</p>
-            <p>🎨 192×192 (4 frames animados)</p>
+            <p>🎨 192×192 (4×4 grid, 48×48 por frame)</p>
           </div>
 
           {/* Buttons */}
