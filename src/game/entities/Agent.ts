@@ -116,7 +116,9 @@ export class Agent {
       this.animatedSprite.texture.source.scaleMode = 'nearest'
       this.animatedSprite.roundPixels = true
       
-      // Anchor is set in spriteSheetData (0.5, 1) - center horizontal, bottom vertical
+      // Set anchor point (0.5, 1) - center horizontal, bottom vertical (feet-based positioning)
+      this.animatedSprite.anchor.set(0.5, 1)
+      
       this.animatedSprite.play()
 
       this.container.addChildAt(this.animatedSprite, 0)

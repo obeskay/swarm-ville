@@ -1,49 +1,62 @@
-import * as PIXI from 'pixi.js'
-import { themeColors } from './utils/themeColors'
-import characterSpriteSheetData from './utils/CharacterSpriteSheetData'
+import * as PIXI from "pixi.js";
+import { themeColors } from "./utils/themeColors";
+import characterSpriteSheetData from "./utils/CharacterSpriteSheetData";
 
 interface Agent {
-  id: string
-  name: string
-  role: string
-  sprite: PIXI.Sprite
-  nameLabel: PIXI.Text
-  chatBubble: PIXI.Container | null
-  x: number
-  y: number
-  chatTimeout: NodeJS.Timeout | null
+  id: string;
+  name: string;
+  role: string;
+  sprite: PIXI.AnimatedSprite;
+  nameLabel: PIXI.Text;
+  chatBubble: PIXI.Container | null;
+  x: number;
+  y: number;
+  chatTimeout: NodeJS.Timeout | null;
 }
 
 interface Player {
-  sprite: PIXI.Sprite
-  x: number
-  y: number
-  speed: number
+  sprite: PIXI.AnimatedSprite | PIXI.Graphics;
+  sheet: PIXI.Spritesheet | null;
+  x: number;
+  y: number;
+  speed: number;
+  direction: "up" | "down" | "left" | "right";
+  animationState:
+    | "idle_down"
+    | "idle_up"
+    | "idle_left"
+    | "idle_right"
+    | "walk_down"
+    | "walk_up"
+    | "walk_left"
+    | "walk_right";
 }
 
 export class ColorGameApp {
-  private app: PIXI.Application | null = null
-  private container: PIXI.Container
-  private worldContainer: PIXI.Container
-  private agents: Map<string, Agent> = new Map()
-  private player: Player | null = null
-  private initialized: boolean = false
-  private spriteTextures: Map<string, PIXI.Texture> = new Map()
-  private keys: Set<string> = new Set()
+  private app: PIXI.Application | null = null;
+  private container: PIXI.Container;
+  private worldContainer: PIXI.Container;
+  private agentLayer: PIXI.Container | null = null; // Direct stage layer for agents
+  private agents: Map<string, Agent> = new Map();
+  private player: Player | null = null;
+  private initialized: boolean = false;
+  private spriteTextures: Map<string, PIXI.Texture> = new Map();
+  private keys: Set<string> = new Set();
+  private cameraFollowsPlayer: boolean = true;
 
-  private readonly TILE_SIZE = 32
-  private readonly GRID_WIDTH = 37
-  private readonly GRID_HEIGHT = 25
+  private readonly TILE_SIZE = 32;
+  private readonly GRID_WIDTH = 37;
+  private readonly GRID_HEIGHT = 25;
 
   constructor() {
-    this.container = new PIXI.Container()
-    this.worldContainer = new PIXI.Container()
-    this.container.addChild(this.worldContainer)
+    this.container = new PIXI.Container();
+    this.worldContainer = new PIXI.Container();
+    this.container.addChild(this.worldContainer);
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
     try {
-      this.app = new PIXI.Application()
+      this.app = new PIXI.Application();
 
       await this.app.init({
         canvas: canvas,
@@ -54,371 +67,632 @@ export class ColorGameApp {
         resolution: 1, // Pixel perfect - 1:1 resolution
         autoDensity: false, // Pixel perfect - no auto density
         roundPixels: true, // Pixel perfect - round pixels
-        powerPreference: 'high-performance',
-        preserveDrawingBuffer: false,
-      })
-      
+        powerPreference: "high-performance",
+        preserveDrawingBuffer: true, // Enable dynamic content updates
+      });
+
       // Ensure pixel perfect rendering
-      this.app.renderer.resolution = 1
-      this.app.stage.scale.set(1, 1)
+      this.app.renderer.resolution = 1;
+      this.app.stage.scale.set(1, 1);
 
-      this.app.stage.addChild(this.container)
+      // Force continuous rendering for dynamic content
+      this.app.ticker.add(() => {
+        // This ensures the renderer updates every frame
+      });
 
-      await this.loadColorSprites()
-      this.createOfficeLayout()
-      this.createPlayer()
-      this.setupKeyboardControls()
+      this.app.stage.addChild(this.container);
 
-      this.app.ticker.add(() => this.update())
+      // Create separate layer for agents that renders ABOVE the world container
+      // IMPORTANT: disable batching for dynamic content
+      this.agentLayer = new PIXI.Container();
+      (this.agentLayer as any).isRenderGroup = false; // Disable batch rendering
+      this.app.stage.addChild(this.agentLayer);
+      console.log("[ColorGameApp] ✅ Agent layer created at stage level (batching disabled)");
 
-      this.initialized = true
-      console.log('[ColorGameApp] ✅ Initialized with colored sprites')
+      await this.loadColorSprites();
+      this.createOfficeLayout();
+      await this.createPlayer();
+      this.setupKeyboardControls();
+
+      this.app.ticker.add(() => this.update());
+
+      this.initialized = true;
+      console.log("[ColorGameApp] ✅ Initialized with character spritesheets");
     } catch (error) {
-      console.error('[ColorGameApp] ❌ Init failed:', error)
-      throw error
+      console.error("[ColorGameApp] ❌ Init failed:", error);
+      throw error;
     }
   }
 
   private async loadColorSprites(): Promise<void> {
-    // Only load environment sprites, NOT agent sprites (agents use character spritesheets)
-    const sprites = [
-      'floor', 'wall', 'desk', 'chair', 'conference_table', 'plant', 'door', 'player'
-    ]
+    // Only load environment sprites, NOT agent/player sprites (they use character spritesheets)
+    const sprites = ["floor", "wall", "desk", "chair", "conference_table", "plant", "door"];
+    const loaded: string[] = [];
+    const failed: string[] = [];
 
     for (const sprite of sprites) {
       try {
-        const texture = await PIXI.Assets.load(`/sprites/colored/${sprite}.png`)
-        this.spriteTextures.set(sprite, texture)
+        const texture = await PIXI.Assets.load(`/sprites/colored/${sprite}.png`);
+        if (texture && texture.width > 0 && texture.height > 0) {
+          this.spriteTextures.set(sprite, texture);
+          loaded.push(sprite);
+        } else {
+          throw new Error(`Invalid texture dimensions for ${sprite}`);
+        }
       } catch (error) {
-        console.warn(`[ColorGameApp] Could not load sprite: ${sprite}`)
+        console.warn(`[ColorGameApp] ⚠️ Could not load sprite: ${sprite}`, error);
+        failed.push(sprite);
       }
     }
 
-    console.log('[ColorGameApp] ✅ Loaded environment sprites (agents use character spritesheets)')
+    console.log(`[ColorGameApp] ✅ Loaded ${loaded.length}/${sprites.length} environment sprites`, {
+      loaded,
+      failed,
+    });
   }
 
   private getSprite(name: string): PIXI.Texture {
-    const texture = this.spriteTextures.get(name)
+    const texture = this.spriteTextures.get(name);
     if (!texture) {
-      throw new Error(`Sprite not found: ${name}`)
+      throw new Error(`Sprite not found: ${name}`);
     }
-    return texture
+    return texture;
   }
 
   private createOfficeLayout(): void {
     // Floor - entire office area
     for (let y = 1; y < this.GRID_HEIGHT - 1; y++) {
       for (let x = 1; x < this.GRID_WIDTH - 1; x++) {
-        const floor = new PIXI.Sprite(this.getSprite('floor'))
-        floor.x = x * this.TILE_SIZE
-        floor.y = y * this.TILE_SIZE
-        this.worldContainer.addChild(floor)
+        const floor = new PIXI.Sprite(this.getSprite("floor"));
+        floor.x = x * this.TILE_SIZE;
+        floor.y = y * this.TILE_SIZE;
+        this.worldContainer.addChild(floor);
       }
     }
 
     // Outer walls
     for (let x = 0; x < this.GRID_WIDTH; x++) {
       // Top wall
-      const topWall = new PIXI.Sprite(this.getSprite('wall'))
-      topWall.x = x * this.TILE_SIZE
-      topWall.y = 0
-      this.worldContainer.addChild(topWall)
+      const topWall = new PIXI.Sprite(this.getSprite("wall"));
+      topWall.x = x * this.TILE_SIZE;
+      topWall.y = 0;
+      this.worldContainer.addChild(topWall);
 
       // Bottom wall
-      const bottomWall = new PIXI.Sprite(this.getSprite('wall'))
-      bottomWall.x = x * this.TILE_SIZE
-      bottomWall.y = (this.GRID_HEIGHT - 1) * this.TILE_SIZE
-      this.worldContainer.addChild(bottomWall)
+      const bottomWall = new PIXI.Sprite(this.getSprite("wall"));
+      bottomWall.x = x * this.TILE_SIZE;
+      bottomWall.y = (this.GRID_HEIGHT - 1) * this.TILE_SIZE;
+      this.worldContainer.addChild(bottomWall);
     }
 
     for (let y = 1; y < this.GRID_HEIGHT - 1; y++) {
       // Left wall
-      const leftWall = new PIXI.Sprite(this.getSprite('wall'))
-      leftWall.x = 0
-      leftWall.y = y * this.TILE_SIZE
-      this.worldContainer.addChild(leftWall)
+      const leftWall = new PIXI.Sprite(this.getSprite("wall"));
+      leftWall.x = 0;
+      leftWall.y = y * this.TILE_SIZE;
+      this.worldContainer.addChild(leftWall);
 
       // Right wall
-      const rightWall = new PIXI.Sprite(this.getSprite('wall'))
-      rightWall.x = (this.GRID_WIDTH - 1) * this.TILE_SIZE
-      rightWall.y = y * this.TILE_SIZE
-      this.worldContainer.addChild(rightWall)
+      const rightWall = new PIXI.Sprite(this.getSprite("wall"));
+      rightWall.x = (this.GRID_WIDTH - 1) * this.TILE_SIZE;
+      rightWall.y = y * this.TILE_SIZE;
+      this.worldContainer.addChild(rightWall);
     }
 
     // Desks - left side
     const deskPositions = [
-      {x: 3, y: 3}, {x: 7, y: 3}, {x: 11, y: 3}, {x: 15, y: 3},
-      {x: 3, y: 8}, {x: 7, y: 8}, {x: 11, y: 8}, {x: 15, y: 8},
-      {x: 3, y: 13}, {x: 7, y: 13}, {x: 11, y: 13}, {x: 15, y: 13},
-    ]
+      { x: 3, y: 3 },
+      { x: 7, y: 3 },
+      { x: 11, y: 3 },
+      { x: 15, y: 3 },
+      { x: 3, y: 8 },
+      { x: 7, y: 8 },
+      { x: 11, y: 8 },
+      { x: 15, y: 8 },
+      { x: 3, y: 13 },
+      { x: 7, y: 13 },
+      { x: 11, y: 13 },
+      { x: 15, y: 13 },
+    ];
 
-    deskPositions.forEach(pos => {
-      const desk = new PIXI.Sprite(this.getSprite('desk'))
-      desk.x = pos.x * this.TILE_SIZE
-      desk.y = pos.y * this.TILE_SIZE
-      this.worldContainer.addChild(desk)
+    deskPositions.forEach((pos) => {
+      const desk = new PIXI.Sprite(this.getSprite("desk"));
+      desk.x = pos.x * this.TILE_SIZE;
+      desk.y = pos.y * this.TILE_SIZE;
+      this.worldContainer.addChild(desk);
 
-      const chair = new PIXI.Sprite(this.getSprite('chair'))
-      chair.x = (pos.x + 2) * this.TILE_SIZE
-      chair.y = (pos.y + 1) * this.TILE_SIZE
-      this.worldContainer.addChild(chair)
-    })
+      const chair = new PIXI.Sprite(this.getSprite("chair"));
+      chair.x = (pos.x + 2) * this.TILE_SIZE;
+      chair.y = (pos.y + 1) * this.TILE_SIZE;
+      this.worldContainer.addChild(chair);
+    });
 
     // Conference table - center/right
     for (let dy = 0; dy < 3; dy++) {
       for (let dx = 0; dx < 4; dx++) {
-        const table = new PIXI.Sprite(this.getSprite('conference_table'))
-        table.x = (24 + dx) * this.TILE_SIZE
-        table.y = (10 + dy) * this.TILE_SIZE
-        this.worldContainer.addChild(table)
+        const table = new PIXI.Sprite(this.getSprite("conference_table"));
+        table.x = (24 + dx) * this.TILE_SIZE;
+        table.y = (10 + dy) * this.TILE_SIZE;
+        this.worldContainer.addChild(table);
       }
     }
 
     // Plants - corners
     const plantPositions = [
-      {x: 2, y: 2}, {x: 34, y: 2},
-      {x: 2, y: 22}, {x: 34, y: 22},
-    ]
-    plantPositions.forEach(pos => {
-      const plant = new PIXI.Sprite(this.getSprite('plant'))
-      plant.x = pos.x * this.TILE_SIZE
-      plant.y = pos.y * this.TILE_SIZE
-      this.worldContainer.addChild(plant)
-    })
+      { x: 2, y: 2 },
+      { x: 34, y: 2 },
+      { x: 2, y: 22 },
+      { x: 34, y: 22 },
+    ];
+    plantPositions.forEach((pos) => {
+      const plant = new PIXI.Sprite(this.getSprite("plant"));
+      plant.x = pos.x * this.TILE_SIZE;
+      plant.y = pos.y * this.TILE_SIZE;
+      this.worldContainer.addChild(plant);
+    });
 
     // Doors
-    const doorPositions = [{x: 18, y: 1}]
-    doorPositions.forEach(pos => {
-      const door = new PIXI.Sprite(this.getSprite('door'))
-      door.x = pos.x * this.TILE_SIZE
-      door.y = pos.y * this.TILE_SIZE
-      this.worldContainer.addChild(door)
-    })
+    const doorPositions = [{ x: 18, y: 1 }];
+    doorPositions.forEach((pos) => {
+      const door = new PIXI.Sprite(this.getSprite("door"));
+      door.x = pos.x * this.TILE_SIZE;
+      door.y = pos.y * this.TILE_SIZE;
+      this.worldContainer.addChild(door);
+    });
 
-    console.log('[ColorGameApp] Office layout created')
+    console.log("[ColorGameApp] Office layout created");
   }
 
-  private createPlayer(): void {
-    const playerSprite = new PIXI.Sprite(this.getSprite('player'))
-    playerSprite.x = 18 * this.TILE_SIZE
-    playerSprite.y = 12 * this.TILE_SIZE
+  private async createPlayer(): Promise<void> {
+    // Use selected character from CharacterSelector or default
+    const selectedPath =
+      (window as any).selectedCharacterPath || "/sprites/characters/Character_001.png";
 
-    this.player = {
-      sprite: playerSprite,
-      x: 18 * this.TILE_SIZE,
-      y: 12 * this.TILE_SIZE,
-      speed: 2,
+    try {
+      console.log(`[ColorGameApp] 🎮 Loading player sprite from: ${selectedPath}`);
+
+      // Load and validate texture
+      const texture = await PIXI.Assets.load(selectedPath);
+      if (!texture || texture.width === 0 || texture.height === 0) {
+        throw new Error(`Invalid texture: ${texture?.width}x${texture?.height}`);
+      }
+      console.log(`[ColorGameApp] ✅ Texture loaded: ${texture.width}x${texture.height}`);
+
+      // Clone spriteSheetData and set image path (like gather-clone does)
+      const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData));
+      spriteSheetData.meta.image = selectedPath;
+
+      const sheet = new PIXI.Spritesheet(PIXI.Texture.from(selectedPath), spriteSheetData);
+      await sheet.parse();
+
+      // Validate animations exist
+      if (!sheet.animations || !sheet.animations["idle_down"]) {
+        throw new Error("Animation 'idle_down' not found in spritesheet");
+      }
+      console.log(
+        `[ColorGameApp] ✅ Spritesheet parsed, animations:`,
+        Object.keys(sheet.animations)
+      );
+
+      // Create animated sprite with idle_down animation
+      const animationFrames = sheet.animations["idle_down"];
+      if (!Array.isArray(animationFrames) || animationFrames.length === 0) {
+        throw new Error("Animation frames array is empty");
+      }
+
+      const animatedSprite = new PIXI.AnimatedSprite(animationFrames);
+      animatedSprite.animationSpeed = 0.1;
+
+      // Pixel perfect rendering
+      animatedSprite.texture.source.scaleMode = "nearest";
+      animatedSprite.roundPixels = true;
+
+      // Set anchor point (0.5, 1) - center horizontal, bottom vertical (feet-based positioning)
+      animatedSprite.anchor.set(0.5, 1);
+
+      // Validate sprite dimensions
+      if (animatedSprite.width === 0 || animatedSprite.height === 0) {
+        throw new Error(
+          `Invalid sprite dimensions: ${animatedSprite.width}x${animatedSprite.height}`
+        );
+      }
+      console.log(
+        `[ColorGameApp] ✅ Sprite created: ${animatedSprite.width}x${animatedSprite.height}, anchor: (${animatedSprite.anchor.x}, ${animatedSprite.anchor.y})`
+      );
+
+      animatedSprite.play();
+
+      // Position at tile center, accounting for anchor
+      const startX = 18 * this.TILE_SIZE;
+      const startY = 12 * this.TILE_SIZE;
+      animatedSprite.x = Math.round(startX + 16);
+      animatedSprite.y = Math.round(startY + 32); // Full tile height for bottom anchor
+
+      this.worldContainer.addChild(animatedSprite);
+
+      this.player = {
+        sprite: animatedSprite as any,
+        sheet: sheet,
+        x: startX,
+        y: startY,
+        speed: 2,
+        direction: "down",
+        animationState: "idle_down",
+      };
+
+      console.log(`[ColorGameApp] ✅ Player created successfully at (${startX}, ${startY})`);
+    } catch (error) {
+      console.error(`[ColorGameApp] ❌ Failed to load player sprite: ${selectedPath}`, error);
+      // Fallback: create a simple colored square as last resort
+      const fallbackSprite = new PIXI.Graphics();
+      fallbackSprite.rect(0, 0, 32, 32);
+      fallbackSprite.fill(0x00ff00); // Green square as fallback
+      fallbackSprite.x = 18 * this.TILE_SIZE;
+      fallbackSprite.y = 12 * this.TILE_SIZE;
+
+      this.player = {
+        sprite: fallbackSprite as any,
+        sheet: null,
+        x: 18 * this.TILE_SIZE,
+        y: 12 * this.TILE_SIZE,
+        speed: 2,
+        direction: "down",
+        animationState: "idle_down",
+      };
+
+      this.worldContainer.addChild(fallbackSprite);
+      console.warn("[ColorGameApp] ⚠️ Using fallback sprite for player");
     }
-
-    this.worldContainer.addChild(playerSprite)
-    console.log('[ColorGameApp] Player created')
   }
 
   private setupKeyboardControls(): void {
-    window.addEventListener('keydown', (e) => {
-      this.keys.add(e.key.toLowerCase())
-    })
+    window.addEventListener("keydown", (e) => {
+      this.keys.add(e.key.toLowerCase());
+    });
 
-    window.addEventListener('keyup', (e) => {
-      this.keys.delete(e.key.toLowerCase())
-    })
+    window.addEventListener("keyup", (e) => {
+      this.keys.delete(e.key.toLowerCase());
+    });
 
-    console.log('[ColorGameApp] Keyboard controls ready')
+    console.log("[ColorGameApp] Keyboard controls ready");
+  }
+
+  private changePlayerAnimation(state: Player["animationState"]): void {
+    if (!this.player || !this.player.sheet || !(this.player.sprite instanceof PIXI.AnimatedSprite))
+      return;
+    if (this.player.animationState === state) return;
+
+    this.player.animationState = state;
+    this.player.sprite.textures = this.player.sheet.animations[state];
+    this.player.sprite.play();
   }
 
   private update(): void {
-    if (!this.player) return
+    if (!this.player) return;
 
-    let dx = 0
-    let dy = 0
+    let dx = 0;
+    let dy = 0;
 
-    if (this.keys.has('w') || this.keys.has('arrowup')) dy -= this.player.speed
-    if (this.keys.has('s') || this.keys.has('arrowdown')) dy += this.player.speed
-    if (this.keys.has('a') || this.keys.has('arrowleft')) dx -= this.player.speed
-    if (this.keys.has('d') || this.keys.has('arrowright')) dx += this.player.speed
+    if (this.keys.has("w") || this.keys.has("arrowup")) dy -= this.player.speed;
+    if (this.keys.has("s") || this.keys.has("arrowdown")) dy += this.player.speed;
+    if (this.keys.has("a") || this.keys.has("arrowleft")) dx -= this.player.speed;
+    if (this.keys.has("d") || this.keys.has("arrowright")) dx += this.player.speed;
 
     if (dx !== 0 || dy !== 0) {
-      this.player.x += dx
-      this.player.y += dy
+      // Determine direction based on movement
+      if (Math.abs(dx) > Math.abs(dy)) {
+        this.player.direction = dx > 0 ? "right" : "left";
+      } else {
+        this.player.direction = dy > 0 ? "down" : "up";
+      }
 
-      const margin = this.TILE_SIZE * 2
-      this.player.x = Math.max(margin, Math.min((this.GRID_WIDTH - 2) * this.TILE_SIZE, this.player.x))
-      this.player.y = Math.max(margin, Math.min((this.GRID_HEIGHT - 2) * this.TILE_SIZE, this.player.y))
+      // Change animation based on direction
+      if (this.player.sheet) {
+        this.changePlayerAnimation(`walk_${this.player.direction}` as Player["animationState"]);
+      }
 
-      this.player.sprite.x = this.player.x
-      this.player.sprite.y = this.player.y
+      this.player.x += dx;
+      this.player.y += dy;
 
-      // Camera follows player
-      this.worldContainer.x = 600 - this.player.x
-      this.worldContainer.y = 400 - this.player.y
+      const margin = this.TILE_SIZE * 2;
+      this.player.x = Math.max(
+        margin,
+        Math.min((this.GRID_WIDTH - 2) * this.TILE_SIZE, this.player.x)
+      );
+      this.player.y = Math.max(
+        margin,
+        Math.min((this.GRID_HEIGHT - 2) * this.TILE_SIZE, this.player.y)
+      );
+
+      // Update sprite position (accounting for anchor offset)
+      if (this.player.sprite instanceof PIXI.AnimatedSprite) {
+        this.player.sprite.x = Math.round(this.player.x + 16);
+        this.player.sprite.y = Math.round(this.player.y + 32); // Full tile height for bottom anchor
+      } else {
+        this.player.sprite.x = this.player.x;
+        this.player.sprite.y = this.player.y;
+      }
+
+      // Camera follows player (only if enabled)
+      if (this.cameraFollowsPlayer) {
+        this.worldContainer.x = 600 - this.player.x;
+        this.worldContainer.y = 400 - this.player.y;
+        // Sync agent layer with world camera
+        if (this.agentLayer) {
+          this.agentLayer.x = this.worldContainer.x;
+          this.agentLayer.y = this.worldContainer.y;
+        }
+      }
+    } else {
+      // No movement - switch to idle animation
+      if (this.player.sheet) {
+        this.changePlayerAnimation(`idle_${this.player.direction}` as Player["animationState"]);
+      }
     }
   }
 
-  public spawnAgent(id: string, name: string, role: string, x: number, y: number): void {
-    if (this.agents.has(id)) return
-
-    // Use selected character from CharacterSelector or default
-    const selectedPath = (window as any).selectedCharacterPath || '/sprites/characters/Character_001.png'
-    
-    // Load character sprite dynamically - ALWAYS use selected spritesheet
-    // Based on gather-clone reference implementation
-    const loadCharacterSprite = async () => {
-      try {
-        console.log(`[ColorGameApp] Loading character sprite from: ${selectedPath}`)
-        await PIXI.Assets.load(selectedPath)
-
-        // Clone spriteSheetData and set image path (like gather-clone does)
-        const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData))
-        spriteSheetData.meta.image = selectedPath
-
-        const sheet = new PIXI.Spritesheet(PIXI.Texture.from(selectedPath), spriteSheetData)
-        await sheet.parse()
-
-        // Create animated sprite with idle_down animation
-        const animatedSprite = new PIXI.AnimatedSprite(sheet.animations['idle_down'])
-        animatedSprite.animationSpeed = 0.1
-        
-        // Pixel perfect rendering
-        animatedSprite.texture.source.scaleMode = 'nearest'
-        animatedSprite.roundPixels = true
-        
-        animatedSprite.play()
-        // Anchor is set in spriteSheetData (0.5, 1) - center horizontal, bottom vertical
-        animatedSprite.x = Math.round(x * this.TILE_SIZE + 16)
-        animatedSprite.y = Math.round(y * this.TILE_SIZE + 24) // +24 to align with gather-clone positioning
-
-        this.worldContainer.addChild(animatedSprite)
-
-        const nameLabel = new PIXI.Text({
-          text: name,
-          style: {
-            fontFamily: 'monospace',
-            fontSize: 11,
-            fill: themeColors.foreground,
-            stroke: { color: themeColors.background, width: 2 },
-          }
-        })
-        nameLabel.anchor.set(0.5, 1)
-        nameLabel.x = animatedSprite.x
-        nameLabel.y = animatedSprite.y - 24
-        this.worldContainer.addChild(nameLabel)
-
-        const agent: Agent = {
-          id,
-          name,
-          role,
-          sprite: animatedSprite as any, // Store animated sprite
-          nameLabel,
-          chatBubble: null,
-          x,
-          y,
-          chatTimeout: null,
-        }
-
-        this.agents.set(id, agent)
-        console.log(`[ColorGameApp] ✅ Spawned ${name} (${role}) at (${x}, ${y}) with sprite: ${selectedPath}`)
-      } catch (error) {
-        console.error(`[ColorGameApp] ❌ Failed to load character sprite: ${selectedPath}`, error)
-        // NO FALLBACK - Show error message instead
-        const errorLabel = new PIXI.Text({
-          text: `❌ Failed to load sprite`,
-          style: {
-            fontFamily: 'monospace',
-            fontSize: 10,
-            fill: 0xff0000,
-          }
-        })
-        errorLabel.anchor.set(0.5, 0.5)
-        errorLabel.x = Math.round(x * this.TILE_SIZE + 16)
-        errorLabel.y = Math.round(y * this.TILE_SIZE + 16)
-        this.worldContainer.addChild(errorLabel)
-        
-        console.error(`[ColorGameApp] Error details:`, error)
-        throw error // Re-throw to prevent silent failures
-      }
+  public async spawnAgent(
+    id: string,
+    name: string,
+    role: string,
+    x: number,
+    y: number
+  ): Promise<void> {
+    if (this.agents.has(id)) {
+      console.warn(`[ColorGameApp] ⚠️ Agent ${id} already exists, skipping`);
+      return;
     }
 
-    loadCharacterSprite()
+    // Validate coordinates
+    if (x < 0 || x >= this.GRID_WIDTH || y < 0 || y >= this.GRID_HEIGHT) {
+      console.error(`[ColorGameApp] ❌ Invalid spawn coordinates: (${x}, ${y})`);
+      return;
+    }
+
+    // Use selected character from CharacterSelector or default
+    const selectedPath =
+      (window as any).selectedCharacterPath || "/sprites/characters/Character_001.png";
+
+    console.log(
+      `[ColorGameApp] 🎮 Spawning agent ${name} (${role}) at (${x}, ${y}) with sprite: ${selectedPath}`
+    );
+
+    // Load character sprite dynamically - INDEPENDENT spritesheet per agent
+    try {
+      // Load and validate texture
+      const texture = await PIXI.Assets.load(selectedPath);
+      if (!texture || texture.width === 0 || texture.height === 0) {
+        throw new Error(`Invalid texture: ${texture?.width}x${texture?.height}`);
+      }
+      console.log(`[ColorGameApp] ✅ Texture loaded: ${texture.width}x${texture.height}`);
+
+      // Clone spriteSheetData and set image path
+      const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData));
+      spriteSheetData.meta.image = selectedPath;
+
+      const sheet = new PIXI.Spritesheet(PIXI.Texture.from(selectedPath), spriteSheetData);
+      await sheet.parse();
+      console.log(`[ColorGameApp] ✅ Spritesheet parsed`);
+
+      // Create simple sprite using walk_down_1 frame (idle pose)
+      const idleFrame = sheet.textures["walk_down_1"];
+      if (!idleFrame) {
+        throw new Error("Frame 'walk_down_1' not found in spritesheet");
+      }
+      console.log(`[ColorGameApp] ✅ Using frame: walk_down_1`);
+
+      const sprite = new PIXI.Sprite(idleFrame);
+
+      // Pixel perfect rendering
+      sprite.texture.source.scaleMode = "nearest";
+      sprite.roundPixels = true;
+
+      // Set anchor point (0.5, 1) - center horizontal, bottom vertical (feet-based positioning)
+      sprite.anchor.set(0.5, 1);
+
+      // Validate sprite dimensions
+      if (sprite.width === 0 || sprite.height === 0) {
+        throw new Error(`Invalid sprite dimensions: ${sprite.width}x${sprite.height}`);
+      }
+      console.log(
+        `[ColorGameApp] ✅ Sprite created: ${sprite.width}x${sprite.height}, anchor: (${sprite.anchor.x}, ${sprite.anchor.y})`
+      );
+
+      // Position at tile center, accounting for anchor
+      const spriteX = Math.round(x * this.TILE_SIZE + 16);
+      const spriteY = Math.round(y * this.TILE_SIZE + 32); // Full tile height for bottom anchor
+      sprite.x = spriteX;
+      sprite.y = spriteY;
+      console.log(`[ColorGameApp] ✅ Sprite positioned at: (${spriteX}, ${spriteY})`);
+
+      // Add to agent layer (stage-level, not batched)
+      if (this.agentLayer) {
+        this.agentLayer.addChild(sprite);
+        console.log(`[ColorGameApp] ✅ Sprite added to agent layer at (${spriteX}, ${spriteY})`);
+      } else {
+        this.worldContainer.addChild(sprite);
+        console.log(`[ColorGameApp] ⚠️ Agent layer unavailable, using worldContainer`);
+      }
+
+      // Create fallback Graphics sprite for better visibility in dynamic rendering
+      const fallbackGraphics = new PIXI.Graphics();
+      fallbackGraphics.rect(spriteX - 24, spriteY - 24, 48, 48);
+      fallbackGraphics.fill({ color: 0x9d4edd, alpha: 0.3 }); // Visible purple outline
+      fallbackGraphics.stroke({ color: 0x9d4edd, width: 2 });
+      if (this.agentLayer) {
+        this.agentLayer.addChild(fallbackGraphics);
+      } else {
+        this.worldContainer.addChild(fallbackGraphics);
+      }
+      console.log(`[ColorGameApp] ✅ Fallback graphics added to agent layer`);
+
+      // Create name label
+      const nameLabel = new PIXI.Text({
+        text: name,
+        style: {
+          fontFamily: "monospace",
+          fontSize: 11,
+          fill: themeColors.foreground,
+          stroke: { color: themeColors.background, width: 2 },
+        },
+      });
+      nameLabel.anchor.set(0.5, 1);
+      nameLabel.x = spriteX;
+      nameLabel.y = spriteY - 32; // Position above sprite (accounting for anchor)
+      if (this.agentLayer) {
+        this.agentLayer.addChild(nameLabel);
+      } else {
+        this.worldContainer.addChild(nameLabel);
+      }
+
+      const agent: Agent = {
+        id,
+        name,
+        role,
+        sprite: sprite as any, // Store simple sprite
+        nameLabel,
+        chatBubble: null,
+        x,
+        y,
+        chatTimeout: null,
+      };
+
+      this.agents.set(id, agent);
+
+      // Force renderer to recognize new content
+      this.worldContainer.cullable = false;
+      sprite.cullable = false;
+      nameLabel.cullable = false;
+
+      console.log(`[ColorGameApp] ✅ Successfully spawned ${name} (${role}) at (${x}, ${y})`);
+    } catch (error) {
+      console.error(`[ColorGameApp] ❌ Failed to load character sprite: ${selectedPath}`, error);
+
+      // Show error message on map
+      const errorLabel = new PIXI.Text({
+        text: `❌ ${name}\n(sprite error)`,
+        style: {
+          fontFamily: "monospace",
+          fontSize: 10,
+          fill: 0xff0000,
+          align: "center",
+        },
+      });
+      errorLabel.anchor.set(0.5, 0.5);
+      errorLabel.x = Math.round(x * this.TILE_SIZE + 16);
+      errorLabel.y = Math.round(y * this.TILE_SIZE + 16);
+      this.worldContainer.addChild(errorLabel);
+
+      console.error(`[ColorGameApp] Error details:`, error);
+      throw error; // Re-throw to prevent silent failures
+    }
   }
 
   public showAgentMessage(agentId: string, message: string): void {
-    const agent = this.agents.get(agentId)
-    if (!agent) return
+    const agent = this.agents.get(agentId);
+    if (!agent) return;
 
     // Remove old chat bubble if exists
     if (agent.chatBubble) {
-      this.worldContainer.removeChild(agent.chatBubble)
-      agent.chatBubble.destroy()
+      this.worldContainer.removeChild(agent.chatBubble);
+      agent.chatBubble.destroy();
     }
 
     if (agent.chatTimeout) {
-      clearTimeout(agent.chatTimeout)
+      clearTimeout(agent.chatTimeout);
     }
 
     // Create chat bubble
-    const bubble = new PIXI.Container()
+    const bubble = new PIXI.Container();
 
     // Truncate message (max 30 chars)
-    const truncated = message.length > 30 ? message.substring(0, 27) + '...' : message
+    const truncated = message.length > 30 ? message.substring(0, 27) + "..." : message;
 
     // Background using shadcn card colors
-    const bg = new PIXI.Graphics()
-    bg.rect(0, 0, Math.min(150, truncated.length * 8), 40)
-    bg.fill({ color: themeColors.card, alpha: 0.98 })
-    bg.stroke({ width: 1.5, color: themeColors.primary, alpha: 0.6 })
-    bubble.addChild(bg)
+    const bg = new PIXI.Graphics();
+    bg.rect(0, 0, Math.min(150, truncated.length * 8), 40);
+    bg.fill({ color: themeColors.card, alpha: 0.98 });
+    bg.stroke({ width: 1.5, color: themeColors.primary, alpha: 0.6 });
+    bubble.addChild(bg);
 
     // Text using shadcn foreground color
     const text = new PIXI.Text({
       text: truncated,
       style: {
-        fontFamily: 'monospace',
+        fontFamily: "monospace",
         fontSize: 9,
         fill: themeColors.cardForeground,
         wordWrap: true,
         wordWrapWidth: 140,
         letterSpacing: 0.5,
-      }
-    })
-    text.x = 5
-    text.y = 5
-    bubble.addChild(text)
+      },
+    });
+    text.x = 5;
+    text.y = 5;
+    bubble.addChild(text);
 
-    bubble.x = agent.sprite.x - 75
-    bubble.y = agent.sprite.y - 50
+    bubble.x = agent.sprite.x - 75;
+    bubble.y = agent.sprite.y - 50;
 
-    this.worldContainer.addChild(bubble)
-    agent.chatBubble = bubble
+    this.worldContainer.addChild(bubble);
+    agent.chatBubble = bubble;
 
     // Auto-hide after 3 seconds
     agent.chatTimeout = setTimeout(() => {
       if (agent.chatBubble) {
-        this.worldContainer.removeChild(agent.chatBubble)
-        agent.chatBubble.destroy()
-        agent.chatBubble = null
+        this.worldContainer.removeChild(agent.chatBubble);
+        agent.chatBubble.destroy();
+        agent.chatBubble = null;
       }
-    }, 3000)
+    }, 3000);
+  }
+
+  public centerCameraOn(x: number, y: number, disableFollow: boolean = true): void {
+    if (!this.app) return;
+
+    // Disable camera following player if requested
+    if (disableFollow) {
+      this.cameraFollowsPlayer = false;
+    }
+
+    // Center camera on given coordinates
+    this.worldContainer.x = this.app.renderer.width / 2 - x;
+    this.worldContainer.y = this.app.renderer.height / 2 - y;
+    // Sync agent layer
+    if (this.agentLayer) {
+      this.agentLayer.x = this.worldContainer.x;
+      this.agentLayer.y = this.worldContainer.y;
+    }
+
+    console.log(
+      `[ColorGameApp] 📷 Camera centered on (${x}, ${y}), follow=${this.cameraFollowsPlayer}`
+    );
+  }
+
+  public enableCameraFollow(): void {
+    this.cameraFollowsPlayer = true;
+    console.log(`[ColorGameApp] 📷 Camera follow enabled`);
   }
 
   public isInitialized(): boolean {
-    return this.initialized
+    return this.initialized;
   }
 
   public destroy(): void {
     if (this.app) {
-      this.app.destroy(true, { children: true })
-      this.app = null
+      this.app.destroy(true, { children: true });
+      this.app = null;
     }
 
     // Clear all agent timeouts
-    this.agents.forEach(agent => {
-      if (agent.chatTimeout) clearTimeout(agent.chatTimeout)
-    })
+    this.agents.forEach((agent) => {
+      if (agent.chatTimeout) clearTimeout(agent.chatTimeout);
+    });
 
-    this.agents.clear()
-    this.player = null
-    this.keys.clear()
-    this.spriteTextures.clear()
-    this.initialized = false
+    this.agents.clear();
+    this.player = null;
+    this.keys.clear();
+    this.spriteTextures.clear();
+    this.initialized = false;
   }
 }

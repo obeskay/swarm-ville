@@ -21,16 +21,20 @@ impl CursorProvider {
         let cli_path = if let Ok(path) = std::env::var("CURSOR_CLI_PATH") {
             path
         } else {
+            let home = std::env::var("HOME").unwrap_or_else(|_| "/Users/user".to_string());
             // Check common locations
-            let common_paths = vec![
-                "/usr/local/bin/cursor",
-                "/usr/bin/cursor",
-                format!("{}/.local/bin/cursor", std::env::var("HOME").unwrap_or_else(|_| "/Users/user".to_string())),
-                format!("{}/.local/bin/cursor-agent", std::env::var("HOME").unwrap_or_else(|_| "/Users/user".to_string())),
+            let common_paths: Vec<String> = vec![
+                "/usr/local/bin/cursor".to_string(),
+                "/usr/bin/cursor".to_string(),
+                format!("{}/.local/bin/cursor", home),
+                format!("{}/.local/bin/cursor-agent", home),
             ];
-            
+
             // Use first available path or default
-            common_paths.first().unwrap_or(&"/usr/local/bin/cursor".to_string()).clone()
+            common_paths
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "/usr/local/bin/cursor".to_string())
         };
 
         Self {
@@ -166,22 +170,27 @@ impl LLMProvider for CursorProvider {
 
     async fn is_available(&self) -> bool {
         // Check if cursor CLI exists at expected path
-        if tokio::fs::metadata(&self.cli_path).await.map(|meta| meta.is_file()).unwrap_or(false) {
+        if tokio::fs::metadata(&self.cli_path)
+            .await
+            .map(|meta| meta.is_file())
+            .unwrap_or(false)
+        {
             return true;
         }
-        
+
         // Also check common alternative paths
-        let common_paths = vec![
-            "/usr/local/bin/cursor",
-            "/usr/bin/cursor",
-        ];
-        
+        let common_paths = vec!["/usr/local/bin/cursor", "/usr/bin/cursor"];
+
         for path in common_paths {
-            if tokio::fs::metadata(path).await.map(|meta| meta.is_file()).unwrap_or(false) {
+            if tokio::fs::metadata(path)
+                .await
+                .map(|meta| meta.is_file())
+                .unwrap_or(false)
+            {
                 return true;
             }
         }
-        
+
         false
     }
 }

@@ -16,7 +16,7 @@ export function GameCanvas() {
         await game.init(canvas);
         gameRef.current = game;
         isInitializedRef.current = true;
-        console.log("[GameCanvas] ✅ Game ready with colored sprites");
+        console.log("[GameCanvas] ✅ Game ready with character spritesheets");
 
         // Expose game to window for AgentSpawner
         (window as any).game = game;
@@ -40,14 +40,13 @@ export function GameCanvas() {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ 
-          display: "block", 
-          zIndex: 0,
-          imageRendering: "pixelated",
-          imageRendering: "crisp-edges",
-          imageRendering: "-moz-crisp-edges",
-          imageRendering: "-webkit-optimize-contrast",
-        }}
+        style={
+          {
+            display: "block",
+            zIndex: 0,
+            imageRendering: "pixelated",
+          } as React.CSSProperties
+        }
       />
     </div>
   );
