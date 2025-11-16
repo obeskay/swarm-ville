@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { themeColors } from "./utils/themeColors";
 import characterSpriteSheetData from "./utils/CharacterSpriteSheetData";
+import { AgentSpritePool } from "./AgentSpritePool";
 
 interface Agent {
   id: string;
@@ -37,6 +38,7 @@ export class ColorGameApp {
   private container: PIXI.Container;
   private worldContainer: PIXI.Container;
   private agentLayer: PIXI.Container | null = null; // Direct stage layer for agents
+  private spritePool: AgentSpritePool | null = null; // Pre-allocated sprite pool
   private agents: Map<string, Agent> = new Map();
   private player: Player | null = null;
   private initialized: boolean = false;
@@ -92,6 +94,16 @@ export class ColorGameApp {
       await this.loadColorSprites();
       this.createOfficeLayout();
       await this.createPlayer();
+
+      // Initialize sprite pool for agents (pre-create sprites at init time)
+      this.spritePool = new AgentSpritePool(this.agentLayer, 10);
+      // Load character spritesheet for pool
+      const charTexture = await PIXI.Assets.load("/sprites/characters/Character_001.png");
+      const charSheet = new PIXI.Spritesheet(charTexture, characterSpriteSheetData);
+      await charSheet.parse();
+      await this.spritePool.initialize(charSheet);
+      console.log("[ColorGameApp] ✅ Agent sprite pool initialized with 10 slots");
+
       this.setupKeyboardControls();
 
       this.app.ticker.add(() => this.update());
@@ -449,143 +461,39 @@ export class ColorGameApp {
       return;
     }
 
-    // Use selected character from CharacterSelector or default
-    const selectedPath =
-      (window as any).selectedCharacterPath || "/sprites/characters/Character_001.png";
-
-    console.log(
-      `[ColorGameApp] 🎮 Spawning agent ${name} (${role}) at (${x}, ${y}) with sprite: ${selectedPath}`
-    );
-
-    // Load character sprite dynamically - INDEPENDENT spritesheet per agent
-    try {
-      // Load and validate texture
-      const texture = await PIXI.Assets.load(selectedPath);
-      if (!texture || texture.width === 0 || texture.height === 0) {
-        throw new Error(`Invalid texture: ${texture?.width}x${texture?.height}`);
-      }
-      console.log(`[ColorGameApp] ✅ Texture loaded: ${texture.width}x${texture.height}`);
-
-      // Clone spriteSheetData and set image path
-      const spriteSheetData = JSON.parse(JSON.stringify(characterSpriteSheetData));
-      spriteSheetData.meta.image = selectedPath;
-
-      const sheet = new PIXI.Spritesheet(PIXI.Texture.from(selectedPath), spriteSheetData);
-      await sheet.parse();
-      console.log(`[ColorGameApp] ✅ Spritesheet parsed`);
-
-      // Create simple sprite using walk_down_1 frame (idle pose)
-      const idleFrame = sheet.textures["walk_down_1"];
-      if (!idleFrame) {
-        throw new Error("Frame 'walk_down_1' not found in spritesheet");
-      }
-      console.log(`[ColorGameApp] ✅ Using frame: walk_down_1`);
-
-      const sprite = new PIXI.Sprite(idleFrame);
-
-      // Pixel perfect rendering
-      sprite.texture.source.scaleMode = "nearest";
-      sprite.roundPixels = true;
-
-      // Set anchor point (0.5, 1) - center horizontal, bottom vertical (feet-based positioning)
-      sprite.anchor.set(0.5, 1);
-
-      // Validate sprite dimensions
-      if (sprite.width === 0 || sprite.height === 0) {
-        throw new Error(`Invalid sprite dimensions: ${sprite.width}x${sprite.height}`);
-      }
-      console.log(
-        `[ColorGameApp] ✅ Sprite created: ${sprite.width}x${sprite.height}, anchor: (${sprite.anchor.x}, ${sprite.anchor.y})`
-      );
-
-      // Position at tile center, accounting for anchor
-      const spriteX = Math.round(x * this.TILE_SIZE + 16);
-      const spriteY = Math.round(y * this.TILE_SIZE + 32); // Full tile height for bottom anchor
-      sprite.x = spriteX;
-      sprite.y = spriteY;
-      console.log(`[ColorGameApp] ✅ Sprite positioned at: (${spriteX}, ${spriteY})`);
-
-      // Add to agent layer (stage-level, not batched)
-      if (this.agentLayer) {
-        this.agentLayer.addChild(sprite);
-        console.log(`[ColorGameApp] ✅ Sprite added to agent layer at (${spriteX}, ${spriteY})`);
-      } else {
-        this.worldContainer.addChild(sprite);
-        console.log(`[ColorGameApp] ⚠️ Agent layer unavailable, using worldContainer`);
-      }
-
-      // Create fallback Graphics sprite for better visibility in dynamic rendering
-      const fallbackGraphics = new PIXI.Graphics();
-      fallbackGraphics.rect(spriteX - 24, spriteY - 24, 48, 48);
-      fallbackGraphics.fill({ color: 0x9d4edd, alpha: 0.3 }); // Visible purple outline
-      fallbackGraphics.stroke({ color: 0x9d4edd, width: 2 });
-      if (this.agentLayer) {
-        this.agentLayer.addChild(fallbackGraphics);
-      } else {
-        this.worldContainer.addChild(fallbackGraphics);
-      }
-      console.log(`[ColorGameApp] ✅ Fallback graphics added to agent layer`);
-
-      // Create name label
-      const nameLabel = new PIXI.Text({
-        text: name,
-        style: {
-          fontFamily: "monospace",
-          fontSize: 11,
-          fill: themeColors.foreground,
-          stroke: { color: themeColors.background, width: 2 },
-        },
-      });
-      nameLabel.anchor.set(0.5, 1);
-      nameLabel.x = spriteX;
-      nameLabel.y = spriteY - 32; // Position above sprite (accounting for anchor)
-      if (this.agentLayer) {
-        this.agentLayer.addChild(nameLabel);
-      } else {
-        this.worldContainer.addChild(nameLabel);
-      }
-
-      const agent: Agent = {
-        id,
-        name,
-        role,
-        sprite: sprite as any, // Store simple sprite
-        nameLabel,
-        chatBubble: null,
-        x,
-        y,
-        chatTimeout: null,
-      };
-
-      this.agents.set(id, agent);
-
-      // Force renderer to recognize new content
-      this.worldContainer.cullable = false;
-      sprite.cullable = false;
-      nameLabel.cullable = false;
-
-      console.log(`[ColorGameApp] ✅ Successfully spawned ${name} (${role}) at (${x}, ${y})`);
-    } catch (error) {
-      console.error(`[ColorGameApp] ❌ Failed to load character sprite: ${selectedPath}`, error);
-
-      // Show error message on map
-      const errorLabel = new PIXI.Text({
-        text: `❌ ${name}\n(sprite error)`,
-        style: {
-          fontFamily: "monospace",
-          fontSize: 10,
-          fill: 0xff0000,
-          align: "center",
-        },
-      });
-      errorLabel.anchor.set(0.5, 0.5);
-      errorLabel.x = Math.round(x * this.TILE_SIZE + 16);
-      errorLabel.y = Math.round(y * this.TILE_SIZE + 16);
-      this.worldContainer.addChild(errorLabel);
-
-      console.error(`[ColorGameApp] Error details:`, error);
-      throw error; // Re-throw to prevent silent failures
+    if (!this.spritePool) {
+      console.error(`[ColorGameApp] ❌ Sprite pool not initialized`);
+      return;
     }
+
+    // Position at tile center
+    const spriteX = Math.round(x * this.TILE_SIZE + 16);
+    const spriteY = Math.round(y * this.TILE_SIZE + 32);
+
+    // Activate sprite from pool
+    const poolSprites = this.spritePool.activate(id, name, spriteX, spriteY);
+    if (!poolSprites) {
+      console.error(`[ColorGameApp] ❌ No available sprites in pool for agent ${name}`);
+      return;
+    }
+
+    const { sprite, label } = poolSprites;
+
+    // Create agent record
+    const agent: Agent = {
+      id,
+      name,
+      role,
+      sprite: sprite as any,
+      nameLabel: label,
+      chatBubble: null,
+      x,
+      y,
+      chatTimeout: null,
+    };
+
+    this.agents.set(id, agent);
+    console.log(`[ColorGameApp] ✅ Successfully spawned ${name} (${role}) at (${x}, ${y})`);
   }
 
   public showAgentMessage(agentId: string, message: string): void {
