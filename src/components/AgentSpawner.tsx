@@ -28,22 +28,29 @@ export function AgentSpawner() {
         return;
       }
 
-      // Create 4 specialized agents
+      // Create 4 specialized agents - POSITIONED IN CENTER OF MAP
       const agents = [
-        { id: "agent-1", name: "Researcher", role: "researcher", x: 4, y: 4 },
-        { id: "agent-2", name: "Designer", role: "designer", x: 10, y: 4 },
-        { id: "agent-3", name: "Developer", role: "frontend_developer", x: 16, y: 4 },
-        { id: "agent-4", name: "Reviewer", role: "code_reviewer", x: 22, y: 4 },
+        { id: "agent-1", name: "Researcher", role: "researcher", x: 15, y: 10 },
+        { id: "agent-2", name: "Designer", role: "designer", x: 20, y: 10 },
+        { id: "agent-3", name: "Developer", role: "frontend_developer", x: 15, y: 14 },
+        { id: "agent-4", name: "Reviewer", role: "code_reviewer", x: 20, y: 14 },
       ];
 
-      // Spawn agents with staggered messages
-      agents.forEach((agent, index) => {
-        game.spawnAgent(agent.id, agent.name, agent.role, agent.x, agent.y);
+      // Spawn agents with staggered messages - WAIT FOR EACH
+      for (let i = 0; i < agents.length; i++) {
+        const agent = agents[i];
+        await game.spawnAgent(agent.id, agent.name, agent.role, agent.x, agent.y);
+        console.log(`[AgentSpawner] ✅ Agent ${i + 1}/4 spawned: ${agent.name}`);
 
         setTimeout(() => {
           game.showAgentMessage(agent.id, `Analizando tarea...`);
-        }, index * 600);
-      });
+        }, i * 600);
+      }
+
+      // Center camera on agents area (average position in pixel coordinates)
+      const avgX = ((15 + 20 + 15 + 20) / 4) * 32; // 576 pixels
+      const avgY = ((10 + 10 + 14 + 14) / 4) * 32; // 384 pixels
+      game.centerCameraOn(avgX, avgY);
 
       toast.success("🚀 Agentes Desplegados!", {
         description: `4 agentes especializados en: "${taskDescription.substring(0, 35)}..."`,
@@ -139,12 +146,7 @@ export function AgentSpawner() {
             placeholder="Describe la tarea que requiere múltiples agentes especializados..."
             className="font-mono text-sm min-h-24"
           />
-          <Button
-            onClick={handleQuickTest}
-            variant="ghost"
-            size="sm"
-            className="text-xs font-mono"
-          >
+          <Button onClick={handleQuickTest} variant="ghost" size="sm" className="text-xs font-mono">
             📝 Cargar: Página Café Cursor
           </Button>
         </div>

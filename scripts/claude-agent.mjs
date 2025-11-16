@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Simple Claude CLI wrapper for SwarmVille agent spawning
- * Uses the local Claude CLI without requiring API keys
+ * Claude API wrapper for SwarmVille agent spawning
+ * Uses Anthropic SDK directly for better control
  */
 
-import { spawn } from "child_process";
+import Anthropic from "@anthropic-ai/sdk";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 const prompt = process.argv[2];
 
@@ -14,35 +16,49 @@ if (!prompt) {
   process.exit(1);
 }
 
-// Spawn claude CLI process with --print flag for non-interactive output
-const claude = spawn("claude", ["--print", prompt], {
-  stdio: ["inherit", "pipe", "pipe"],
-});
+// Read API key from parent .env file
+const envPath = join(process.cwd(), "..", ".env");
+let apiKey = process.env.ANTHROPIC_API_KEY;
 
-let output = "";
-let error = "";
-
-claude.stdout.on("data", (data) => {
-  output += data.toString();
-});
-
-claude.stderr.on("data", (data) => {
-  error += data.toString();
-});
-
-claude.on("close", (code) => {
-  if (code !== 0) {
-    console.error(error || `Claude CLI exited with code ${code}`);
-    process.exit(code);
+if (!apiKey) {
+  try {
+    const envContent = readFileSync(envPath, "utf-8");
+    const match = envContent.match(/ANTHROPIC_API_KEY=(.+)/);
+    if (match) {
+      apiKey = match[1].trim();
+    }
+  } catch (err) {
+    console.error("Error reading .env file:", err.message);
   }
+}
 
-  console.log(output);
-  process.exit(0);
-});
-
-// Handle timeout (60 seconds for agent tasks)
-setTimeout(() => {
-  claude.kill();
-  console.error("Claude CLI timeout after 60 seconds");
+if (!apiKey) {
+  console.error("Error: ANTHROPIC_API_KEY not found in environment or .env file");
   process.exit(1);
-}, 60000);
+}
+
+const client = new Anthropic({ apiKey });
+
+async function runClaude() {
+  try {
+    const message = await client.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const response = message.content[0].text;
+    console.log(response);
+    process.exit(0);
+  } catch (error) {
+    console.error("Claude API error:", error.message);
+    process.exit(1);
+  }
+}
+
+runClaude();

@@ -1,6 +1,5 @@
 use crate::agents::{
     Agent, AgentConfig, AgentInputMessage, ClaudeProvider, CursorProvider, LLMProvider, MessageBus,
-    MockProvider,
 };
 use dashmap::DashMap;
 use std::sync::Arc;
@@ -34,7 +33,10 @@ impl AgentRuntime {
             "cursor" => Arc::new(CursorProvider::with_model(model_name)),
             _ => {
                 // Panic if unknown provider - no mock fallback
-                panic!("Unknown provider '{}'. Only 'claude' and 'cursor' are supported.", provider_name);
+                panic!(
+                    "Unknown provider '{}'. Only 'claude' and 'cursor' are supported.",
+                    provider_name
+                );
             }
         }
     }
