@@ -71,10 +71,13 @@ export class ColorGameApp {
         roundPixels: true, // Pixel perfect - round pixels
         powerPreference: "high-performance",
         preserveDrawingBuffer: true, // Enable dynamic content updates
+        // PixiJS v8 best practices
+        autoStart: true, // Start render loop automatically
+        sharedTicker: false, // Use dedicated ticker for this app
       });
 
-      // Ensure pixel perfect rendering
-      this.app.renderer.resolution = 1;
+      // Ensure pixel perfect rendering (redundant but explicit)
+      // Note: resolution is already set in init(), but keeping for clarity
       this.app.stage.scale.set(1, 1);
 
       // Force continuous rendering for dynamic content
@@ -84,19 +87,18 @@ export class ColorGameApp {
 
       this.app.stage.addChild(this.container);
 
-      // Create separate layer for agents that renders ABOVE the world container
-      // IMPORTANT: disable batching for dynamic content
+      // Create agent layer at STAGE LEVEL DURING INIT
+      // This ensures it's in the scene graph BEFORE batch rendering freezes
       this.agentLayer = new PIXI.Container();
-      (this.agentLayer as any).isRenderGroup = false; // Disable batch rendering
       this.app.stage.addChild(this.agentLayer);
-      console.log("[ColorGameApp] ✅ Agent layer created at stage level (batching disabled)");
 
       await this.loadColorSprites();
       this.createOfficeLayout();
       await this.createPlayer();
 
-      // Initialize sprite pool for agents (pre-create sprites at init time)
-      this.spritePool = new AgentSpritePool(this.agentLayer, 10);
+      // Initialize sprite pool for agents - this creates sprites DURING init
+      // which is the ONLY way PixiJS 8 will render them
+      this.spritePool = new AgentSpritePool(this.agentLayer, 4);
       // Load character spritesheet for pool
       const charTexture = await PIXI.Assets.load("/sprites/characters/Character_001.png");
       const charSheet = new PIXI.Spritesheet(charTexture, characterSpriteSheetData);
@@ -473,7 +475,7 @@ export class ColorGameApp {
     // Activate sprite from pool
     const poolSprites = this.spritePool.activate(id, name, spriteX, spriteY);
     if (!poolSprites) {
-      console.error(`[ColorGameApp] ❌ No available sprites in pool for agent ${name}`);
+      console.error(`[ColorGameApp] ❌ Failed to activate sprite for agent ${name}`);
       return;
     }
 

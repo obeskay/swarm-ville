@@ -17,23 +17,26 @@ export class AgentSpritePool {
   }
 
   /**
-   * Pre-create all agent sprites at init time
-   * KEY: Don't add to container yet - wait for activation
+   * Pre-create all agent sprites at init time AND ADD TO CONTAINER
+   * CRITICAL: This is the ONLY way PixiJS 8 will render sprites
+   * Sprites must be added during initialization before batch rendering freezes
    */
   async initialize(sheet: PIXI.Spritesheet): Promise<void> {
-    const idleFrame = sheet.textures["walk_down_1"];
-    if (!idleFrame) throw new Error("Frame walk_down_1 not found");
+    const idleFrames = sheet.animations["idle_down"];
+    if (!idleFrames) throw new Error("Animation idle_down not found");
 
     for (let i = 0; i < this.maxAgents; i++) {
-      const id = `_pool_${i}`;
+      const id = `_agent_${i}`;
 
-      // Create sprite but DON'T add to container
-      const sprite = new PIXI.Sprite(idleFrame);
+      // Create AnimatedSprite (like player) for rendering compatibility
+      const sprite = new PIXI.AnimatedSprite(idleFrames);
       sprite.anchor.set(0.5, 1);
       sprite.texture.source.scaleMode = "nearest";
       sprite.roundPixels = true;
+      sprite.animationSpeed = 0.1;
+      sprite.play();
 
-      // Create label but DON'T add to container
+      // CREATE LABEL
       const label = new PIXI.Text({
         text: "",
         style: {
@@ -45,11 +48,23 @@ export class AgentSpritePool {
       });
       label.anchor.set(0.5, 1);
 
+      // ADD TO CONTAINER IMMEDIATELY DURING INIT
+      // Position off-screen initially (will be repositioned when activated)
+      sprite.x = -1000;
+      sprite.y = -1000;
+      label.x = -1000;
+      label.y = -1032;
+      this.container.addChild(sprite);
+      this.container.addChild(label);
+
+      // Mark as active but inactive for agents (will be reused)
       this.pool.set(id, { sprite, label, active: false });
+      (sprite as any)._poolId = id;
+      (label as any)._poolId = id;
     }
 
     console.log(
-      `[AgentSpritePool] ✅ Pre-created ${this.maxAgents} agent sprite slots (not in container yet)`
+      `[AgentSpritePool] ✅ Pre-created ${this.maxAgents} agent sprites and ADDED TO CONTAINER during init`
     );
   }
 
@@ -74,18 +89,14 @@ export class AgentSpritePool {
         label.x = x;
         label.y = y - 32;
 
-        // ADD TO CONTAINER ON ACTIVATION (critical for PixiJS dynamic rendering!)
-        this.container.addChild(sprite);
-        this.container.addChild(label);
-
-        // Mark as active and associate with agent ID
+        // Sprite is already in container (added during init)
+        // Just mark as active and associate with agent ID
         this.pool.set(poolId, { sprite, label, active: true });
-        // Store mapping for later deactivation
         (sprite as any)._agentId = agentId;
         (label as any)._agentId = agentId;
 
         console.log(
-          `[AgentSpritePool] ✅ Activated agent "${name}" at (${x}, ${y}) - ADDED TO CONTAINER`
+          `[AgentSpritePool] ✅ Activated agent "${name}" at (${x}, ${y}) | Sprite already in container from init`
         );
         return { sprite, label };
       }
@@ -97,16 +108,22 @@ export class AgentSpritePool {
 
   /**
    * Deactivate a sprite and return to pool
-   * CRITICAL: Remove from container to reset renderer state
+   * Sprite stays in container but is repositioned off-screen
    */
   deactivate(agentId: string): void {
     for (const [poolId, { sprite, label, active }] of this.pool) {
       if (active && (sprite as any)._agentId === agentId) {
-        // Remove from container (key for dynamic rendering reset)
-        this.container.removeChild(sprite);
-        this.container.removeChild(label);
+        // Move off-screen instead of removing (sprites must stay in container)
+        sprite.x = -1000;
+        sprite.y = -1000;
+        label.x = -1000;
+        label.y = -1032;
+        label.text = "";
+
         this.pool.set(poolId, { sprite, label, active: false });
-        console.log(`[AgentSpritePool] ✅ Deactivated agent ${agentId} - REMOVED FROM CONTAINER`);
+        console.log(
+          `[AgentSpritePool] ✅ Deactivated agent ${agentId} - moved off-screen for reuse`
+        );
         return;
       }
     }
@@ -125,6 +142,39 @@ export class AgentSpritePool {
         return;
       }
     }
+  }
+
+  /**
+   * Reactivate a pre-created slot with new agent data
+   * Used when agents spawn to reuse pre-activated slots
+   */
+  reactivateSlot(
+    oldAgentId: string,
+    newAgentId: string,
+    name: string,
+    x: number,
+    y: number
+  ): { sprite: PIXI.Sprite; label: PIXI.Text } | null {
+    for (const { sprite, label, active } of this.pool.values()) {
+      if (active && (sprite as any)._agentId === oldAgentId) {
+        // Update with new agent data
+        sprite.x = x;
+        sprite.y = y;
+        label.text = name;
+        label.x = x;
+        label.y = y - 32;
+
+        // Update agent ID mapping
+        (sprite as any)._agentId = newAgentId;
+        (label as any)._agentId = newAgentId;
+
+        console.log(`[AgentSpritePool] ✅ Reactivated slot for agent "${name}" at (${x}, ${y})`);
+        return { sprite, label };
+      }
+    }
+
+    console.warn(`[AgentSpritePool] ⚠️ Pre-activated slot ${oldAgentId} not found`);
+    return null;
   }
 
   /**
