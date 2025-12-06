@@ -11,6 +11,7 @@
 SwarmVille has been transformed from a game with static agent sprites into a **real multi-agent system** where agents autonomously make decisions, communicate with each other, and persist memory across sessions.
 
 The Agent Runtime is a Rust-based backend system that:
+
 - Spawns and manages autonomous agents in separate async tasks
 - Coordinates inter-agent communication via broadcast message bus
 - Persists agent conversations, tasks, and state history to SQLite
@@ -24,9 +25,9 @@ The Agent Runtime is a Rust-based backend system that:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│              GODOT FRONTEND (GDScript)                  │
+│              REACT + PIXIJS FRONTEND                    │
 │                                                         │
-│  [Player Controller] [Agent Sprites] [HUD]             │
+│  [Player Controller] [Agent Sprites] [UI Components]   │
 │         │                  │              │             │
 │         └──────────────────┼──────────────┘             │
 │                            │                            │
@@ -89,6 +90,7 @@ The Agent Runtime is a Rust-based backend system that:
 **Purpose**: Orchestrate and manage all agents
 
 **Key Methods**:
+
 - `new(message_bus_capacity)` - Create runtime
 - `spawn_agent(config)` - Create new agent in tokio task
 - `terminate_agent(agent_id)` - Graceful shutdown
@@ -99,6 +101,7 @@ The Agent Runtime is a Rust-based backend system that:
 - `shutdown()` - Graceful shutdown of all agents
 
 **Implementation Details**:
+
 - Uses `DashMap<String, (AgentTaskHandle, UnboundedSender)>` for thread-safe agent storage
 - Holds reference to shared `MessageBus`
 - Clone-able for sharing across async contexts
@@ -116,6 +119,7 @@ pub struct AgentRuntime {
 **Purpose**: Autonomous agent with decision loop
 
 **Key Methods**:
+
 - `new(config, rx, message_bus)` - Create agent
 - `run()` - Main async loop (tokio::select!)
 - `autonomous_decision()` - Periodic decision making
@@ -124,6 +128,7 @@ pub struct AgentRuntime {
 - `execute_action(action)` - Perform actions
 
 **Agent Loop** (runs in separate tokio task):
+
 ```
 loop {
     select! {
@@ -135,12 +140,12 @@ loop {
                 AssignTask { task_id, task_name } => handle_task(),
             }
         }
-        
+
         // Periodic decision making (every 5-10s)
         _ = decision_interval.tick() => {
             autonomous_decision().await
         }
-        
+
         // Process broadcasts from other agents
         Ok(msg) = message_rx.recv() => {
             process_broadcast_message(msg).await
@@ -150,6 +155,7 @@ loop {
 ```
 
 **State Machine**:
+
 ```
 Idle ←─────────────────────────────┐
  ↓ (message received)              │
@@ -166,6 +172,7 @@ Speaking                           │
 **Purpose**: Inter-agent communication
 
 **Supported Messages**:
+
 - `AgentSpoke { agent_id, content, recipient }` - Agent broadcast text
 - `AgentMoved { agent_id, x, y }` - Position update
 - `TaskAssigned { agent_id, task_id, task_name }` - Task delegation
@@ -174,6 +181,7 @@ Speaking                           │
 - `Broadcast { agent_id, data }` - Generic broadcast
 
 **Implementation**:
+
 - Uses `tokio::sync::broadcast::channel(capacity)` internally
 - Pub/sub pattern: agents publish, all subscribers receive
 - <100ms latency for message delivery
@@ -194,6 +202,7 @@ pub fn subscribe(&self) -> broadcast::Receiver<AgentMessage> {
 **Purpose**: In-memory context for agents
 
 **Data Structures**:
+
 ```rust
 pub struct AgentMemory {
     conversations: VecDeque<ConversationEntry>,  // Last 100 entries
@@ -218,6 +227,7 @@ pub struct TaskEntry {
 ```
 
 **Key Methods**:
+
 - `add_conversation(sender, content, recipient)` - Store message
 - `assign_task(task_id, task_name)` - Add task
 - `update_task_status(task_id, status)` - Update task
@@ -230,6 +240,7 @@ pub struct TaskEntry {
 **Purpose**: SQLite persistence layer
 
 **Database Tables**:
+
 ```sql
 agent_conversations (
     id INTEGER PRIMARY KEY,
@@ -261,6 +272,7 @@ agent_state_history (
 ```
 
 **Key Methods**:
+
 - `save_conversation(agent_id, entry)` - Persist conversation
 - `load_recent_conversations(agent_id, limit)` - Retrieve from DB
 - `save_task(agent_id, task)` - Store task
@@ -272,6 +284,7 @@ agent_state_history (
 **Purpose**: State machine validation
 
 **States**:
+
 - `Idle` - Resting, ready to make decisions
 - `Listening` - Receiving and processing message
 - `Thinking` - Making decision, consulting LLM
@@ -279,6 +292,7 @@ agent_state_history (
 - `Error` - Error state
 
 **Valid Transitions**:
+
 ```
 Idle ←─ all states
 Idle → Listening, Thinking
@@ -380,6 +394,7 @@ let handle = tokio::spawn(async move {
 ```
 
 **Benefits**:
+
 - **Isolation**: Agent crash doesn't affect others
 - **Scalability**: Tokio handles thousands of tasks efficiently
 - **Fairness**: Tokio scheduler gives each agent CPU time
@@ -415,22 +430,26 @@ let handle = tokio::spawn(async move {
 ## Performance Characteristics
 
 ### Agent Spawning
+
 - **Time**: ~1ms per agent spawn
 - **Memory**: ~64 bytes per tokio task + agent data
 - **Tested**: Successfully spawned 5-10 agents in unit tests
 
 ### Message Delivery
+
 - **Latency**: <100ms for broadcast
 - **Throughput**: No artificial limit (depends on tokio runtime)
 - **Loss**: None (broadcast is reliable within capacity)
 
 ### SQLite Operations
+
 - **Conversation save**: <5ms per entry
 - **Task update**: <5ms per update
 - **Query recent**: <10ms for 100 conversations
 - **Index lookup**: O(log n) via SQLite B-tree
 
 ### Decision Making
+
 - **Interval**: 5-10 seconds per agent (configurable)
 - **Cost**: Negligible (mock decision <1ms, real LLM will be 5-30s)
 - **Concurrency**: All agents make decisions in parallel
@@ -442,6 +461,7 @@ let handle = tokio::spawn(async move {
 ### What Changes
 
 **Agent Loop** will change from:
+
 ```rust
 async fn autonomous_decision(&mut self) {
     let response = self.mock_decision().await;  // Returns dummy action
@@ -450,11 +470,12 @@ async fn autonomous_decision(&mut self) {
 ```
 
 To:
+
 ```rust
 async fn autonomous_decision(&mut self) {
     let context = self.memory.build_context();
     let prompt = format!("You are {}. {}. What do you do?", self.name, context);
-    
+
     let response = self.cli.send_acp_request(prompt).await?;  // Real LLM!
     let action = self.parse_action(response);
 }
@@ -473,7 +494,7 @@ async fn autonomous_decision(&mut self) {
    - Improve prompts with context
 
 3. **WebSocket Bridge**
-   - New message types for Godot
+   - New message types for frontend
    - Real-time state updates
    - Task management UI
 
@@ -482,6 +503,7 @@ async fn autonomous_decision(&mut self) {
 ## Testing Strategy
 
 ### Unit Tests Implemented
+
 - ✅ State transition validation
 - ✅ Message bus pub/sub
 - ✅ Memory operations
@@ -490,13 +512,15 @@ async fn autonomous_decision(&mut self) {
 - ✅ Multiple concurrent agents
 
 ### Integration Tests Needed (Phase 2)
+
 - [ ] ACP protocol with real CLI
-- [ ] WebSocket communication with Godot
+- [ ] WebSocket communication with frontend
 - [ ] End-to-end agent workflows
 - [ ] Performance under load (50+ agents)
 - [ ] Network failure recovery
 
 ### Manual Testing Performed
+
 - ✅ cargo check - all modules compile
 - ✅ cargo test - all tests pass
 - ✅ Multiple agent coordination in mock mode
@@ -508,9 +532,10 @@ async fn autonomous_decision(&mut self) {
 ### State History
 
 All state transitions are recorded in `agent_state_history` table:
+
 ```sql
-SELECT agent_id, old_state, new_state, timestamp 
-FROM agent_state_history 
+SELECT agent_id, old_state, new_state, timestamp
+FROM agent_state_history
 WHERE agent_id = 'agent_001'
 ORDER BY timestamp DESC
 LIMIT 10;
@@ -519,6 +544,7 @@ LIMIT 10;
 ### Memory Snapshots
 
 Agent memory can be inspected via:
+
 ```rust
 let context = agent.memory.build_context();  // See recent conversations + tasks
 let active_tasks = agent.memory.get_active_tasks();
@@ -528,6 +554,7 @@ let recent_convs = agent.memory.get_recent_conversations(10);
 ### Logging
 
 All state transitions, decisions, and errors are logged via `tracing`:
+
 ```rust
 tracing::debug!("Agent {} deciding...", self.id);
 tracing::info!("Agent {} transitioned: {} -> {}", self.id, old, new);
@@ -549,21 +576,25 @@ tracing::error!("Agent {} error: {:?}", self.id, err);
 ## Future Enhancements
 
 ### Phase 2
+
 - Real LLM integration via ACP protocol
 - Proximity detection and awareness
 - Multi-agent planning and collaboration
 
 ### Phase 3
+
 - Agent resume/checkpoint at startup
 - Advanced task workflows
 - MCP tool integration
 
 ### Phase 4
-- Godot visual integration
+
+- PixiJS visual integration
 - Player-agent interaction
 - Real-time collaboration UI
 
 ### Phase 5+
+
 - Multi-machine orchestration
 - Advanced learning and adaptation
 - Persistent agent personalities
@@ -572,15 +603,15 @@ tracing::error!("Agent {} error: {:?}", self.id, err);
 
 ## Code Statistics
 
-| Component | Lines | Tests | Status |
-|-----------|-------|-------|--------|
-| runtime.rs | 210 | 5 | ✅ Complete |
-| agent.rs | 290 | 3 | ✅ Complete |
-| message_bus.rs | 130 | 3 | ✅ Complete |
-| memory.rs | 220 | 3 | ✅ Complete |
-| persistence.rs | 280 | 2 | ✅ Complete |
-| state.rs | 110 | 3 | ✅ Complete |
-| **Total** | **1,240** | **19** | **✅** |
+| Component      | Lines     | Tests  | Status      |
+| -------------- | --------- | ------ | ----------- |
+| runtime.rs     | 210       | 5      | ✅ Complete |
+| agent.rs       | 290       | 3      | ✅ Complete |
+| message_bus.rs | 130       | 3      | ✅ Complete |
+| memory.rs      | 220       | 3      | ✅ Complete |
+| persistence.rs | 280       | 2      | ✅ Complete |
+| state.rs       | 110       | 3      | ✅ Complete |
+| **Total**      | **1,240** | **19** | **✅**      |
 
 ---
 
