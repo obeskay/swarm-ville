@@ -102,11 +102,11 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <Card className="w-96 p-8 bg-card border border-border shadow-2xl">
-        <div className="space-y-6">
+    <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+      <Card className="w-80 max-h-[90vh] overflow-hidden p-4 bg-card border border-border shadow-2xl">
+        <div className="space-y-3">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-foreground font-mono mb-2">SELECCIONAR PERSONAJE</h2>
+            <h2 className="text-lg font-bold text-foreground font-mono">SELECCIONAR PERSONAJE</h2>
             <p className="text-xs text-muted-foreground font-mono">{selectedChar.name}</p>
           </div>
 
@@ -114,51 +114,46 @@ export function CharacterSelector({ onSelect, onClose }: CharacterSelectorProps)
           <div className="flex justify-center bg-muted rounded border border-border p-2">
             <canvas
               ref={canvasRef}
-              width={160}
-              height={280}
+              width={144}
+              height={144}
               className="bg-transparent"
-              style={{ imageRendering: "pixelated", width: "160px", height: "280px" }}
+              style={{ imageRendering: "pixelated", width: "144px", height: "144px" }}
             />
           </div>
 
           {/* Character Grid */}
-          <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-muted p-3 rounded border border-border">
+          <div className="grid grid-cols-5 gap-1 max-h-28 overflow-y-auto bg-muted p-2 rounded border border-border">
             {CHARACTERS.map((char) => (
               <button
                 key={char.id}
                 onClick={() => setSelectedId(char.id)}
-                className={`p-2 rounded text-center text-xs font-mono transition-all ${
+                className={`p-1.5 rounded text-center text-xs font-mono ${
                   selectedId === char.id
-                    ? "bg-primary text-primary-foreground font-bold border-2 border-primary scale-105"
-                    : "bg-secondary text-secondary-foreground hover:bg-accent border border-border"
+                    ? "bg-primary text-primary-foreground font-bold"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent"
                 }`}
               >
-                #{String(char.id).padStart(2, "0")}
+                {char.id}
               </button>
             ))}
           </div>
 
-          {/* Info */}
-          <div className="bg-muted p-3 rounded border border-border text-xs text-muted-foreground font-mono space-y-1">
-            <p>📊 Total: {CHARACTERS.length} personajes</p>
-            <p>🎬 Seleccionado: {selectedChar.name}</p>
-            <p>🎨 192×192 (4×4 grid, 48×48 por frame)</p>
-          </div>
-
           {/* Buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <Button
               onClick={onClose}
               variant="ghost"
-              className="flex-1 font-mono text-sm"
+              size="sm"
+              className="flex-1 font-mono text-xs"
             >
-              ✕ CANCELAR
+              Cancelar
             </Button>
             <Button
               onClick={handleConfirm}
-              className="flex-1 bg-primary text-primary-foreground font-mono font-bold text-sm"
+              size="sm"
+              className="flex-1 bg-primary text-primary-foreground font-mono text-xs"
             >
-              ✓ USAR ESTE
+              Usar
             </Button>
           </div>
         </div>

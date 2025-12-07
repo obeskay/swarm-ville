@@ -84,113 +84,56 @@ export function AgentSpawner() {
     }
   };
 
-  const handleQuickTest = async () => {
-    setTaskDescription(
-      "Generar una página de React que contenga componentes de 21st.dev y hable sobre el Café Cursor que se organizó el 15 de noviembre de 2025 en CDMX"
-    );
-  };
-
   return (
-    <Card className="absolute top-4 right-4 w-96 p-6 bg-card/95 backdrop-blur-xl border border-border shadow-2xl z-50">
-      <div className="space-y-5">
-        <div className="border-b border-border pb-3">
-          <div className="flex items-center gap-2 mb-1">
+    <Card className="absolute top-2 right-2 w-64 p-3 bg-card/95 backdrop-blur-xl border border-border shadow-2xl z-50">
+      <div className="space-y-3">
+        <div className="border-b border-border pb-2">
+          <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-            <h2 className="text-xl font-bold text-foreground font-mono tracking-wide">
-              AGENT SPAWNER
-            </h2>
+            <h2 className="text-sm font-bold text-foreground font-mono">AGENTS</h2>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 font-mono">
-            Sistema de orquestación multi-agentes
-          </p>
         </div>
 
-        <div className="space-y-2.5">
-          <label className="text-sm font-mono text-foreground font-semibold tracking-wide">
-            Proveedor CLI
-          </label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-mono text-muted-foreground">Provider</label>
           <Select value={cliType} onValueChange={(v) => setCLIType(v as CLIType)}>
-            <SelectTrigger className="font-mono">
+            <SelectTrigger className="font-mono text-xs h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cursor" className="font-mono">
-                <span className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                  Cursor CLI
-                </span>
+              <SelectItem value="cursor" className="font-mono text-xs">
+                Cursor
               </SelectItem>
-              <SelectItem value="claude" className="font-mono">
-                <span className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                  Claude Haiku 4.5
-                </span>
+              <SelectItem value="claude" className="font-mono text-xs">
+                Claude
               </SelectItem>
-              <SelectItem value="demo" className="font-mono">
-                <span className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></span>
-                  Modo Demo
-                </span>
+              <SelectItem value="demo" className="font-mono text-xs">
+                Demo
               </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2.5">
-          <label className="text-sm font-mono text-foreground font-semibold tracking-wide">
-            Tarea Compleja
-          </label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-mono text-muted-foreground">Task</label>
           <Textarea
             value={taskDescription}
             onChange={(e) => setTaskDescription(e.target.value)}
-            placeholder="Describe la tarea que requiere múltiples agentes especializados..."
-            className="font-mono text-sm min-h-24"
+            placeholder="Describe task..."
+            className="font-mono text-xs min-h-16 resize-none"
           />
-          <Button onClick={handleQuickTest} variant="ghost" size="sm" className="text-xs font-mono">
-            📝 Cargar: Página Café Cursor
-          </Button>
         </div>
 
         <Button
           onClick={handleSpawnComplexTask}
           disabled={spawning || !taskDescription.trim()}
-          className="w-full font-mono font-bold"
+          size="sm"
+          className="w-full font-mono text-xs"
         >
-          {spawning ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse"></span>
-              DESPLEGANDO...
-            </span>
-          ) : (
-            "🚀 DESPLEGAR AGENTES"
-          )}
+          {spawning ? "Spawning..." : "Spawn Agents"}
         </Button>
 
-        <div className="border-t border-border pt-4 text-xs text-muted-foreground font-mono space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-primary">🎮</span>
-            <span>Los agentes aparecerán en el mapa</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-primary">💬</span>
-            <span>Burbujas de chat con decisiones en tiempo real</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-primary">⚡</span>
-            <span>
-              {cliType === "cursor"
-                ? "Cursor CLI"
-                : cliType === "claude"
-                  ? "Claude Haiku 4.5"
-                  : "Modo Demo"}{" "}
-              activo
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-primary">⌨️</span>
-            <span>WASD para moverte por el mapa</span>
-          </div>
-        </div>
+        <p className="text-[10px] text-muted-foreground font-mono">WASD to move</p>
       </div>
     </Card>
   );
