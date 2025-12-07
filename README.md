@@ -1,109 +1,38 @@
 # SwarmVille
 
-A real-time collaborative virtual office where humans and AI agents work together. Built with Tauri, React, and PixiJS.
+Virtual office environment for AI agent collaboration.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tauri](https://img.shields.io/badge/Tauri-v2-blue)
-![React](https://img.shields.io/badge/React-18-61dafb)
-![PixiJS](https://img.shields.io/badge/PixiJS-v8-e91e63)
+## Status: Early Development
 
-## What is SwarmVille?
+This is a foundation for a multi-agent collaboration system. Currently implements:
 
-SwarmVille is a desktop application that simulates a virtual office environment where you can:
+- ✅ Desktop app (Tauri v2)
+- ✅ 2D office rendering (PixiJS v8)
+- ✅ Player movement (WASD)
+- ✅ Character selection (83 sprites)
+- ✅ Agent spawning on canvas
+- ✅ WebSocket server (Rust)
+- ✅ SQLite persistence layer
+- 🚧 AI agent behavior (in progress)
+- 🚧 Real CLI integration (in progress)
 
-- **Move around** a 2D office space with your character
-- **Spawn AI agents** that can be connected to Claude or Cursor CLI
-- **Collaborate in real-time** via WebSocket synchronization
-- **Persist state** with SQLite backend
-
-## Quick Start
+## Setup
 
 ```bash
-# Clone
-git clone https://github.com/obeskay/swarm-ville.git
-cd swarm-ville
-
-# Install
 pnpm install
-
-# Run
 pnpm run dev
 ```
 
-This opens a Tauri window with the office environment. Use **WASD** or **Arrow keys** to move.
+## Tech
 
-## Tech Stack
+- **Frontend**: React + PixiJS v8 + TypeScript
+- **Desktop**: Tauri v2
+- **Backend**: Rust + SQLite + WebSocket
 
-| Component   | Technology               |
-| ----------- | ------------------------ |
-| Desktop App | Tauri v2 (Rust)          |
-| Frontend    | React 18 + TypeScript    |
-| Rendering   | PixiJS v8 (WebGL)        |
-| UI          | shadcn/ui + Tailwind CSS |
-| Backend     | Rust + SQLite            |
-| Sync        | WebSocket                |
+## Controls
 
-## Project Structure
-
-```
-swarm-ville/
-├── src/                    # React frontend
-│   ├── components/         # UI components
-│   ├── game/              # PixiJS game engine
-│   │   ├── ColorGameApp.ts    # Main application
-│   │   └── AgentSpritePool.ts # Sprite management
-│   └── lib/               # Utilities
-├── src-tauri/             # Rust backend
-│   ├── src/
-│   │   ├── agents/        # AI agent runtime
-│   │   ├── ws/            # WebSocket server
-│   │   └── db/            # SQLite persistence
-│   └── migrations/        # DB migrations
-├── public/sprites/        # Character sprites (83 characters)
-└── server/               # Node.js WebSocket (alternative)
-```
-
-## Features
-
-### Working
-
-- Office environment with tile-based rendering
-- Player movement with 8-direction animation
-- Character selection (83 sprites)
-- Agent spawning UI
-- WebSocket server (Rust + Node.js)
-- SQLite persistence
-- Dark theme UI
-
-### In Development
-
-- AI agent autonomous behavior
-- Claude/Cursor CLI integration
-- Multi-user collaboration
-
-## Development
-
-```bash
-# Type check
-pnpm run type-check
-
-# Lint
-pnpm run lint
-
-# Test
-pnpm run test
-
-# Build for production
-pnpm run tauri:build
-```
-
-## Contributing
-
-1. Fork the repo
-2. Create a feature branch
-3. Make changes
-4. Run `pnpm run type-check && pnpm run lint`
-5. Submit a PR
+- WASD / Arrow keys: Move player
+- Agent panel: Spawn AI agents
 
 ## License
 
