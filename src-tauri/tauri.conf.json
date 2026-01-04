@@ -1,9 +1,9 @@
 {
   "productName": "SwarmVille",
   "version": "0.1.0",
-  "identifier": "com.swarmville.app",
+  "identifier": "com.swarmville.desktop",
   "build": {
-    "beforeBuildCommand": "pnpm run build",
+    "beforeBuildCommand": "vite build",
     "beforeDevCommand": "vite dev",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../dist"

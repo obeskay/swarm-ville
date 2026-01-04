@@ -12,16 +12,21 @@ export function GameCanvas() {
 
     const initGame = async () => {
       try {
+        // Log the selected character path for debugging
+        const charPath = (window as unknown as { selectedCharacterPath?: string })
+          .selectedCharacterPath;
+        console.log("[GameCanvas] Initializing with character:", charPath);
+
         const game = new ColorGameApp();
         await game.init(canvas);
         gameRef.current = game;
         isInitializedRef.current = true;
-        console.log("[GameCanvas] ✅ Game ready with character spritesheets");
+        console.log("[GameCanvas] Game ready");
 
         // Expose game to window for AgentSpawner
-        (window as any).game = game;
+        (window as unknown as { game: ColorGameApp }).game = game;
       } catch (err) {
-        console.error("[GameCanvas] ❌ Init error:", err);
+        console.error("[GameCanvas] Init error:", err);
       }
     };
 
@@ -31,6 +36,7 @@ export function GameCanvas() {
       if (gameRef.current) {
         gameRef.current.destroy();
         gameRef.current = null;
+        isInitializedRef.current = false;
       }
     };
   }, []);
