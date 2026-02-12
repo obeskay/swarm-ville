@@ -12,6 +12,8 @@ const AGENT_SPRITES: Record<string, string> = {
   tester: "/sprites/characters/Character_025.png",
 };
 
+export type Phase = "IDLE" | "PLANNING" | "ACTING" | "REFLECTING" | "COMPLETED";
+
 interface Agent {
   id: string;
   name: string;
@@ -23,6 +25,8 @@ interface Agent {
   y: number;
   targetX: number;
   targetY: number;
+  homeX: number; // Original spawn position
+  homeY: number;
   speed: number;
   direction: string;
   status: "idle" | "working" | "completed" | "error";
@@ -47,10 +51,14 @@ export class ColorGameApp {
   private player: Player | null = null;
   private initialized = false;
   private keys = new Set<string>();
+  private currentPhase: Phase = "IDLE";
+  private phaseIndicator: PIXI.Graphics | null = null;
 
   private readonly TILE_SIZE = 32;
   private readonly MAP_WIDTH = 30;
   private readonly MAP_HEIGHT = 20;
+  private readonly CENTER_X = 15 * 32; // Map center X
+  private readonly CENTER_Y = 10 * 32; // Map center Y
 
   constructor() {
     this.worldContainer = new PIXI.Container();
@@ -81,6 +89,9 @@ export class ColorGameApp {
 
       // Create simple grass floor
       this.createFloor();
+
+      // Create phase indicator
+      this.createPhaseIndicator();
 
       // Create player
       await this.createPlayer();
@@ -239,6 +250,7 @@ export class ColorGameApp {
     this.updatePlayer();
     this.updateAgents();
     this.sortEntities();
+    this.updatePhaseIndicator();
   }
 
   private updatePlayer(): void {
@@ -317,16 +329,42 @@ export class ColorGameApp {
     for (const agent of this.agents.values()) {
       if (agent.status !== "working") continue;
 
+      // Determine target based on phase
+      let targetX: number;
+      let targetY: number;
+
+      switch (this.currentPhase) {
+        case "PLANNING":
+        case "REFLECTING":
+          // Gather at center in a circle
+          const agentIndex = Array.from(this.agents.keys()).indexOf(agent.id);
+          const totalAgents = this.agents.size;
+          const angle = (agentIndex / totalAgents) * Math.PI * 2;
+          const radius = 80;
+          targetX = this.CENTER_X + Math.cos(angle) * radius;
+          targetY = this.CENTER_Y + Math.sin(angle) * radius;
+          break;
+        case "ACTING":
+          // Spread out to work areas
+          targetX = agent.targetX;
+          targetY = agent.targetY;
+          break;
+        case "COMPLETED":
+          // Return to home positions
+          targetX = agent.homeX;
+          targetY = agent.homeY;
+          break;
+        default:
+          targetX = agent.targetX;
+          targetY = agent.targetY;
+      }
+
       // Move towards target
-      const dx = agent.targetX - agent.x;
-      const dy = agent.targetY - agent.y;
+      const dx = targetX - agent.x;
+      const dy = targetY - agent.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < 4) {
-        // Pick new random target
-        agent.targetX = (Math.random() * (this.MAP_WIDTH - 4) + 2) * this.TILE_SIZE;
-        agent.targetY = (Math.random() * (this.MAP_HEIGHT - 4) + 2) * this.TILE_SIZE;
-      } else {
+      if (dist > 4) {
         // Move
         const vx = (dx / dist) * agent.speed;
         const vy = (dy / dist) * agent.speed;
@@ -351,8 +389,77 @@ export class ColorGameApp {
           agent.sprite.textures = agent.sheet.animations[`walk_${newDir}`];
           agent.sprite.play();
         }
+      } else if (this.currentPhase === "ACTING" && dist < 4) {
+        // Pick new random target when in ACTING phase and reached destination
+        agent.targetX = (Math.random() * (this.MAP_WIDTH - 4) + 2) * this.TILE_SIZE;
+        agent.targetY = (Math.random() * (this.MAP_HEIGHT - 4) + 2) * this.TILE_SIZE;
       }
     }
+  }
+
+  private createPhaseIndicator(): void {
+    this.phaseIndicator = new PIXI.Graphics();
+    this.phaseIndicator.x = this.CENTER_X;
+    this.phaseIndicator.y = this.CENTER_Y;
+    this.uiLayer.addChild(this.phaseIndicator);
+  }
+
+  private updatePhaseIndicator(): void {
+    if (!this.phaseIndicator) return;
+
+    this.phaseIndicator.clear();
+
+    if (this.currentPhase === "IDLE" || this.agents.size === 0) {
+      return;
+    }
+
+    // Draw a central indicator based on phase
+    const phaseColors: Record<Phase, number> = {
+      IDLE: 0x94a3b8,
+      PLANNING: 0xa855f7, // Purple
+      ACTING: 0xeab308,   // Yellow
+      REFLECTING: 0x22d3ee, // Cyan
+      COMPLETED: 0x22c55e, // Green
+    };
+
+    const color = phaseColors[this.currentPhase];
+
+    // Draw pulsing circle
+    this.phaseIndicator.circle(0, 0, 30 + Math.sin(Date.now() / 200) * 5);
+    this.phaseIndicator.fill({ color, alpha: 0.2 });
+
+    // Draw inner circle
+    this.phaseIndicator.circle(0, 0, 15);
+    this.phaseIndicator.fill({ color, alpha: 0.6 });
+
+    // Draw phase text
+    const phaseLabel = new PIXI.Text({
+      text: this.currentPhase,
+      style: {
+        fontFamily: "monospace",
+        fontSize: 10,
+        fontWeight: "bold",
+        fill: color,
+      },
+    });
+    phaseLabel.anchor.set(0.5);
+    phaseLabel.y = 50;
+
+    // Clear previous text and add new
+    if (this.phaseIndicator.children.length > 0) {
+      this.phaseIndicator.removeChildren();
+    }
+    this.phaseIndicator.addChild(phaseLabel);
+  }
+
+  public setPhase(phase: Phase): void {
+    this.currentPhase = phase;
+    this.updatePhaseIndicator();
+    console.log(`[Game] Phase changed to: ${phase}`);
+  }
+
+  public getPhase(): Phase {
+    return this.currentPhase;
   }
 
   private sortEntities(): void {
@@ -426,6 +533,8 @@ export class ColorGameApp {
         y,
         targetX: x + (Math.random() - 0.5) * 200,
         targetY: y + (Math.random() - 0.5) * 200,
+        homeX: x,
+        homeY: y,
         speed: 1.5,
         direction: "down",
         status: "working",
