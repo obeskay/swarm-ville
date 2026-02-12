@@ -9,8 +9,6 @@ import { MetricsPanel } from "./components/MetricsPanel";
 import { ProjectsPanel } from "./components/ProjectsPanel";
 import { PhaseIndicator, usePhaseCycler, Phase } from "./components/PhaseIndicator";
 import { Toaster } from "sonner";
-import { PhaseIndicator, usePhaseCycler, Phase } from "./components/PhaseIndicator";
-import { Toaster } from "sonner";
 
 type AppState = "welcome" | "character" | "game";
 

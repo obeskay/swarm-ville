@@ -21,7 +21,21 @@
 
 ## 🎬 Demo
 
-> **Note:** Screenshots and demo GIF coming soon. [Star the repo](https://github.com/obeskay/swarm-ville/stargazers) to stay updated!
+<div align="center">
+
+### Welcome Screen & Main View
+
+| Welcome Screen | Main Game View |
+|:--------------:|:--------------:|
+| ![Welcome](docs/screenshots/01-initial.png) | ![Main View](docs/screenshots/03-main-view.png) |
+
+### Features in Action
+
+| Character Selection | Full UI |
+|:------------------:|:-------:|
+| ![Character](docs/screenshots/02-after-click.png) | ![Full](docs/screenshots/04-full-page.png) |
+
+</div>
 
 **Imagine this:**
 A 2D pixel-art office where each AI agent is a character walking around, collaborating on your codebase. Researchers gather information, Designers craft UIs, Developers write code, and Reviewers ensure quality — all visible in a game-like interface that makes coding feel like watching a strategy game unfold.
