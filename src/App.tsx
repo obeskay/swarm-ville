@@ -5,6 +5,11 @@ import { CharacterSelector } from "./components/CharacterSelector";
 import { Minimap } from "./components/Minimap";
 import { HelpOverlay } from "./components/HelpOverlay";
 import { WelcomeScreen } from "./components/WelcomeScreen";
+import { MetricsPanel } from "./components/MetricsPanel";
+import { ProjectsPanel } from "./components/ProjectsPanel";
+import { PhaseIndicator, usePhaseCycler, Phase } from "./components/PhaseIndicator";
+import { Toaster } from "sonner";
+import { PhaseIndicator, usePhaseCycler, Phase } from "./components/PhaseIndicator";
 import { Toaster } from "sonner";
 
 type AppState = "welcome" | "character" | "game";
@@ -19,6 +24,18 @@ function App() {
   const [selectedCharacter, setSelectedCharacter] = useState(
     "/sprites/characters/Character_001.png"
   );
+
+  const [showProjects, setShowProjects] = useState(false);
+  const [showMetrics, setShowMetrics] = useState(true);
+  const [agentActivity, setAgentActivity] = useState<Array<{
+    id: string;
+    name: string;
+    messages: number;
+    tokens: number;
+    lastActive: number;
+  }>>([]);
+
+  const phaseCycler = usePhaseCycler();
 
   const handleWelcomeComplete = () => {
     localStorage.setItem("swarmville_welcomed", "true");
@@ -40,6 +57,14 @@ function App() {
       selectedCharacter;
     setAppState("game");
   };
+
+  // Sync phase with game engine
+  useEffect(() => {
+    const game = (window as unknown as { game?: { setPhase?: (phase: Phase) => void } }).game;
+    if (game?.setPhase) {
+      game.setPhase(phaseCycler.phase);
+    }
+  }, [phaseCycler.phase]);
 
   // Keyboard shortcut to reset welcome
   useEffect(() => {
@@ -64,6 +89,45 @@ function App() {
           <CommandCenter />
           <Minimap />
           <HelpOverlay />
+
+          {/* Phase Indicator - Top Left */}
+          <div className="absolute top-3 left-3 z-40">
+            <PhaseIndicator
+              currentPhase={phaseCycler.phase}
+              phaseProgress={phaseCycler.progress}
+              cycleCount={phaseCycler.cycleCount}
+            />
+          </div>
+
+          {/* Metrics Panel - Bottom Left */}
+          {showMetrics && (
+            <div className="absolute bottom-3 left-3 z-40">
+              <MetricsPanel agents={agentActivity} />
+            </div>
+          )}
+
+          {/* Projects Panel - Bottom Center (toggleable) */}
+          {showProjects && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40">
+              <ProjectsPanel />
+            </div>
+          )}
+
+          {/* Toggle Buttons */}
+          <div className="absolute bottom-3 right-3 flex gap-2 z-40">
+            <button
+              onClick={() => setShowMetrics(!showMetrics)}
+              className="px-2 py-1 text-xs bg-card/90 border border-border/50 rounded hover:bg-card transition-colors"
+            >
+              {showMetrics ? "Hide Metrics" : "Show Metrics"}
+            </button>
+            <button
+              onClick={() => setShowProjects(!showProjects)}
+              className="px-2 py-1 text-xs bg-card/90 border border-border/50 rounded hover:bg-card transition-colors"
+            >
+              {showProjects ? "Hide Projects" : "Show Projects"}
+            </button>
+          </div>
         </>
       )}
 

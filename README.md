@@ -10,8 +10,10 @@
 [![Built with Tauri](https://img.shields.io/badge/Tauri-2.0-0ea5e9?style=for-the-badge&logo=tauri)](https://tauri.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178c6?style=for-the-badge&logo=typescript)](https://typescriptlang.org)
 [![PixiJS](https://img.shields.io/badge/PixiJS-8.0-e7287f?style=for-the-badge&logo=pixi)](https://pixijs.com)
+[![React](https://img.shields.io/badge/React-18-61dafb?style=for-the-badge&logo=react)](https://react.dev)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.3-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com)
 
-[🚀 Quick Start](#-installation--quick-start) • [🎮 Demo](#-demo) • [✨ Features](#-why-swarmville) • [🛠️ Tech Stack](#-tech-stack) • [🗺️ Roadmap](#-roadmap)
+[🚀 Quick Start](#-installation--quick-start) • [🎮 Demo](#-demo) • [✨ Features](#-why-swarmville) • [🛠️ Tech Stack](#-tech-stack) • [🗺️ Roadmap](#-roadmap) • [💡 Inspiration](#-inspiration)
 
 ---
 
@@ -199,6 +201,13 @@ Connect to your favorite AI coding assistant:
 
 ## 🗺️ Roadmap
 
+### 🎯 v0.1.1 — Foundation Features (Current)
+- [x] Projects & Runs System (like AgentScope Studio)
+- [x] PLAN/ACT/REFLECT Phase Visualization (like AgentBoard)
+- [x] Cost/Token Metrics Dashboard (like AgentScope)
+- [x] Activity Heatmap
+- [x] Run History & Statistics
+
 ### 🎯 v0.2 — Visual Improvements
 - [ ] Add animated sprite sheets for agent actions
 - [ ] Implement speech bubbles for agent communication
@@ -210,6 +219,8 @@ Connect to your favorite AI coding assistant:
 - [ ] Shared workspace with file ownership
 - [ ] Collision detection (agents can't overlap)
 - [ ] Team performance analytics dashboard
+- [ ] Cloud sync for projects and runs
+- [ ] Export/Import project data
 
 ### 🎯 v0.4 — Ecosystem Growth
 - [ ] Plugin system for custom agents
@@ -225,6 +236,28 @@ Connect to your favorite AI coding assistant:
 - [ ] Video tutorials & demo reels
 
 > **Vote on features:** Open an [issue](https://github.com/obeskay/swarm-ville/issues) or join discussions!
+
+## 💡 Inspiration
+
+SwarmVille draws inspiration from several innovative projects in the AI agent visualization space:
+
+### [PixelHQ](https://github.com/pipecat-ai/pipecat)
+A real-time multiplayer office simulation where AI agents collaborate as pixel-art characters. Inspired the spatial, game-like approach to visualizing AI workflows.
+
+### [AgentScope Studio](https://github.com/modelscope/agentscope)
+A multi-agent platform with excellent project organization and run management. Inspired our Projects & Runs system for organizing agent sessions.
+
+### [AgentBoard](https://github.com/smart-abi/AgentBoard)
+A visual debugging tool for AI agents with phase-based workflow visualization. Inspired our PLAN/ACT/REFLECT phase indicators.
+
+### Other Influences
+- **Strategy Games** - The idea of watching AI "units" work together
+- **Live Coding Streams** - Making code generation entertaining
+- **Multi-Agent Systems Research** - Visualizing emergent behaviors
+
+---
+
+> **Want to contribute an inspiration?** We're always looking for new ideas to make AI collaboration more visual and intuitive!
 
 ## 🧪 Development
 
