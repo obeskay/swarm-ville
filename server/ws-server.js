@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
+import { generateOllamaResponse } from "./providers/ollama.js";
 
 const PORT = process.env.PORT || 8765;
 
@@ -8,6 +9,7 @@ const agents = new Map();
 const tasks = [];
 let simRunning = true;
 let simInterval = null;
+let currentProvider = "mock"; // mock | ollama | claude | openai
 
 // Initial Default Swarm Team
 const DEFAULT_AGENTS = [
@@ -203,13 +205,21 @@ const CHAT_TEMPLATES = {
 function startSimulator() {
   if (simInterval) clearInterval(simInterval);
 
-  simInterval = setInterval(() => {
+  simInterval = setInterval(async () => {
     if (!simRunning || agents.size === 0) return;
 
     const list = Array.from(agents.values());
     const randomAgent = list[Math.floor(Math.random() * list.length)];
-    const messages = CHAT_TEMPLATES[randomAgent.role] || CHAT_TEMPLATES.executor;
-    const text = messages[Math.floor(Math.random() * messages.length)];
+
+    let text = null;
+    if (currentProvider === "ollama") {
+      text = await generateOllamaResponse(`You are a ${randomAgent.role} AI agent in a developer swarm. Give a 1-sentence status update.`);
+    }
+
+    if (!text) {
+      const messages = CHAT_TEMPLATES[randomAgent.role] || CHAT_TEMPLATES.executor;
+      text = messages[Math.floor(Math.random() * messages.length)];
+    }
 
     // Update status & chat
     randomAgent.status = text;

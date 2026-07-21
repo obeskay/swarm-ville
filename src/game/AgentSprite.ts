@@ -40,6 +40,8 @@ export class AgentSprite {
   y: number;
   targetX: number;
   targetY: number;
+  path: { x: number; y: number }[] = [];
+  memoryLogs: string[] = [];
   isSelected = false;
   isWorking = false;
   animFrame = 0;
@@ -53,6 +55,7 @@ export class AgentSprite {
     this.y = initialY;
     this.targetX = initialX;
     this.targetY = initialY;
+    this.memoryLogs.push(`Spawned at (${Math.round(initialX)}, ${Math.round(initialY)})`);
 
     this.container = new PIXI.Container();
     this.container.x = initialX;
@@ -74,6 +77,10 @@ export class AgentSprite {
 
     this.renderLabel();
     this.loadSprite();
+  }
+
+  setPath(newPath: { x: number; y: number }[]) {
+    this.path = newPath;
   }
 
   private frameTextures: PIXI.Texture[] = [];
@@ -137,6 +144,9 @@ export class AgentSprite {
   }
 
   showSpeech(text: string) {
+    this.memoryLogs.push(`Chat: "${text}"`);
+    if (this.memoryLogs.length > 25) this.memoryLogs.shift();
+
     if (this.speechTimer) clearTimeout(this.speechTimer);
 
     if (!this.speechBubble) {
@@ -199,7 +209,22 @@ export class AgentSprite {
   }
 
   update(delta: number) {
-    // Smooth movement towards target
+    // If following path steps, target current step head
+    if (this.path.length > 0) {
+      const nextPoint = this.path[0];
+      const stepDx = nextPoint.x - this.x;
+      const stepDy = nextPoint.y - this.y;
+      const stepDist = Math.sqrt(stepDx * stepDx + stepDy * stepDy);
+
+      if (stepDist < 4) {
+        this.path.shift(); // Move to next path node
+      } else {
+        this.targetX = nextPoint.x;
+        this.targetY = nextPoint.y;
+      }
+    }
+
+    // Smooth movement towards current target
     const dx = this.targetX - this.x;
     const dy = this.targetY - this.y;
     const dist = Math.sqrt(dx * dx + dy * dy);

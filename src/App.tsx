@@ -5,6 +5,8 @@ import { Sidebar } from "./components/Sidebar";
 import { AgentInspector } from "./components/AgentInspector";
 import { ActivityLog, LogItem } from "./components/ActivityLog";
 import { TaskModal, TaskItem } from "./components/TaskModal";
+import { NetworkGraph } from "./components/NetworkGraph";
+import { CodeArtifactModal } from "./components/CodeArtifactModal";
 import { AgentData } from "./game/AgentSprite";
 import { audioManager } from "./game/AudioManager";
 
@@ -17,9 +19,13 @@ export default function App() {
   const [simRunning, setSimRunning] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<AgentData | null>(null);
   const [activeAgentsCount, setActiveAgentsCount] = useState(0);
+  const [agentsList, setAgentsList] = useState<AgentData[]>([]);
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showNetworkGraph, setShowNetworkGraph] = useState(false);
+  const [showCodeArtifacts, setShowCodeArtifacts] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -39,12 +45,14 @@ export default function App() {
         e.data.forEach((agent: AgentData) => {
           gameRef.current?.spawnAgent(agent);
         });
+        setAgentsList(e.data);
         setActiveAgentsCount(e.data.length);
       }
 
       if (e.type === "agent_spawn" && gameRef.current) {
         const d = e.data as AgentData;
         gameRef.current.spawnAgent(d);
+        setAgentsList((prev) => [...prev, d]);
         setActiveAgentsCount((prev) => prev + 1);
         addLog(d.name, d.role, `Spawned in workspace zone.`);
       }
@@ -78,6 +86,7 @@ export default function App() {
       if (e.type === "agent_remove" && gameRef.current) {
         const d = e.data as { id: string };
         gameRef.current.removeAgent(d.id);
+        setAgentsList((prev) => prev.filter((a) => a.id !== d.id));
         setActiveAgentsCount((prev) => Math.max(0, prev - 1));
       }
     });
@@ -110,13 +119,14 @@ export default function App() {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "spawn_agent", role, name }));
     } else {
-      // Fallback local spawn if WS disconnected
-      gameRef.current?.spawnAgent({
+      const agent: AgentData = {
         id: `ag-${Date.now()}`,
         name,
         role,
         status: "Local offline agent"
-      });
+      };
+      gameRef.current?.spawnAgent(agent);
+      setAgentsList((prev) => [...prev, agent]);
       setActiveAgentsCount((prev) => prev + 1);
     }
   };
@@ -134,6 +144,7 @@ export default function App() {
       wsRef.current.send(JSON.stringify({ type: "remove_agent", id }));
     } else {
       gameRef.current?.removeAgent(id);
+      setAgentsList((prev) => prev.filter((a) => a.id !== id));
       setActiveAgentsCount((prev) => Math.max(0, prev - 1));
     }
     setSelectedAgent(null);
@@ -145,7 +156,6 @@ export default function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt })
     }).catch(() => {
-      // Fallback local task
       const t: TaskItem = {
         id: `task-${Date.now()}`,
         prompt,
@@ -173,6 +183,8 @@ export default function App() {
         }}
         onToggleAudio={() => audioManager.toggleAudio()}
         onOpenTaskModal={() => setShowTaskModal(true)}
+        onOpenNetworkGraph={() => setShowNetworkGraph(true)}
+        onOpenCodeArtifacts={() => setShowCodeArtifacts(true)}
         activeAgentsCount={activeAgentsCount}
       />
 
@@ -190,6 +202,19 @@ export default function App() {
           tasks={tasks}
           onClose={() => setShowTaskModal(false)}
           onSubmitTask={handleDispatchTask}
+        />
+      )}
+
+      {showNetworkGraph && (
+        <NetworkGraph
+          agents={agentsList}
+          onClose={() => setShowNetworkGraph(false)}
+        />
+      )}
+
+      {showCodeArtifacts && (
+        <CodeArtifactModal
+          onClose={() => setShowCodeArtifacts(false)}
         />
       )}
 

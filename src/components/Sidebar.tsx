@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Play, Pause, Plus, Volume2, VolumeX, ZoomIn, ZoomOut, Maximize2, ListTodo, Bot } from "lucide-react";
+import { Play, Pause, Plus, Volume2, VolumeX, ZoomIn, ZoomOut, Maximize2, ListTodo, Bot, Network, Code2, Cpu } from "lucide-react";
 
 interface SidebarProps {
   connected: boolean;
@@ -11,6 +11,8 @@ interface SidebarProps {
   onResetCamera: () => void;
   onToggleAudio: () => boolean;
   onOpenTaskModal: () => void;
+  onOpenNetworkGraph: () => void;
+  onOpenCodeArtifacts: () => void;
   activeAgentsCount: number;
 }
 
@@ -35,12 +37,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onResetCamera,
   onToggleAudio,
   onOpenTaskModal,
+  onOpenNetworkGraph,
+  onOpenCodeArtifacts,
   activeAgentsCount
 }) => {
   const [showSpawnModal, setShowSpawnModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState("executor");
   const [agentName, setAgentName] = useState("");
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [provider, setProvider] = useState("mock");
 
   const handleSpawnSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div>
           <h1 className="font-extrabold text-sm tracking-wide text-slate-100 flex items-center gap-2">
-            SwarmVille <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30">v2.0</span>
+            SwarmVille <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30">v2.1</span>
           </h1>
           <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-400 animate-pulse" : "bg-red-500"}`} />
@@ -86,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => setShowSpawnModal(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition shadow-md shadow-indigo-600/30"
         >
-          <Plus className="w-3.5 h-3.5" /> Spawn Agent
+          <Plus className="w-3.5 h-3.5" /> Spawn
         </button>
 
         <button
@@ -94,6 +99,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-600/30 transition"
         >
           <ListTodo className="w-3.5 h-3.5" /> Tasks
+        </button>
+
+        <button
+          onClick={onOpenNetworkGraph}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600/30 transition"
+          title="Swarm Topology Graph"
+        >
+          <Network className="w-3.5 h-3.5" /> Graph
+        </button>
+
+        <button
+          onClick={onOpenCodeArtifacts}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 transition"
+          title="Generated Code Artifacts"
+        >
+          <Code2 className="w-3.5 h-3.5" /> Code
         </button>
 
         <div className="h-4 w-px bg-slate-700 mx-1" />
@@ -118,12 +139,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Active Swarm Count */}
-      <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-lg text-xs text-slate-400 flex items-center justify-between">
-        <span className="flex items-center gap-1.5">
-          <Bot className="w-3.5 h-3.5 text-indigo-400" /> Active Agents
-        </span>
-        <span className="font-bold text-slate-200">{activeAgentsCount}</span>
+      {/* Provider Selector & Active Agent Count */}
+      <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 px-3 py-2 rounded-xl text-xs text-slate-400 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            className="bg-slate-800 text-slate-200 border border-slate-700 rounded px-2 py-1 text-[11px] focus:outline-none focus:border-indigo-500"
+          >
+            <option value="mock">Provider: Mock Simulator</option>
+            <option value="ollama">Provider: Ollama (Local)</option>
+            <option value="claude">Provider: Claude Code</option>
+            <option value="openai">Provider: OpenAI GPT-4</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <Bot className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="font-bold text-slate-200">{activeAgentsCount} Agents</span>
+        </div>
       </div>
 
       {/* Spawn Modal */}

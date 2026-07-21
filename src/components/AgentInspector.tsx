@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { X, Send, Trash2, Shield, Cpu, Sparkles } from "lucide-react";
+import { X, Send, Trash2, Shield, Cpu, Sparkles, Brain } from "lucide-react";
 import { AgentData } from "../game/AgentSprite";
 
 interface AgentInspectorProps {
-  agent: AgentData | null;
+  agent: (AgentData & { memoryLogs?: string[] }) | null;
   onClose: () => void;
   onSendChat: (id: string, text: string) => void;
   onRemoveAgent: (id: string) => void;
@@ -27,6 +27,7 @@ export const AgentInspector: React.FC<AgentInspectorProps> = ({
   onRemoveAgent
 }) => {
   const [chatInput, setChatInput] = useState("");
+  const [activeTab, setActiveTab] = useState<"status" | "memory">("status");
 
   if (!agent) return null;
 
@@ -40,7 +41,7 @@ export const AgentInspector: React.FC<AgentInspectorProps> = ({
   };
 
   return (
-    <div className="absolute top-4 right-4 z-20 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-2xl p-4 text-white flex flex-col gap-4 animate-in fade-in slide-in-from-right duration-200">
+    <div className="absolute top-4 right-4 z-20 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-2xl p-4 text-white flex flex-col gap-3 animate-in fade-in slide-in-from-right duration-200">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -62,18 +63,55 @@ export const AgentInspector: React.FC<AgentInspectorProps> = ({
         </button>
       </div>
 
-      {/* Live Status Box */}
-      <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3">
-        <div className="text-[11px] font-semibold text-slate-400 mb-1 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Current Activity
-        </div>
-        <p className="text-xs text-slate-200 font-medium leading-relaxed italic">
-          "{agent.status || "Standing by for task assignment..."}"
-        </p>
+      {/* Tabs Selector */}
+      <div className="flex gap-2 border-b border-slate-800 pb-1">
+        <button
+          onClick={() => setActiveTab("status")}
+          className={`flex-1 py-1 text-center text-xs font-semibold rounded-lg transition ${
+            activeTab === "status" ? "bg-slate-800 text-indigo-400" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Sparkles className="w-3 h-3 inline mr-1" /> Activity
+        </button>
+        <button
+          onClick={() => setActiveTab("memory")}
+          className={`flex-1 py-1 text-center text-xs font-semibold rounded-lg transition ${
+            activeTab === "memory" ? "bg-slate-800 text-purple-400" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Brain className="w-3 h-3 inline mr-1" /> Memory Vault
+        </button>
       </div>
 
+      {/* Tab 1: Current Activity */}
+      {activeTab === "status" && (
+        <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3">
+          <div className="text-[11px] font-semibold text-slate-400 mb-1 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Current Action
+          </div>
+          <p className="text-xs text-slate-200 font-medium leading-relaxed italic">
+            "{agent.status || "Standing by for task assignment..."}"
+          </p>
+        </div>
+      )}
+
+      {/* Tab 2: Memory Vault */}
+      {activeTab === "memory" && (
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto font-mono text-[10px] text-slate-300 flex flex-col gap-1.5">
+          {(!agent.memoryLogs || agent.memoryLogs.length === 0) ? (
+            <span className="text-slate-500 italic">No short-term memories logged.</span>
+          ) : (
+            agent.memoryLogs.map((log, idx) => (
+              <div key={idx} className="border-b border-slate-800/60 pb-1">
+                <span className="text-purple-400 font-bold mr-1">›</span> {log}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Direct Speech Input */}
-      <form onSubmit={handleSend} className="flex gap-2">
+      <form onSubmit={handleSend} className="flex gap-2 mt-1">
         <input
           type="text"
           placeholder="Inject speech prompt..."

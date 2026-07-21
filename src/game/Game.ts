@@ -2,11 +2,15 @@ import * as PIXI from "pixi.js";
 import { MapRenderer } from "./MapRenderer";
 import { AgentSprite, AgentData } from "./AgentSprite";
 import { audioManager } from "./AudioManager";
+import { Pathfinder } from "./Pathfinder";
+import { CommunicationLaser } from "./CommunicationLaser";
 
 export class Game {
   private app: PIXI.Application | null = null;
   private viewportContainer: PIXI.Container;
   private mapRenderer: MapRenderer;
+  private pathfinder: Pathfinder;
+  private lasers: CommunicationLaser[] = [];
   private agents: Map<string, AgentSprite> = new Map();
   private selectedAgentId: string | null = null;
 
@@ -20,6 +24,19 @@ export class Game {
   constructor() {
     this.viewportContainer = new PIXI.Container();
     this.mapRenderer = new MapRenderer(this.viewportContainer);
+    this.pathfinder = new Pathfinder();
+    this.setupObstacles();
+  }
+
+  private setupObstacles() {
+    // Populate Pathfinder obstacles from MapRenderer desk positions
+    for (const zone of this.mapRenderer.ZONES) {
+      for (const d of zone.deskPos) {
+        const cell = this.pathfinder.toCell(d.x, d.y);
+        this.pathfinder.setObstacle(cell.x, cell.y, true);
+        this.pathfinder.setObstacle(cell.x - 1, cell.y, true);
+      }
+    }
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
@@ -147,8 +164,17 @@ export class Game {
   moveAgent(id: string, targetX: number, targetY: number) {
     const agent = this.agents.get(id);
     if (agent) {
-      agent.targetX = targetX;
-      agent.targetY = targetY;
+      const path = this.pathfinder.findPath(agent.x, agent.y, targetX, targetY);
+      agent.setPath(path);
+    }
+  }
+
+  fireLaser(fromId: string, toId: string, color?: number) {
+    const a1 = this.agents.get(fromId);
+    const a2 = this.agents.get(toId);
+    if (a1 && a2) {
+      const laser = new CommunicationLaser(this.viewportContainer, { x: a1.x, y: a1.y }, { x: a2.x, y: a2.y }, color || 0x38bdf8);
+      this.lasers.push(laser);
     }
   }
 
@@ -157,7 +183,22 @@ export class Game {
     if (agent) {
       agent.showSpeech(text);
       audioManager.playChat();
+
+      // Fire communication laser to another random agent to visualize inter-agent communication!
+      const otherAgents = Array.from(this.agents.values()).filter(a => a.id !== id);
+      if (otherAgents.length > 0) {
+        const target = otherAgents[Math.floor(Math.random() * otherAgents.length)];
+        this.fireLaser(id, target.id);
+      }
     }
+  }
+
+  getSelectedAgent(): AgentSprite | null {
+    return this.selectedAgentId ? this.agents.get(this.selectedAgentId) || null : null;
+  }
+
+  getAgents(): Map<string, AgentSprite> {
+    return this.agents;
   }
 
   removeAgent(id: string): void {
@@ -172,6 +213,15 @@ export class Game {
   private update(delta: number): void {
     for (const agent of this.agents.values()) {
       agent.update(delta);
+    }
+
+    // Update communication lasers
+    for (let i = this.lasers.length - 1; i >= 0; i--) {
+      const laser = this.lasers[i];
+      laser.update(delta);
+      if (!laser.isAlive) {
+        this.lasers.splice(i, 1);
+      }
     }
   }
 
