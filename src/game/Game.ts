@@ -1,158 +1,182 @@
 import * as PIXI from "pixi.js";
-
-// Minimalist agent visualization - <200 lines
-interface Agent {
-  id: string;
-  name: string;
-  role: string;
-  sprite: PIXI.Graphics;
-  label: PIXI.Text;
-  x: number;
-  y: number;
-  targetX: number;
-  targetY: number;
-  vx: number;
-  vy: number;
-}
+import { MapRenderer } from "./MapRenderer";
+import { AgentSprite, AgentData } from "./AgentSprite";
+import { audioManager } from "./AudioManager";
 
 export class Game {
   private app: PIXI.Application | null = null;
-  private container: PIXI.Container;
-  private agents: Map<string, Agent> = new Map();
-  private initialized = false;
+  private viewportContainer: PIXI.Container;
+  private mapRenderer: MapRenderer;
+  private agents: Map<string, AgentSprite> = new Map();
+  private selectedAgentId: string | null = null;
 
-  readonly TILE = 32;
-  readonly MAP_W = 25;
-  readonly MAP_H = 18;
+  private isDragging = false;
+  private dragStart = { x: 0, y: 0 };
+  private containerStart = { x: 0, y: 0 };
+  private zoomLevel = 1.0;
+
+  private onSelectCallback: ((agent: AgentData | null) => void) | null = null;
 
   constructor() {
-    this.container = new PIXI.Container();
+    this.viewportContainer = new PIXI.Container();
+    this.mapRenderer = new MapRenderer(this.viewportContainer);
   }
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
     this.app = new PIXI.Application();
     await this.app.init({
       canvas,
-      width: canvas.clientWidth || 800,
-      height: canvas.clientHeight || 600,
-      backgroundColor: 0x1a1a2e,
-      resolution: 1,
+      resizeTo: window,
+      backgroundColor: 0x090d16,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
+      antialias: true
     });
 
-    this.app.stage.addChild(this.container);
-    this.createFloor();
-    this.app.ticker.add(() => this.update());
-    this.initialized = true;
-    console.log("[Game] Ready");
+    this.app.stage.addChild(this.viewportContainer);
+    await this.mapRenderer.buildMap();
+
+    this.setupInteractions(canvas);
+    this.centerCamera();
+
+    this.app.ticker.add((ticker) => this.update(ticker.deltaTime));
+    console.log("[Game Engine] Initialized with PixiJS v8");
   }
 
-  private createFloor(): void {
-    const floor = new PIXI.Graphics();
-    for (let y = 0; y < this.MAP_H; y++) {
-      for (let x = 0; x < this.MAP_W; x++) {
-        const color = (x + y) % 2 === 0 ? 0x16213e : 0x1a1a2e;
-        floor.rect(x * this.TILE, y * this.TILE, this.TILE, this.TILE);
-        floor.fill(color);
+  onSelectAgent(callback: (agent: AgentData | null) => void) {
+    this.onSelectCallback = callback;
+  }
+
+  private setupInteractions(canvas: HTMLCanvasElement) {
+    // Canvas Pan & Drag
+    canvas.addEventListener("pointerdown", (e) => {
+      // If clicking background canvas directly, deselect agent
+      if (e.target === canvas) {
+        this.isDragging = true;
+        this.dragStart = { x: e.clientX, y: e.clientY };
+        this.containerStart = { x: this.viewportContainer.x, y: this.viewportContainer.y };
       }
-    }
-    this.container.addChild(floor);
-  }
+    });
 
-  private update(): void {
-    for (const agent of this.agents.values()) {
-      // Move towards target
-      const dx = agent.targetX - agent.x;
-      const dy = agent.targetY - agent.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist > 2) {
-        const speed = 2;
-        agent.vx = (dx / dist) * speed;
-        agent.vy = (dy / dist) * speed;
-        agent.x += agent.vx;
-        agent.y += agent.vy;
-      } else {
-        // Pick new random target
-        agent.targetX = 50 + Math.random() * (this.MAP_W * this.TILE - 100);
-        agent.targetY = 50 + Math.random() * (this.MAP_H * this.TILE - 100);
+    window.addEventListener("pointermove", (e) => {
+      if (this.isDragging) {
+        const dx = e.clientX - this.dragStart.x;
+        const dy = e.clientY - this.dragStart.y;
+        this.viewportContainer.x = this.containerStart.x + dx;
+        this.viewportContainer.y = this.containerStart.y + dy;
       }
+    });
 
-      agent.sprite.x = agent.x;
-      agent.sprite.y = agent.y;
-      agent.label.x = agent.x;
-      agent.label.y = agent.y - 35;
+    window.addEventListener("pointerup", () => {
+      this.isDragging = false;
+    });
+
+    // Zoom on Mouse Wheel
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      this.setZoom(this.zoomLevel * zoomFactor);
+    }, { passive: false });
+  }
+
+  setZoom(newZoom: number) {
+    this.zoomLevel = Math.max(0.6, Math.min(2.5, newZoom));
+    this.viewportContainer.scale.set(this.zoomLevel);
+  }
+
+  getZoom(): number {
+    return this.zoomLevel;
+  }
+
+  centerCamera() {
+    if (!this.app) return;
+    const mapW = 28 * 32 * this.zoomLevel;
+    const mapH = 18 * 32 * this.zoomLevel;
+    this.viewportContainer.x = (this.app.renderer.width - mapW) / 2;
+    this.viewportContainer.y = (this.app.renderer.height - mapH) / 2;
+  }
+
+  spawnAgent(data: AgentData): void {
+    if (this.agents.has(data.id)) return;
+
+    // Find target zone spawn position
+    const zone = this.mapRenderer.ZONES.find(z => z.role === data.role) || this.mapRenderer.ZONES[0];
+    const initialX = zone.bounds.x + 40 + Math.random() * (zone.bounds.w - 80);
+    const initialY = zone.bounds.y + 40 + Math.random() * (zone.bounds.h - 80);
+
+    const agent = new AgentSprite(data, initialX, initialY);
+
+    // Agent click handler
+    agent.container.on("pointerdown", (e) => {
+      e.stopPropagation();
+      this.selectAgent(agent.id);
+    });
+
+    this.viewportContainer.addChild(agent.container);
+    this.agents.set(data.id, agent);
+
+    audioManager.playSpawn();
+    console.log(`[Game Engine] Agent ${data.name} spawned in ${zone.name}`);
+  }
+
+  selectAgent(id: string | null) {
+    if (this.selectedAgentId) {
+      const prev = this.agents.get(this.selectedAgentId);
+      if (prev) prev.setSelected(false);
     }
 
-    // Center camera
-    if (this.app) {
-      const cx = this.MAP_W * this.TILE / 2;
-      const cy = this.MAP_H * this.TILE / 2;
-      this.container.x = this.app.renderer.width / 2 - cx;
-      this.container.y = this.app.renderer.height / 2 - cy;
+    this.selectedAgentId = id;
+    if (id) {
+      const current = this.agents.get(id);
+      if (current) {
+        current.setSelected(true);
+        if (this.onSelectCallback) {
+          this.onSelectCallback({
+            id: current.id,
+            name: current.name,
+            role: current.role,
+            status: "Selected in workspace"
+          });
+        }
+      }
+    } else {
+      if (this.onSelectCallback) this.onSelectCallback(null);
     }
   }
 
-  spawnAgent(id: string, name: string, role: string): void {
-    if (this.agents.has(id) || !this.app) return;
+  moveAgent(id: string, targetX: number, targetY: number) {
+    const agent = this.agents.get(id);
+    if (agent) {
+      agent.targetX = targetX;
+      agent.targetY = targetY;
+    }
+  }
 
-    const colors: Record<string, number> = {
-      architect: 0xa855f7,
-      executor: 0x22c55e,
-      designer: 0x3b82f6,
-      planner: 0xf59e0b,
-      critic: 0xef4444,
-    };
-    const color = colors[role] || 0x6b7280;
-
-    const sprite = new PIXI.Graphics();
-    sprite.circle(0, 0, 14);
-    sprite.fill(color);
-    sprite.stroke({ width: 2, color: 0xffffff });
-
-    const x = 50 + Math.random() * (this.MAP_W * this.TILE - 100);
-    const y = 50 + Math.random() * (this.MAP_H * this.TILE - 100);
-    sprite.x = x;
-    sprite.y = y;
-
-    const label = new PIXI.Text({
-      text: name,
-      style: { fontFamily: "monospace", fontSize: 10, fill: 0xffffff },
-    });
-    label.anchor.set(0.5);
-    label.x = x;
-    label.y = y - 35;
-
-    this.container.addChild(sprite);
-    this.container.addChild(label);
-
-    this.agents.set(id, {
-      id, name, role, sprite, label,
-      x, y,
-      targetX: x + (Math.random() - 0.5) * 200,
-      targetY: y + (Math.random() - 0.5) * 200,
-      vx: 0, vy: 0,
-    });
-
-    console.log(`[Game] Spawned ${name} (${role})`);
+  triggerAgentChat(id: string, text: string) {
+    const agent = this.agents.get(id);
+    if (agent) {
+      agent.showSpeech(text);
+      audioManager.playChat();
+    }
   }
 
   removeAgent(id: string): void {
     const agent = this.agents.get(id);
     if (agent) {
-      this.container.removeChild(agent.sprite);
-      this.container.removeChild(agent.label);
+      this.viewportContainer.removeChild(agent.container);
       this.agents.delete(id);
-      console.log(`[Game] Removed ${agent.name}`);
+      if (this.selectedAgentId === id) this.selectAgent(null);
     }
   }
 
-  isInitialized(): boolean {
-    return this.initialized;
+  private update(delta: number): void {
+    for (const agent of this.agents.values()) {
+      agent.update(delta);
+    }
   }
 
   destroy(): void {
     this.app?.destroy(true, { children: true });
     this.agents.clear();
-    this.initialized = false;
   }
 }

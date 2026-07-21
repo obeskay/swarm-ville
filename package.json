@@ -4,18 +4,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "ws": "node server/ws-server.js",
+    "server": "node server/ws-server.js",
+    "generate-sprites": "node scripts/generate_sprites.js",
+    "build": "node scripts/generate_sprites.js && tsc && vite build",
+    "preview": "vite preview",
+    "dev:all": "concurrently --names \"WS,VITE\" -c \"cyan,magenta\" \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
+    "@types/ws": "^8.18.1",
+    "lucide-react": "^1.25.0",
     "pixi.js": "^8.14.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^10.0.3",
     "typescript": "^5.3.3",
     "vite": "^5.0.8"
   }
