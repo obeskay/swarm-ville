@@ -4,6 +4,7 @@ dist
 *.log
 .env
 .env.local
+.vite
 
 # --- secrets & local agent scratch (security hardening 2026-08-06) ---
 .env

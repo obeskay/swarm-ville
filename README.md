@@ -1,100 +1,166 @@
-# 🐝 SwarmVille: Visual AI Agent Collaboration Engine
+# SwarmVille
 
-SwarmVille brings the invisible world of multi-agent AI collaboration to life through an interactive, top-down 2D visual workspace. Specialized AI agents move through work zones, communicate in real-time, execute coding objectives, and demonstrate multi-agent orchestration.
+A small product village where you plant software ideas and watch the swarm grow
+them into shippable releases.
 
-![SwarmVille Preview](public/sprites/architect.svg)
+SwarmVille runs a real agentic loop and renders it as a place: five agents, five
+plots, one commons. An agent walking to its bench with a lit ring is mid-model-call.
+An arc between two agents is a handoff. Walk your own avatar into the commons and
+a peer-to-peer video call opens with whoever else is standing there.
 
----
+The map is the readout: the world is a low-poly Three.js village with blocky
+characters, a custom avatar, animated critters, fences, work plots, a commons,
+a market, paths, water and product gardens.
 
-## 🚀 Key Features
+## Product garden
 
-- 🎨 **Tailored Pixel-Art Character Sprites**: Distinct custom sprite sheets and 4-directional walking/working animations for 8 specialized AI agent roles.
-- 🏢 **5-Zone Workstation Map**: Top-down office layout featuring Architecture War Room, Engineering Hub, UI/UX Design Studio, QA & Code Review Lab, and Knowledge Shrine.
-- ⚡ **Real-Time WebSocket Server**: Node.js WebSocket engine supporting live agent state, auto-reconnect, and multi-agent workflow simulation.
-- 📋 **Swarm Task Dispatcher**: Interactive objective launcher where agents collaborate step-by-step (Architect → Designer → Dev → Reviewer → QA).
-- 🔊 **Retro Web Audio SFX**: Synthesized 8-bit sound effects for agent spawning, walking clicks, speech bubbles, and task completions.
-- 🔍 **Interactive Camera & Agent Inspector**: Zoom, pan, auto-follow camera, and detail drawer to inspect agent status, logs, and inject direct prompts.
+The Product garden is the playable loop around the agentic loop:
 
----
+1. Plant a product with a name, kind and objective.
+2. Select its plot from the HUD or directly from the 3D map.
+3. Send it to the swarm. The plot advances through plan, design, build, review,
+   verify and ship as the real run emits steps. Design is the product-facing
+   milestone; the backend's planner and builder still produce the observable
+   model calls behind it.
+4. Tend a plot with energy to grow it between swarm runs, recharge energy with
+   coins, buy fertilizer or energy at the market, unlock new plots, and complete
+   evergreen or daily village quests for extra rewards.
+5. Harvest the shipped release to earn coins, gems, energy and XP. Profile
+   progress and plots persist in the browser's local storage.
 
-## 👥 Agent Roles & Visual Identities
+The four product seeds are Web app, Mobile, AI agent and Data tool. Starter
+briefs make the first planting fast, and a plot can be replanted after harvest
+for another iteration. A shipped plot opens Product Studio: edit the generated
+HTML, CSS, JavaScript or README, create new files, publish revisions, preview
+them in an iframe, or download a runnable single-file app and a workspace
+manifest. The village is
+usable on narrow screens too: the map, active panel and toolbelt collapse into
+a readable mobile stack.
 
-| Role | Expertise | Symbol | Color | Zone |
-|---|---|---|---|---|
-| **Architect** | System Design & ADRs | ⚡ | Purple | War Room |
-| **Executor** | Code Implementation | 💻 | Green | Engineering Hub |
-| **Designer** | UI/UX & Design Tokens | 🎨 | Blue | Design Studio |
-| **Planner** | Roadmap & Backlog | 📋 | Gold | War Room |
-| **Critic** | Security & Code Review | 🔍 | Red | QA Lab |
-| **Tester** | E2E & Unit Testing | 🧪 | Orange | QA Lab |
-| **Oracle** | Deep Heuristics & Analysis | 🧠 | Violet | Knowledge Shrine |
-| **Librarian** | Documentation & Context | 📚 | Cyan | Knowledge Shrine |
+<!-- Screenshot: run `npm run dev` and grab the map. -->
 
----
+## The loop
 
-## 🛠️ Quick Start
+```
+plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ──▶ archive
+            ▲               │
+            └─── REVISE ────┘   (bounded by MAX_REVISIONS)
+```
 
-### Prerequisites
-- **Node.js**: v18+
-- **npm** (or pnpm)
+Each phase is one model call by one agent. The reviewer's verdict is what closes
+the loop: `VERDICT: REVISE` sends control back to the builder.
 
-### Installation
+| Agent | Phase | Plot |
+|---|---|---|
+| Atlas | Plan | Plan |
+| Neo | Build | Build |
+| Socrates | Review | Review |
+| Vanguard | Verify | Review |
+| Alexandria | Archive | Memory |
+
+## Observability
+
+Every model call is recorded as a **step** and nothing on screen is invented:
+
+- wall-clock latency per step
+- input and output tokens per step, summed per run
+- the attempt number, so revise cycles are visible as repeats
+- the full model output, expandable inline
+- the failure reason when a step fails
+
+Where an agent is standing and whether its ring is lit are derived from the same
+records. Product XP and rewards are game state owned by the garden, not model
+confidence or an invented quality score.
+
+## Quick start
+
+Node 20+.
+
 ```bash
-git clone https://github.com/obeskay/swarm-ville.git
-cd swarm-ville
-
-# Install dependencies
 npm install
-
-# Generate custom sprite assets & tilesets
-npm run generate-sprites
+npm run dev
 ```
 
-### Running SwarmVille
+Open <http://127.0.0.1:5173>. This starts the Vite dev server on 5173 and the
+relay on 8765; Vite proxies `/api` and `/ws` to the relay, so the browser only
+ever talks to one origin.
+
+It works out of the box with no API key: the default `mock` provider runs the
+whole loop offline, revise cycle included.
+
+## Providers
+
+Pick one from the selector in the top bar, or set `PROVIDER` in `.env`.
+
+| id | What it is | Needs |
+|---|---|---|
+| `mock` | Offline simulator. The default. | nothing |
+| `ollama` | Local models over Ollama | Ollama running locally |
+| `anthropic` | Claude via the Anthropic API | `ANTHROPIC_API_KEY` |
+
+Keys are read by the relay from the environment and never reach the browser.
+Copy `.env.example` to `.env` to configure. If a provider cannot be constructed
+(missing key, missing SDK) the relay falls back to `mock` and says so in the top
+bar instead of failing silently.
+
+## The commons
+
+Click the ground to walk. Step into the circle and you join the room: the relay
+hands you the list of peers already there, and your browser opens a WebRTC
+connection to each. Media is peer-to-peer — the relay only forwards SDP and ICE.
+
+Declining the camera prompt is fine; you join as a listener. Public STUN covers
+the same machine and the same LAN; crossing a symmetric NAT needs a TURN server
+(see `.env.example`).
+
+## HTTP API
+
+The relay is usable without the UI.
+
 ```bash
-# Start both WebSocket Server & Vite Dev Frontend
-npm run dev:all
-```
-Open `http://localhost:5173` (or `http://localhost:1420`) in your browser to experience SwarmVille!
-
-### Individual Commands
-- `npm run dev`: Launch Vite frontend only
-- `npm run server`: Launch WebSocket server (`ws://localhost:8765`)
-- `npm run build`: Generate sprites, compile TypeScript, and build production web bundle
-
----
-
-## 🔌 WebSocket API Protocol
-
-Connect to `ws://localhost:8765` to send and receive agent telemetry:
-
-### Spawn Agent
-```json
-{
-  "type": "spawn_agent",
-  "role": "executor",
-  "name": "Cypher_Dev"
-}
+curl localhost:8765/api/health
+curl localhost:8765/api/state
+curl -X POST localhost:8765/api/runs \
+  -H 'content-type: application/json' \
+  -d '{"goal":"Add rate limiting to the public REST API"}'
+curl -X POST localhost:8765/api/runs/stop
 ```
 
-### Dispatch Objective
-```json
-{
-  "type": "create_task",
-  "prompt": "Build responsive React component with unit tests"
-}
+WebSocket lives at `/ws` and pushes `snapshot`, `run`, `event`, `agent`,
+`handoff`, `provider`, presence and WebRTC signalling messages.
+
+## Layout
+
+```
+server/
+  index.js          HTTP + WebSocket, security middleware
+  config.js         env and flag parsing
+  security.js       rate limits, origin checks, body caps, sanitising
+  orchestrator.js   the agentic loop
+  state.js          bounded in-memory world state
+  rooms.js          presence + WebRTC signalling
+  providers/        mock, ollama, anthropic
+src/
+  world/            three.js town
+  ui/               panels
+  lib/              WebSocket client, WebRTC mesh
 ```
 
-### Agent Chatter
-```json
-{
-  "type": "send_chat",
-  "id": "ag-1",
-  "text": "Refactoring system state pipeline..."
-}
+## Scripts
+
+```bash
+npm run dev        # relay + web
+npm run relay      # relay only
+npm run typecheck  # tsc --noEmit
+npm run build      # typecheck + production bundle
 ```
 
----
+## Security
 
-## 📄 License
-MIT License. Built for high-agency visual AI agent orchestration.
+Local-first by default: binds `127.0.0.1`, allowlists origins, and has **no
+authentication**. Read [SECURITY.md](SECURITY.md) before putting it on a
+network.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
