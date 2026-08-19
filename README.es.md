@@ -59,6 +59,13 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
 Cada fase es una llamada al modelo hecha por un agente. El veredicto del revisor es
 lo que cierra el ciclo: `VERDICT: REVISE` devuelve el control al constructor.
 
+Cada objetivo recibe las mismas cinco llamadas, sea del tamaño que sea. Con
+`DECOMPOSE=1` cambia la etapa de construcción: al planificador ya se le piden
+pasos ordenados, así que el plan se lee como lista de tareas y el constructor las
+toma de una en una —una llamada al modelo por paso, etiquetada `Build 2/4` en el
+panel de la corrida—. Cuesta una llamada por paso, por eso viene apagado y por
+eso no cambia nada más del bucle.
+
 | Agente | Fase | Cuarto |
 |---|---|---|
 | Atlas | Planear | Plan |

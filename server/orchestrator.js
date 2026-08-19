@@ -42,10 +42,15 @@ const PHASES = {
     system:
       "You are the builder of a small software swarm. Carry out the plan and " +
       "report what you actually changed. Be specific and brief. No preamble.",
-    prompt: ({ goal, plan, critique }) =>
-      critique
-        ? `Objective: ${goal}\n\nPlan:\n${plan}\n\nThe reviewer asked for changes:\n${critique}\n\nAddress the critique and report the revised work.`
-        : `Objective: ${goal}\n\nPlan:\n${plan}\n\nCarry it out and report the work.`
+    prompt: ({ goal, plan, critique, task, index, total }) => {
+      const changes = critique ? `The reviewer asked for changes:\n${critique}\n\n` : "";
+      if (task) {
+        return `Objective: ${goal}\n\nFull plan:\n${plan}\n\nYou are on step ${index} of ${total}:\n${task}\n\n${changes}Carry out only this step and report only that work.`;
+      }
+      return critique
+        ? `Objective: ${goal}\n\nPlan:\n${plan}\n\n${changes}Address the critique and report the revised work.`
+        : `Objective: ${goal}\n\nPlan:\n${plan}\n\nCarry it out and report the work.`;
+    }
   },
   review: {
     agentId: "reviewer",
@@ -77,6 +82,20 @@ const PHASES = {
   }
 };
 
+/**
+ * The planner is already asked for ordered steps, so the plan is the task list —
+ * no second model call is needed to split it. Anything that is not a numbered
+ * or bulleted line is prose about the plan, not a step of it.
+ */
+export const planTasks = (text) =>
+  String(text ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => /^(\d+[.)]|[-*])\s+/.test(line))
+    .map((line) => line.replace(/^(\d+[.)]|[-*])\s+/, "").trim())
+    .filter((line) => line.length > 3)
+    .slice(0, config.limits.maxTasks);
+
 /** Output kept per step, so a chatty model cannot bloat the transported run. */
 const MAX_STEP_OUTPUT = 4000;
 
@@ -96,14 +115,14 @@ const publishRun = (run) => emit("run", run);
  * Throws only on abort; provider failures are recorded on the step and
  * rethrown so the run can fail loudly rather than pretend to succeed.
  */
-const runPhase = async ({ run, phase, context, attempt, provider, signal }) => {
+const runPhase = async ({ run, phase, context, attempt, provider, signal, label }) => {
   const spec = PHASES[phase];
   const agent = AGENT_BY_ID.get(spec.agentId);
 
   const step = {
     id: newId("step"),
     phase,
-    label: spec.label,
+    label: label ?? spec.label,
     agentId: agent.id,
     attempt,
     status: "running",
@@ -216,20 +235,49 @@ export const startRun = async (goal) => {
         signal
       });
 
+      // One call for the whole plan, or one per step when decomposing.
+      const tasks = config.decompose ? planTasks(planStep.output) : [];
+      const buildOnce = async ({ attempt, critique }) => {
+        if (tasks.length < 2) {
+          const step = await runPhase({
+            run,
+            phase: "build",
+            context: { goal, plan: planStep.output, critique },
+            attempt,
+            provider,
+            signal
+          });
+          return step.output;
+        }
+        const parts = [];
+        for (let index = 0; index < tasks.length; index += 1) {
+          const step = await runPhase({
+            run,
+            phase: "build",
+            label: `Build ${index + 1}/${tasks.length}`,
+            context: {
+              goal,
+              plan: planStep.output,
+              critique,
+              task: tasks[index],
+              index: index + 1,
+              total: tasks.length
+            },
+            attempt,
+            provider,
+            signal
+          });
+          parts.push(`${index + 1}. ${tasks[index]}\n${step.output}`);
+        }
+        return parts.join("\n\n");
+      };
+
       let work = "";
       let critique = null;
 
       for (let attempt = 0; attempt <= config.limits.maxRevisions; attempt += 1) {
         emit("handoff", { from: attempt === 0 ? "planner" : "reviewer", to: "builder" });
-        const buildStep = await runPhase({
-          run,
-          phase: "build",
-          context: { goal, plan: planStep.output, critique },
-          attempt,
-          provider,
-          signal
-        });
-        work = buildStep.output;
+        work = await buildOnce({ attempt, critique });
 
         emit("handoff", { from: "builder", to: "reviewer" });
         const reviewStep = await runPhase({

@@ -57,6 +57,13 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
 Each phase is one model call by one agent. The reviewer's verdict closes the loop:
 `VERDICT: REVISE` sends control back to the builder.
 
+Every objective gets the same five calls, however large it is. Setting
+`DECOMPOSE=1` changes the build stage: the planner is already asked for ordered
+steps, so the plan is read as a task list and the builder takes one step at a
+time — one model call each, labelled `Build 2/4` in the run panel. It costs a
+call per step, which is why it is off by default and why nothing else in the
+loop changes.
+
 | Agent | Phase | Room |
 |---|---|---|
 | Atlas | Plan | Plan |

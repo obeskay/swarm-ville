@@ -8,6 +8,8 @@ const int = (value, fallback) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+const bool = (value) => /^(1|true|yes|on)$/i.test(String(value ?? "").trim());
+
 const list = (value) =>
   String(value || "")
     .split(",")
@@ -34,6 +36,12 @@ export const config = {
   // this relay. RELAY_PORT is the env-var escape hatch; PORT stays supported
   // last so the usual PaaS convention still works in production.
   port: int(flag("port") ?? process.env.RELAY_PORT ?? process.env.PORT, 8765),
+
+  /**
+   * Off by default. On, the builder takes the plan one numbered step at a time,
+   * which costs one model call per step instead of one for the whole plan.
+   */
+  decompose: bool(process.env.DECOMPOSE),
 
   /** Where the archivist's notes outlive the process. */
   archiveFile: process.env.ARCHIVE_FILE || ".data/archive.jsonl",
@@ -73,6 +81,8 @@ export const config = {
     messagesPerMinute: int(process.env.WS_RATE_LIMIT, 240),
     /** Concurrent WebSocket connections accepted. */
     maxConnections: int(process.env.MAX_CONNECTIONS, 64),
+    /** Plan steps the builder will take on individually when decomposing. */
+    maxTasks: int(process.env.MAX_TASKS, 5),
     /** Runs kept in memory. */
     runHistory: int(process.env.RUN_HISTORY, 25),
     /** Events kept in memory. */
