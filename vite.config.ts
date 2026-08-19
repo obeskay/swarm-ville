@@ -1,7 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const RELAY = process.env.RELAY_URL || "http://127.0.0.1:8765";
+// Same port the relay binds in `npm run relay`. Vite 8 no longer ships node
+// globals to config files, and an undocumented env override was not worth a
+// dependency to keep reading one.
+const RELAY = "http://127.0.0.1:8765";
 
 // The API and the WebSocket are proxied through Vite so the browser only ever
 // talks to one origin. That keeps CORS out of the picture and lets the relay
