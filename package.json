@@ -18,17 +18,17 @@
     "art": "node tools/genart.mjs && python3 tools/pixelize.py"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.68.0",
-    "lucide-react": "^1.25.0",
+    "@anthropic-ai/sdk": "^0.117.1",
+    "lucide-react": "^1.31.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "ws": "^8.21.1"
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.5",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }
