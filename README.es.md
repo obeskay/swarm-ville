@@ -104,6 +104,20 @@ JavaScript o README generado, publicas revisiones, las previsualizas en un ifram
 te descargas una app de un solo archivo lista para correr. El perfil y los plantíos
 se guardan en el almacenamiento local del navegador.
 
+## Una dirección para una entrega
+
+El Estudio de Producto siempre supo armar una app de un solo archivo; el bucle
+terminaba en tu carpeta de descargas y nada más. **Publish** escribe ese
+documento en `.data/releases/` y el relay lo sirve en `/r/<id>`, así que un
+plantío entregado es algo que puedes abrir en otra pestaña o pasarle a alguien de
+la misma red.
+
+A propósito no es Vercel ni GitHub. Una herramienta que escucha en `127.0.0.1` y
+no tiene autenticación no tiene por qué guardar un token de despliegue. El
+documento se sirve con `Content-Security-Policy: sandbox`, así que una entrega
+corre pero no puede leer el almacenamiento de esta app — ver
+[SECURITY.md](SECURITY.md).
+
 ## La plaza
 
 Entra a la plaza y te unes a la sala: el relay te pasa la lista de quienes ya están
@@ -162,6 +176,7 @@ curl -X POST localhost:8765/api/runs \
   -d '{"goal":"Añadir rate limiting a la API REST pública"}'
 curl -X POST localhost:8765/api/runs/stop
 curl 'localhost:8765/api/archive?q=rate%20limiting'
+curl -X POST localhost:8765/api/releases -d '{"html":"<h1>hi</h1>"}'
 ```
 
 El WebSocket en `/ws` empuja mensajes `snapshot`, `run`, `step`, `event`, `agent`,
@@ -174,6 +189,7 @@ server/
   index.js          HTTP + WebSocket, middleware de seguridad
   orchestrator.js   el bucle de agentes
   archive.js        una línea JSON por corrida terminada
+  releases.js       publica y sirve una entrega de un solo archivo
   security.js       límites de tasa, chequeo de origen, tope de cuerpo, saneo
   rooms.js          presencia + señalización WebRTC
   providers/        mock, ollama, anthropic

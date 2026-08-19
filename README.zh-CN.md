@@ -73,6 +73,12 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
 
 已交付的地块会打开 **产品工作室**：编辑生成的 HTML、CSS、JavaScript 或 README，发布修订版，在 iframe 里预览，或者下载一个可直接运行的单文件应用。个人档案和地块保存在浏览器本地存储里。
 
+## 给交付物一个地址
+
+产品工作室一直能打包出单文件应用，只是这个循环最后停在了你的下载文件夹里。点 **Publish**，这份文档会被写进 `.data/releases/`，由中继服务在 `/r/<id>` 提供访问——于是一块已交付的地块变成了你可以在新标签页打开、或者直接发给同一网络里某个人的东西。
+
+刻意不接 Vercel，也不接 GitHub。一个绑定在 `127.0.0.1`、完全没有鉴权的工具，不该保管任何部署令牌。文档带着 `Content-Security-Policy: sandbox` 返回，所以交付物能运行，却读不到这个应用的存储——见 [SECURITY.md](SECURITY.md)。
+
 ## 广场
 
 走进广场就等于加入房间：中继服务会把已经在场的人告诉你，你的浏览器随即和每个人建立 WebRTC 连接。音视频是点对点的——中继只转发 SDP 和 ICE。
@@ -116,6 +122,7 @@ curl -X POST localhost:8765/api/runs \
   -d '{"goal":"给公开的 REST API 加上限流"}'
 curl -X POST localhost:8765/api/runs/stop
 curl 'localhost:8765/api/archive?q=rate%20limiting'
+curl -X POST localhost:8765/api/releases -d '{"html":"<h1>hi</h1>"}'
 ```
 
 `/ws` 上的 WebSocket 会推送 `snapshot`、`run`、`step`、`event`、`agent`、`handoff`、`provider`，以及在线状态和 WebRTC 信令消息。
@@ -127,6 +134,7 @@ server/
   index.js          HTTP + WebSocket，安全中间件
   orchestrator.js   智能体循环
   archive.js        每完成一次运行写一行 JSON
+  releases.js       发布并提供单文件交付物
   security.js       限流、来源校验、请求体上限、内容清洗
   rooms.js          在线状态 + WebRTC 信令
   providers/        mock、ollama、anthropic

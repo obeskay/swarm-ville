@@ -1,4 +1,4 @@
-import { Check, Clipboard, Code2, Download, Eye, FileText, Plus, Save, X } from "lucide-react";
+import { Check, Clipboard, Code2, Download, Eye, ExternalLink, FileText, Globe, Plus, Save, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Project, WorkspaceFile } from "./shared";
 
@@ -17,6 +17,8 @@ export const WorkspaceModal = ({ open, project, onClose, onVisit, onUpdateWorksp
   const [dirty, setDirty] = useState(false);
   const [newFileOpen, setNewFileOpen] = useState(false);
   const [newFileName, setNewFileName] = useState("");
+  const [releaseUrl, setReleaseUrl] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -27,6 +29,7 @@ export const WorkspaceModal = ({ open, project, onClose, onVisit, onUpdateWorksp
     setDirty(false);
     setNewFileOpen(false);
     setNewFileName("");
+    setReleaseUrl(null);
     onVisit();
   }, [onVisit, open, project?.id, project?.release?.runId]);
 
@@ -50,6 +53,28 @@ export const WorkspaceModal = ({ open, project, onClose, onVisit, onUpdateWorksp
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       setCopied(false);
+    }
+  };
+
+  /**
+   * Gives the release an address instead of a download. The relay writes the
+   * document to disk and serves it back sandboxed, so this stays local-first —
+   * no deploy token belongs in a tool that binds to 127.0.0.1.
+   */
+  const publishApp = async () => {
+    setPublishing(true);
+    try {
+      const response = await fetch("/api/releases", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ html: previewDocument })
+      });
+      const body = (await response.json()) as { path?: string };
+      setReleaseUrl(body.path ? `${window.location.origin}${body.path}` : null);
+    } catch {
+      setReleaseUrl(null);
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -104,8 +129,16 @@ export const WorkspaceModal = ({ open, project, onClose, onVisit, onUpdateWorksp
         </header>
         <div className="workspace-toolbar">
           <span><Code2 size={13} /> {preview ? "Live preview" : selected.path}{dirty && <em className="workspace-dirty">unsaved</em>}</span>
-          <div><button type="button" className="secondary workspace-save" onClick={saveWorkspace} disabled={!dirty}><Save size={12} /> Publish revision</button><button type="button" className={`secondary ${preview ? "selected" : ""}`} onClick={() => setPreview((value) => !value)}><Eye size={12} /> {preview ? "Show files" : "Preview"}</button><button type="button" className="secondary" onClick={() => void copyFile()}>{copied ? <Check size={12} /> : <Clipboard size={12} />} {copied ? "Copied" : "Copy file"}</button><button type="button" className="secondary" onClick={downloadApp}><Download size={12} /> Download app</button><button type="button" className="secondary" onClick={downloadWorkspace}><Download size={12} /> Export workspace</button></div>
+          <div><button type="button" className="secondary workspace-save" onClick={saveWorkspace} disabled={!dirty}><Save size={12} /> Publish revision</button><button type="button" className={`secondary ${preview ? "selected" : ""}`} onClick={() => setPreview((value) => !value)}><Eye size={12} /> {preview ? "Show files" : "Preview"}</button><button type="button" className="secondary" onClick={() => void copyFile()}>{copied ? <Check size={12} /> : <Clipboard size={12} />} {copied ? "Copied" : "Copy file"}</button><button type="button" className="secondary" onClick={() => void publishApp()} disabled={publishing}><Globe size={12} /> {publishing ? "Publishing…" : "Publish"}</button><button type="button" className="secondary" onClick={downloadApp}><Download size={12} /> Download app</button><button type="button" className="secondary" onClick={downloadWorkspace}><Download size={12} /> Export workspace</button></div>
         </div>
+        {releaseUrl && (
+          <p className="workspace-release">
+            <Globe size={12} aria-hidden />
+            <a href={releaseUrl} target="_blank" rel="noreferrer">{releaseUrl}</a>
+            <button type="button" className="icon" onClick={() => void navigator.clipboard.writeText(releaseUrl).catch(() => undefined)} aria-label="Copy the release address"><Clipboard size={12} /></button>
+            <a className="icon" href={releaseUrl} target="_blank" rel="noreferrer" aria-label="Open the release"><ExternalLink size={12} /></a>
+          </p>
+        )}
         {preview ? <iframe className="workspace-preview" title={`${project.name} preview`} sandbox="allow-scripts" srcDoc={previewDocument} /> : <div className="workspace-body"><nav className="workspace-files" aria-label="Workspace files"><div className="workspace-files__head"><span>Files</span><button type="button" className="icon" onClick={() => setNewFileOpen((value) => !value)} aria-label="Create workspace file" title="Create file"><Plus size={13} /></button></div>{newFileOpen && <form className="workspace-new-file" onSubmit={addFile}><input value={newFileName} onChange={(event) => setNewFileName(event.target.value)} placeholder="components/card.html" aria-label="New file path" autoFocus /><button type="submit" className="primary" disabled={!newFileName.trim()} aria-label="Add file"><Plus size={12} /></button></form>}{activeFiles.map((file) => <button key={file.path} type="button" className={file.path === selected.path ? "active" : ""} onClick={() => { setSelectedPath(file.path); setCopied(false); }}><FileText size={13} /><span>{file.path}</span><small>{languageLabel(file)}</small></button>)}</nav><textarea className="workspace-code workspace-editor" aria-label={`Edit ${selected.path}`} value={selected.content} onChange={(event) => updateSelected(event.target.value)} spellCheck={false} /></div>}
       </section>
     </div>

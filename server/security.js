@@ -55,14 +55,14 @@ export const clientKey = (req) => req.socket.remoteAddress || "unknown";
  * Reads a JSON body with a hard byte ceiling, rejecting rather than buffering
  * an unbounded payload.
  */
-export const readJsonBody = (req) =>
+export const readJsonBody = (req, limit = config.limits.bodyBytes) =>
   new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
 
     req.on("data", (chunk) => {
       size += chunk.length;
-      if (size > config.limits.bodyBytes) {
+      if (size > limit) {
         reject(new Error("payload_too_large"));
         req.destroy();
         return;

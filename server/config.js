@@ -38,6 +38,9 @@ export const config = {
   /** Where the archivist's notes outlive the process. */
   archiveFile: process.env.ARCHIVE_FILE || ".data/archive.jsonl",
 
+  /** Where a published single-file release is written. */
+  releaseDir: process.env.RELEASE_DIR || ".data/releases",
+
   /** Browser origins allowed to reach the API and the WebSocket. */
   allowedOrigins: list(process.env.ALLOWED_ORIGINS).length
     ? list(process.env.ALLOWED_ORIGINS)
@@ -58,6 +61,8 @@ export const config = {
   limits: {
     /** Max bytes accepted on any HTTP request body. */
     bodyBytes: int(process.env.MAX_BODY_BYTES, 16 * 1024),
+    /** A published release is a whole HTML document, so it gets its own ceiling. */
+    releaseBytes: int(process.env.MAX_RELEASE_BYTES, 512 * 1024),
     /** Max bytes accepted on a single WebSocket frame. */
     frameBytes: int(process.env.MAX_FRAME_BYTES, 64 * 1024),
     /** Max characters of a user-supplied goal. */

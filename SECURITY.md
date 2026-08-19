@@ -54,6 +54,28 @@ executed. The orchestrator reads exactly one thing out of a model response: a
 model cannot steer the loop beyond that, and the revise cycle is bounded by
 `MAX_REVISIONS`.
 
+## Published releases
+
+`POST /api/releases` writes a single-file HTML document to `.data/releases/` and
+`GET /r/<id>` serves it back. That document is model-written and user-edited, and
+it is served from the relay's own origin, so it is treated as hostile:
+
+- `Content-Security-Policy: sandbox allow-scripts allow-forms` drops it into an
+  opaque origin. Scripts still run, but `localStorage`, `document.cookie` and
+  same-origin `fetch` are all denied — verified in Chrome, both directly on the
+  relay and through the Vite proxy, where the document shares an origin with the
+  app itself and the guarantee matters most.
+- `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
+- Ids are 12 hex characters from `randomUUID`, matched against `^[0-9a-f]{12}$`
+  before touching the filesystem, and the resolved path is checked against the
+  release directory. `/r/../../package.json` returns 404.
+- Bodies are capped at `MAX_RELEASE_BYTES` (512 KB by default), separately from
+  the 16 KB ceiling on every other request.
+
+There is no deletion endpoint and no authentication in front of `/r`. Anything
+published is readable by anyone who can reach the relay, which on the default
+binding is you. Delete `.data/releases/` to revoke.
+
 ## Before exposing this to a network
 
 1. Put an authenticating reverse proxy in front of the relay.

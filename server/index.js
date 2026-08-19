@@ -16,6 +16,7 @@ import { bus, snapshot, state, emit, activeRun } from "./state.js";
 import { isRunning, startRun, stopAll, stopRun } from "./orchestrator.js";
 import * as rooms from "./rooms.js";
 import { recall } from "./archive.js";
+import { publish, read as readRelease } from "./releases.js";
 
 const json = (res, status, payload) => {
   const body = JSON.stringify(payload);
@@ -86,9 +87,46 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Served before the origin check: a browser navigating to a page sends no
+  // Origin header, and this is a page rather than an API call.
+  if (req.method === "GET" && url.pathname.startsWith("/r/")) {
+    const html = await readRelease(url.pathname.slice(3));
+    if (!html) {
+      json(res, 404, { error: "not_found" });
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      // The document is user-authored and served from the relay's own origin.
+      // `sandbox` drops it into an opaque origin, so a published release cannot
+      // read this app's storage or call its API with anybody's cookies.
+      "Content-Security-Policy": "sandbox allow-scripts allow-forms;",
+      "Referrer-Policy": "no-referrer"
+    });
+    res.end(html);
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/archive") {
     const query = sanitizeText(url.searchParams.get("q") || "", 200);
     json(res, 200, { entries: await recall(query) });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/releases") {
+    try {
+      const body = await readJsonBody(req, config.limits.releaseBytes);
+      const html = String(body.html ?? "");
+      if (html.length < 20) {
+        json(res, 400, { error: "empty_release" });
+        return;
+      }
+      const id = await publish(html);
+      json(res, 201, { id, path: `/r/${id}` });
+    } catch (error) {
+      json(res, error.message === "payload_too_large" ? 413 : 400, { error: error.message });
+    }
     return;
   }
 

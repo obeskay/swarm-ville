@@ -100,6 +100,18 @@ A shipped plot opens **Product Studio**: edit the generated HTML, CSS, JavaScrip
 or README, publish revisions, preview them in an iframe, and download a runnable
 single-file app. Profile and plots persist in local storage.
 
+## An address for a release
+
+Product Studio could always build a single-file app; the loop just ended in your
+downloads folder. **Publish** writes that document to `.data/releases/` and the
+relay serves it at `/r/<id>`, so a shipped plot is something you can open in
+another tab or hand to somebody on the same network.
+
+Deliberately not Vercel or GitHub. A tool that binds to `127.0.0.1` and has no
+authentication has no business holding a deploy token. The document is served
+under `Content-Security-Policy: sandbox`, so a release runs but cannot read this
+app's storage — see [SECURITY.md](SECURITY.md).
+
 ## The commons
 
 Walk into the plaza and you join the room: the relay hands you the peers already
@@ -157,6 +169,7 @@ curl -X POST localhost:8765/api/runs \
   -d '{"goal":"Add rate limiting to the public REST API"}'
 curl -X POST localhost:8765/api/runs/stop
 curl 'localhost:8765/api/archive?q=rate%20limiting'
+curl -X POST localhost:8765/api/releases -d '{"html":"<h1>hi</h1>"}'
 ```
 
 The WebSocket at `/ws` pushes `snapshot`, `run`, `step`, `event`, `agent`,
@@ -169,6 +182,7 @@ server/
   index.js          HTTP + WebSocket, security middleware
   orchestrator.js   the agentic loop
   archive.js        one JSON line per finished run
+  releases.js       publishes and serves a single-file release
   security.js       rate limits, origin checks, body caps, sanitising
   rooms.js          presence + WebRTC signalling
   providers/        mock, ollama, anthropic

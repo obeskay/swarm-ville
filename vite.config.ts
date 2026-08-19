@@ -12,7 +12,9 @@ const RELAY = "http://127.0.0.1:8765";
 // bundle can be exercised locally without a separate reverse proxy.
 const proxy = {
   "/api": { target: RELAY, changeOrigin: false },
-  "/ws": { target: RELAY, ws: true, changeOrigin: false }
+  "/ws": { target: RELAY, ws: true, changeOrigin: false },
+  // Published releases, so a release address is on the same origin as the app.
+  "/r": { target: RELAY, changeOrigin: false }
 };
 
 export default defineConfig({
