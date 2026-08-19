@@ -9,11 +9,18 @@ interface Props {
   micOn: boolean;
   camOn: boolean;
   error: string | null;
+  flatAudio: boolean;
   onToggleMic: () => void;
   onToggleCam: () => void;
   onLeave: () => void;
 }
 
+/**
+ * Remote tiles are muted while the spatial graph is carrying the audio —
+ * unmuting them would play every peer twice, once flat. If that graph could not
+ * be built, `flatAudio` hands the sound back to the elements: worse, but not
+ * silent.
+ */
 const Tile = ({ stream, label, muted }: { stream: MediaStream; label: string; muted: boolean }) => {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -41,6 +48,7 @@ export const CallDock = ({
   micOn,
   camOn,
   error,
+  flatAudio,
   onToggleMic,
   onToggleCam,
   onLeave
@@ -56,7 +64,7 @@ export const CallDock = ({
           <p className="call__hint">{error ?? "Camera off — you are here, listening."}</p>
         )}
         {[...remoteStreams].map(([id, stream]) => (
-          <Tile key={id} stream={stream} label={nameOf(id)} muted={false} />
+          <Tile key={id} stream={stream} label={nameOf(id)} muted={!flatAudio} />
         ))}
       </div>
 

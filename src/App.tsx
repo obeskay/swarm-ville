@@ -3,6 +3,7 @@ import { ListChecks } from "lucide-react";
 import { World } from "./world/World";
 import { connect, type Relay, type Status } from "./lib/ws";
 import { CallMesh, isSignal } from "./lib/rtc";
+import { SpatialAudio } from "./lib/spatial";
 import { TopBar } from "./ui/TopBar";
 import { CommandBar } from "./ui/CommandBar";
 import { RunPanel } from "./ui/RunPanel";
@@ -119,6 +120,7 @@ export default function App() {
   const worldRef = useRef<World | null>(null);
   const relayRef = useRef<Relay | null>(null);
   const meshRef = useRef<CallMesh | null>(null);
+  const spatialRef = useRef<SpatialAudio | null>(null);
   const selfIdRef = useRef<string | null>(null);
 
   const [status, setStatus] = useState<Status>("connecting");
@@ -155,6 +157,8 @@ export default function App() {
   const [inCall, setInCall] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
+  // Set when the spatial graph cannot be built: the tiles play the audio flat.
+  const [flatAudio, setFlatAudio] = useState(false);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -235,6 +239,7 @@ export default function App() {
       return null;
     });
     setRemoteStreams(new Map());
+    spatialRef.current?.reset();
     setInCall(false);
     setMediaError(null);
   }, [send]);
@@ -350,6 +355,7 @@ export default function App() {
 
         case "presence:move":
           worldRef.current?.movePeer(message.data.id, message.data.x, message.data.z);
+          spatialRef.current?.place(message.data.id, message.data.x, message.data.z);
           return;
 
         case "presence:leave":
@@ -402,20 +408,35 @@ export default function App() {
     world.onSelectAgent = (id) => { setSelected(id); if (id) setSelectedProjectId(null); };
     world.onSelectProject = (id) => { setSelectedProjectId(id); setSelected(null); if (id) world.focusOnProject(id); };
     world.onSelectMarket = () => { dismissGuide(); setSelected(null); setSelectedProjectId(null); setShowMarket(true); };
-    world.onSelfMoved = (x, z) => relayRef.current?.send({ type: "presence:move", x, z });
+    world.onSelfMoved = (x, z) => {
+      spatialRef.current?.listener(x, z);
+      relayRef.current?.send({ type: "presence:move", x, z });
+    };
 
     const mesh = new CallMesh({
       send: (to, payload) => relayRef.current?.send({ type: "rtc:signal", to, payload }),
-      onStream: (peerId, stream) =>
-        setRemoteStreams((previous) => new Map(previous).set(peerId, stream)),
-      onClosed: (peerId) =>
+      onStream: (peerId, stream) => {
+        // Tile first: a fault in the audio graph must never cost you the video
+        // of the person you are talking to.
+        setRemoteStreams((previous) => new Map(previous).set(peerId, stream));
+        try {
+          spatialRef.current?.attach(peerId, stream);
+        } catch (error) {
+          console.warn("[call] spatial audio unavailable, tiles carry the sound", error);
+          setFlatAudio(true);
+        }
+      },
+      onClosed: (peerId) => {
+        spatialRef.current?.detach(peerId);
         setRemoteStreams((previous) => {
           const next = new Map(previous);
           next.delete(peerId);
           return next;
-        })
+        });
+      }
     });
     meshRef.current = mesh;
+    spatialRef.current = new SpatialAudio();
 
     relayRef.current = connect((message) => handleMessageRef.current(message), setStatus);
 
@@ -424,10 +445,19 @@ export default function App() {
       relayRef.current = null;
       mesh.destroy();
       meshRef.current = null;
+      spatialRef.current?.destroy();
+      spatialRef.current = null;
       world.dispose();
       worldRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    for (const peer of peers) {
+      if (peer.id === selfIdRef.current) continue;
+      spatialRef.current?.place(peer.id, peer.x, peer.z);
+    }
+  }, [peers]);
 
   // Walking into the commons is the same action as pressing the call button.
   useEffect(() => {
@@ -716,6 +746,7 @@ export default function App() {
         <CallDock
           localStream={localStream}
           remoteStreams={remoteStreams}
+          flatAudio={flatAudio}
           peers={peers}
           micOn={micOn}
           camOn={camOn}
