@@ -18,6 +18,5 @@ export const MapControls = ({ onZoomIn, onZoomOut, onReset }: Props) => (
     <button type="button" className="map-controls__button map-controls__button--home" onClick={onReset} aria-label="Center village" title="Center village">
       <Compass size={15} />
     </button>
-    <small>drag to explore</small>
   </div>
 );

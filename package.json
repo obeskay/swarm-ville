@@ -14,20 +14,19 @@
     "relay": "node server/index.js",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "art": "node tools/genart.mjs && python3 tools/pixelize.py"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "lucide-react": "^1.25.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.185.1",
     "ws": "^8.21.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^10.0.3",
     "typescript": "^5.6.3",

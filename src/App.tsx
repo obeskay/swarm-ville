@@ -701,7 +701,7 @@ export default function App() {
       />}
 
       {run && runOpen && <RunPanel run={run} agents={agents} onClose={() => setRunOpen(false)} />}
-      {run && !runOpen && <button type="button" className={`run-dock run-dock--${run.status}`} onClick={() => setRunOpen(true)} aria-label="Open latest run"><span><ListChecks size={13} /> Last run</span><strong>{run.goal}</strong><i>{run.status}</i></button>}
+      {run && !runOpen && <button type="button" className={`run-dock run-dock--${run.status}`} onClick={() => setRunOpen(true)} aria-label="Open latest run"><ListChecks size={13} /><strong>{run.goal}</strong></button>}
 
       {selectedAgent && (
         <AgentCard

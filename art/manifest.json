@@ -1,0 +1,44 @@
+{
+  "style": "16-bit SNES RPG pixel art, top-down 3/4 view, cozy Stardew-Valley-meets-Gather.town village. Muted warm palette: sage greens, sandy tans, terracotta, dusty teal. Crisp hard pixels, no anti-aliasing, no gradients, no glow, flat shading with at most 4 shades per material.",
+  "tiles": [
+    { "name": "grass",  "prompt": "seamless tileable ground texture of short mown grass, muted sage green with a few darker blades and tiny lighter tufts, very low contrast so props read on top of it" },
+    { "name": "grass2", "prompt": "seamless tileable ground texture of grass with small white and pale-yellow wildflowers scattered sparsely, muted sage green base, low contrast" },
+    { "name": "path",   "prompt": "seamless tileable texture of a warm sandy dirt path with a few small pale pebbles pressed into it, tan and soft ochre, low contrast" },
+    { "name": "stone",  "prompt": "seamless tileable texture of large square flagstone plaza tiles, warm grey with subtle beige veining and thin dark mortar lines forming a regular grid" },
+    { "name": "wood",   "prompt": "seamless tileable texture of horizontal wooden plank flooring, warm honey brown with visible grain and thin darker seams between planks" },
+    { "name": "water",  "prompt": "seamless tileable texture of calm shallow water seen from above, dusty teal with soft lighter ripple highlights, no shoreline, no foam" },
+    { "name": "soil",   "prompt": "seamless tileable texture of freshly tilled dark garden soil in neat furrows, rich chocolate brown with a few small stones" }
+  ],
+  "props": [
+    { "name": "tree",       "prompt": "a single cozy round broadleaf tree with a short warm brown trunk and layered sage-green canopy" },
+    { "name": "tree_pine",  "prompt": "a single tall narrow pine tree, deep muted green layered branches, slim dark trunk" },
+    { "name": "bush",       "prompt": "a small round leafy bush, sage green with two shades, no flowers" },
+    { "name": "flowers",    "prompt": "a small clump of garden flowers, terracotta and cream blossoms on short green stems" },
+    { "name": "rock",       "prompt": "a small weathered grey boulder with a patch of moss on one side" },
+    { "name": "fence_h",    "prompt": "a horizontal wooden fence segment seen from above at a 3/4 angle, two rails and two posts, weathered warm brown timber, the segment spans the full width of the image so it tiles side by side, wide 3:1 aspect ratio" },
+    { "name": "fence_v",    "prompt": "a vertical wooden fence segment seen from above at a 3/4 angle, two rails and two posts, weathered warm brown timber, the segment spans the full height of the image so it tiles top to bottom, tall 1:2 aspect ratio" },
+    { "name": "desk",       "prompt": "a wooden work desk seen from above at a 3/4 angle with a small retro CRT monitor glowing pale cyan, a keyboard and a paper cup on it" },
+    { "name": "bookshelf",  "prompt": "a tall wooden bookshelf seen from above at a 3/4 angle, four shelves packed with colourful book spines in muted tones" },
+    { "name": "bench",      "prompt": "a simple wooden park bench seen from above at a 3/4 angle, warm brown slats, dark iron legs" },
+    { "name": "stall",      "prompt": "a small market stall seen from above at a 3/4 angle: wooden counter with crates of produce and a striped terracotta and cream awning above it" },
+    { "name": "lamp",       "prompt": "a slim cast-iron street lamp post with a warm amber lantern at the top, seen from above at a 3/4 angle, tall 1:2 aspect ratio" },
+    { "name": "plant_pot",  "prompt": "a terracotta pot with a leafy green houseplant, seen from above at a 3/4 angle" },
+    { "name": "rug",        "prompt": "a round woven rug seen straight from above, concentric rings in dusty teal, cream and terracotta, frayed edge" },
+    { "name": "fountain",   "prompt": "a small round stone fountain seen from above at a 3/4 angle, pale grey stone rim, calm teal water inside, a low central spout" },
+    { "name": "sign",       "prompt": "a small wooden signpost with a blank plank board, seen from above at a 3/4 angle, warm brown timber" },
+    { "name": "crate",      "prompt": "a stack of two small wooden crates seen from above at a 3/4 angle, warm brown planks with dark corner bands" },
+    { "name": "banner",     "prompt": "a hanging cloth banner pennant on a thin pole, muted violet fabric with a small cream emblem, seen from above at a 3/4 angle, tall 1:2 aspect ratio" },
+    { "name": "crop_0",     "prompt": "a small mound of freshly tilled dark soil with a single tiny pale green seedling shoot just breaking the surface" },
+    { "name": "crop_1",     "prompt": "a young garden plant with four small green leaves growing from a mound of dark soil" },
+    { "name": "crop_2",     "prompt": "a healthy leafy garden plant with a thick bushy crown of green leaves growing from dark soil" },
+    { "name": "crop_3",     "prompt": "a fully grown garden plant heavy with ripe golden fruit, lush green leaves, growing from dark soil, clearly ready to harvest" }
+  ],
+  "chars": [
+    { "name": "char_atlas",      "shirt": "warm amber",     "hair": "chestnut brown",  "trousers": "dark navy" },
+    { "name": "char_neo",        "shirt": "sage green",     "hair": "black",           "trousers": "dark charcoal" },
+    { "name": "char_socrates",   "shirt": "terracotta red", "hair": "silver grey",     "trousers": "warm brown" },
+    { "name": "char_vanguard",   "shirt": "dusty blue",     "hair": "auburn",          "trousers": "dark navy" },
+    { "name": "char_alexandria", "shirt": "muted violet",   "hair": "dark brown",      "trousers": "deep plum" },
+    { "name": "char_player",     "shirt": "cream white",    "hair": "sandy blond",     "trousers": "denim blue" }
+  ]
+}

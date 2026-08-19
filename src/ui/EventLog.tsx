@@ -15,7 +15,7 @@ export const EventLog = ({ events, agents }: Props) => {
   return (
     <section className={`panel log ${open ? "log--open" : ""}`} aria-label="Event stream">
       <button type="button" className="log__toggle" onClick={() => setOpen((value) => !value)}>
-        <span>{open ? "Events" : events[0]?.text ?? "Waiting for the first run"}</span>
+        <span>Events <em>{events.length}</em></span>
         {open ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
       </button>
 

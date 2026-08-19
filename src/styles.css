@@ -4,21 +4,29 @@
  */
 
 :root {
-  --ink: #f2e9dc;
-  --ink-soft: #b9ad9c;
-  --ink-faint: #857b6e;
-  --surface: rgba(30, 27, 24, 0.86);
-  --surface-solid: #211e1b;
-  --line: rgba(242, 233, 220, 0.12);
-  --line-strong: rgba(242, 233, 220, 0.22);
+  --ink: #f4ece0;
+  --ink-soft: #b6a894;
+  --ink-faint: #7e7365;
+  --surface: rgba(26, 21, 16, 0.88);
+  --surface-solid: #1e1b18;
+  --line: rgba(224, 168, 107, 0.16);
+  --line-strong: rgba(224, 168, 107, 0.28);
   --clay: #e0a86b;
-  --violet: #a855f7;
-  --amber: #f59e0b;
-  --sage: #8fbf8a;
-  --rust: #d98878;
-  --sky: #7fa8d4;
-  --radius: 14px;
+  --violet: #b18ad6;
+  --amber: #e8b25c;
+  --sage: #8fb073;
+  --rust: #cc7f68;
+  --sky: #79a6c4;
+  --radius: 12px;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --avatar-skin: #e0a86b;
+  --avatar-accent: #cc7f68;
+  --grass: #7fa86a;
+  --path-tan: #d9c39a;
+  --water: #6fa8b0;
+  --timber: #b98a5e;
+  --stone-grey: #a8a294;
+  --night: #16140f;
 
   color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -31,6 +39,18 @@
   box-sizing: border-box;
 }
 
+/* ----------------------------------------------------------- pixel sharpness -- */
+/* Ensure canvas and pixel art assets are rendered sharply without interpolation */
+canvas,
+canvas.stage,
+img[src*="/art/"],
+.pixel-art {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
 html,
 body,
 #root {
@@ -38,7 +58,7 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: #1b1a19;
+  background: var(--night);
 }
 
 button,
@@ -103,10 +123,10 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
-  animation: panel-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(244, 236, 224, 0.06), 0 10px 28px rgba(12, 9, 6, 0.38);
+  animation: panel-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes panel-in {
@@ -127,16 +147,16 @@ button {
   height: 32px;
   border-radius: 9px;
   color: var(--ink-soft);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.18s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .icon:hover {
-  background: rgba(242, 233, 220, 0.09);
+  background: rgba(244, 236, 224, 0.08);
   color: var(--ink);
 }
 
 .icon--danger:hover {
-  background: rgba(217, 136, 120, 0.18);
+  background: rgba(204, 127, 104, 0.18);
   color: var(--rust);
 }
 
@@ -163,7 +183,7 @@ button {
   display: flex;
   align-items: center;
   gap: 7px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
 
 .brand__mark {
@@ -171,7 +191,7 @@ button {
   height: 32px;
   flex: 0 0 32px;
   border-radius: 10px;
-  box-shadow: 0 8px 22px rgba(168, 85, 247, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .brand__health {
@@ -189,13 +209,14 @@ button {
 }
 
 .brand__copy strong {
-  color: #fff3db;
+  color: var(--ink);
   font-size: 14px;
+  letter-spacing: 0.02em;
 }
 
 .brand__copy small {
   margin-top: 2px;
-  color: rgba(255, 243, 219, 0.62);
+  color: var(--ink-faint);
   font: 500 8px var(--mono);
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -242,8 +263,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--ink-soft);
   font-size: 12px;
 }
@@ -264,7 +285,7 @@ button {
 }
 
 .chip--live {
-  border-color: rgba(143, 191, 138, 0.5);
+  border-color: rgba(143, 176, 115, 0.45);
   color: var(--sage);
 }
 
@@ -283,7 +304,7 @@ button {
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: var(--surface-solid);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   transform: translateX(-50%);
 }
 
@@ -314,7 +335,7 @@ button {
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  transition: filter 0.15s ease;
+  transition: filter 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .command__go {
@@ -326,7 +347,7 @@ button {
 }
 
 .command__go:disabled {
-  background: rgba(242, 233, 220, 0.1);
+  background: rgba(244, 236, 224, 0.08);
   color: var(--ink-faint);
   cursor: not-allowed;
 }
@@ -337,7 +358,7 @@ button {
 }
 
 .command__stop {
-  background: rgba(217, 136, 120, 0.18);
+  background: rgba(204, 127, 104, 0.18);
   color: var(--rust);
 }
 
@@ -375,17 +396,17 @@ button {
   left: 16px;
   z-index: 20;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  width: 320px;
+  width: 260px;
   min-height: 40px;
   padding: 7px 10px;
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--surface-solid);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   color: var(--ink-soft);
   text-align: left;
 }
@@ -743,13 +764,13 @@ button {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  color: #f7e7c9;
-  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  color: var(--ink);
+  transition: background 0.18s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .map-controls__button:hover {
-  background: rgba(255, 235, 193, 0.14);
-  color: #fff4dd;
+  background: rgba(244, 236, 224, 0.12);
+  color: var(--ink);
   transform: translateY(-1px);
 }
 
@@ -766,7 +787,7 @@ button {
 
 .map-controls small {
   margin: 0 7px 0 4px;
-  color: rgba(247, 231, 201, 0.62);
+  color: var(--ink-faint);
   font: 500 8px var(--mono);
   white-space: nowrap;
 }
@@ -783,11 +804,11 @@ button {
   gap: 9px;
   min-width: 238px;
   padding: 9px 11px 9px 9px;
-  border: 1px solid rgba(255, 211, 127, 0.46);
+  border: 1px solid var(--line-strong);
   border-radius: 12px;
-  background: rgba(53, 45, 35, 0.92);
-  box-shadow: 0 14px 35px rgba(34, 26, 15, 0.34), inset 0 1px 0 rgba(255, 247, 218, 0.1);
-  animation: reward-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  background: var(--surface-solid);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+  animation: reward-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
   transform: translateX(-50%);
 }
 
@@ -930,8 +951,18 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .panel,
-  .modal {
+  .modal,
+  .reward-toast {
     animation: none;
   }
 
@@ -990,11 +1021,10 @@ button {
 }
 
 .garden__level strong {
-  display: block;
-  margin-top: 2px;
   color: #ffe0ae;
   font: 700 16px var(--mono);
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .garden__resources {
@@ -1040,14 +1070,14 @@ button {
   width: 23px;
   height: 23px;
   margin-left: 2px;
-  border: 1px solid rgba(242, 233, 220, 0.16);
+  border: 1px solid rgba(244, 236, 224, 0.16);
   border-radius: 7px;
   color: var(--ink-soft);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.18s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .garden__library:hover {
-  background: rgba(242, 233, 220, 0.1);
+  background: rgba(244, 236, 224, 0.1);
   color: var(--ink);
 }
 
@@ -1068,7 +1098,7 @@ button {
   height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(242, 233, 220, 0.1);
+  background: rgba(244, 236, 224, 0.1);
 }
 
 .garden__track i {
@@ -1076,7 +1106,7 @@ button {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--clay), var(--sage));
-  box-shadow: 0 0 11px rgba(143, 191, 138, 0.4);
+  box-shadow: none;
 }
 
 .garden__quest {
@@ -1208,7 +1238,7 @@ button {
   height: 7px;
   flex: 0 0 7px;
   border-radius: 50%;
-  box-shadow: 0 0 7px currentColor;
+  box-shadow: none;
 }
 
 .garden__plot > span {
@@ -1669,7 +1699,8 @@ button {
   place-items: center;
   padding: 18px;
   background: rgba(20, 18, 16, 0.76);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .modal {
@@ -1678,10 +1709,10 @@ button {
   overflow: auto;
   padding: 18px;
   border: 1px solid var(--line-strong);
-  border-radius: 17px;
+  border-radius: var(--radius);
   background: var(--surface-solid);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 245, 220, 0.05);
-  animation: modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes modal-in {
@@ -1702,12 +1733,13 @@ button {
   color: var(--ink-faint);
   font: 500 8px var(--mono);
   letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
 
 .modal__head h2 {
   margin: 5px 0 0;
   font-size: 21px;
-  letter-spacing: -0.05em;
+  letter-spacing: 0.01em;
 }
 
 .modal__head p {
@@ -1791,7 +1823,7 @@ button {
   background: rgba(143, 191, 138, 0.07);
   color: var(--sage);
   font-size: 9px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .starter-seeds button:hover {
@@ -2595,16 +2627,16 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--ink-soft);
   font-size: 11px;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: border-color 0.18s cubic-bezier(0.22, 1, 0.36, 1), background 0.18s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .avatar-chip:hover {
   border-color: var(--line-strong);
-  background: rgba(242, 233, 220, 0.09);
+  background: rgba(244, 236, 224, 0.08);
   color: var(--ink);
 }
 
@@ -2620,7 +2652,7 @@ button {
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
-  border: 2px solid rgba(255, 244, 222, 0.65);
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
   color: #2b2116;
 }
@@ -2662,7 +2694,7 @@ button {
   position: absolute;
   z-index: 1;
   display: block;
-  box-shadow: inset -7px -5px 0 rgba(0, 0, 0, 0.08), 0 10px 18px rgba(0, 0, 0, 0.2);
+  box-shadow: inset -7px -5px 0 rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .avatar-preview__head {
@@ -2756,7 +2788,7 @@ button {
   border: 2px solid transparent;
   border-radius: 9px;
   color: #2b2116;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .swatch-grid button:hover {
@@ -2980,4 +3012,27 @@ button {
   .avatar-chip {
     max-width: 118px;
   }
+}
+
+/* The provider selector says it fell back by looking wrong, not by explaining. */
+.select--fallback::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+.select--fallback {
+  position: relative;
+}
+
+.log__toggle em {
+  margin-left: 6px;
+  color: var(--ink-faint);
+  font: 500 10px var(--mono);
+  font-style: normal;
 }

@@ -36,7 +36,9 @@ const broadcast = (message, exceptId = null) => {
 
 // Arrivals stand on the south lane, clear of the commons circle — walking in
 // is what joins the call, so nobody should start out already in it.
-const SPAWN = { x: -4.6, z: 6.4 };
+// The main street, one step short of the commons: a guest lands in the middle
+// of the village without the proximity call opening a camera on arrival.
+const SPAWN = { x: 0.25, z: -2.5 };
 
 export const addPeer = (id, send) => {
   const peer = { id, name: "Guest", x: SPAWN.x, z: SPAWN.z, inRoom: false, send };

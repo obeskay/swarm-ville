@@ -31,19 +31,17 @@ export const TopBar = ({
   <header className="topbar">
     <div className="brand">
       <img className="brand__mark" src="/swarmville-mark.svg" alt="" />
-      <span className="brand__health" title={`Relay ${status}`}><span className={`dot dot--${status}`} aria-hidden /><small>{status}</small></span>
-      <span className="brand__copy"><strong>SwarmVille</strong><small>Product village</small></span>
+      <span className="brand__health" title={`Relay ${status}`}><span className={`dot dot--${status}`} aria-hidden /></span>
+      <span className="brand__copy"><strong>SwarmVille</strong></span>
     </div>
 
     <div className="topbar__right">
-      {providerNote && <span className="note" title={providerNote}>fell back to simulator</span>}
-
       <button type="button" className="avatar-chip" onClick={onOpenAvatar} title="Open avatar locker">
         <span className="avatar-chip__dot" style={{ background: avatarAccent }}><UserRound size={12} /></span>
         <span>{avatarName}</span>
       </button>
 
-      <label className="select">
+      <label className={`select ${providerNote ? "select--fallback" : ""}`} title={providerNote ?? undefined}>
         <span className="sr-only">Model provider</span>
         <select value={provider} onChange={(event) => onProviderChange(event.target.value)}>
           {providers.map((entry) => (

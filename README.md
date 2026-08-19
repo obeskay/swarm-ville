@@ -1,76 +1,32 @@
-# SwarmVille
+<div align="center">
 
-A small product village where you plant software ideas and watch the swarm grow
-them into shippable releases.
+<img src="assets/banner-en.jpg" alt="SwarmVille — an agentic loop you can walk around in" width="100%">
 
-SwarmVille runs a real agentic loop and renders it as a place: five agents, five
-plots, one commons. An agent walking to its bench with a lit ring is mid-model-call.
-An arc between two agents is a handoff. Walk your own avatar into the commons and
-a peer-to-peer video call opens with whoever else is standing there.
+Five agents, five rooms, one town. Watch the loop happen instead of reading about it afterwards.
 
-The map is the readout: the world is a low-poly Three.js village with blocky
-characters, a custom avatar, animated critters, fences, work plots, a commons,
-a market, paths, water and product gardens.
+[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/Node-20%2B-black)](https://nodejs.org)
+[![No API key needed](https://img.shields.io/badge/API%20key-optional-black)](#providers)
 
-## Product garden
+English · [Español](README.es.md) · [中文](README.zh-CN.md)
 
-The Product garden is the playable loop around the agentic loop:
+</div>
 
-1. Plant a product with a name, kind and objective.
-2. Select its plot from the HUD or directly from the 3D map.
-3. Send it to the swarm. The plot advances through plan, design, build, review,
-   verify and ship as the real run emits steps. Design is the product-facing
-   milestone; the backend's planner and builder still produce the observable
-   model calls behind it.
-4. Tend a plot with energy to grow it between swarm runs, recharge energy with
-   coins, buy fertilizer or energy at the market, unlock new plots, and complete
-   evergreen or daily village quests for extra rewards.
-5. Harvest the shipped release to earn coins, gems, energy and XP. Profile
-   progress and plots persist in the browser's local storage.
+---
 
-The four product seeds are Web app, Mobile, AI agent and Data tool. Starter
-briefs make the first planting fast, and a plot can be replanted after harvest
-for another iteration. A shipped plot opens Product Studio: edit the generated
-HTML, CSS, JavaScript or README, create new files, publish revisions, preview
-them in an iframe, or download a runnable single-file app and a workspace
-manifest. The village is
-usable on narrow screens too: the map, active panel and toolbelt collapse into
-a readable mobile stack.
+## The problem
 
-<!-- Screenshot: run `npm run dev` and grab the map. -->
+An agentic loop is a wall of text. Plan, build, review, revise, verify — five model
+calls that scroll past faster than you can read them, and by the time it fails you
+are scrolling back up trying to work out which step went wrong and why.
 
-## The loop
+The information was never the problem. The **shape** was. A log is a bad medium for
+something that is really five actors, a handoff, and a cycle.
 
-```
-plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ──▶ archive
-            ▲               │
-            └─── REVISE ────┘   (bounded by MAX_REVISIONS)
-```
-
-Each phase is one model call by one agent. The reviewer's verdict is what closes
-the loop: `VERDICT: REVISE` sends control back to the builder.
-
-| Agent | Phase | Plot |
-|---|---|---|
-| Atlas | Plan | Plan |
-| Neo | Build | Build |
-| Socrates | Review | Review |
-| Vanguard | Verify | Review |
-| Alexandria | Archive | Memory |
-
-## Observability
-
-Every model call is recorded as a **step** and nothing on screen is invented:
-
-- wall-clock latency per step
-- input and output tokens per step, summed per run
-- the attempt number, so revise cycles are visible as repeats
-- the full model output, expandable inline
-- the failure reason when a step fails
-
-Where an agent is standing and whether its ring is lit are derived from the same
-records. Product XP and rewards are game state owned by the garden, not model
-confidence or an invented quality score.
+So SwarmVille renders the loop as a place. Atlas is standing at a desk in the Plan
+room with a lit ring: that is a model call in flight. An arc between Neo and
+Socrates: that is the handoff. Socrates walking back to Neo: the reviewer said
+revise. You do not read the state, you look at it.
 
 ## Quick start
 
@@ -81,16 +37,70 @@ npm install
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173>. This starts the Vite dev server on 5173 and the
-relay on 8765; Vite proxies `/api` and `/ws` to the relay, so the browser only
-ever talks to one origin.
+Open <http://127.0.0.1:5173>. That starts Vite on 5173 and the relay on 8765;
+Vite proxies `/api` and `/ws`, so the browser only ever talks to one origin.
 
-It works out of the box with no API key: the default `mock` provider runs the
-whole loop offline, revise cycle included.
+No API key required. The default `mock` provider runs the whole loop offline,
+revise cycle included, so the town is alive on first boot.
+
+Walk with **WASD** or click the ground. Type an objective in the bar at the bottom
+and watch five agents do it.
+
+## The loop
+
+```
+plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ──▶ archive
+            ▲               │
+            └─── REVISE ────┘   (bounded by MAX_REVISIONS)
+```
+
+Each phase is one model call by one agent. The reviewer's verdict closes the loop:
+`VERDICT: REVISE` sends control back to the builder.
+
+| Agent | Phase | Room |
+|---|---|---|
+| Atlas | Plan | Plan |
+| Neo | Build | Build |
+| Socrates | Review | Review |
+| Vanguard | Verify | Review |
+| Alexandria | Archive | Memory |
+
+## Nothing on screen is invented
+
+Every model call is recorded as a **step**, and every step carries wall-clock
+latency, input and output tokens, the attempt number, the full output, and the
+failure reason if it failed. Where an agent is standing and whether its ring is
+lit are derived from those same records — not from a progress animation that
+guesses.
+
+Product XP and rewards are game state owned by the garden. They are never dressed
+up as model confidence or an invented quality score.
+
+## The garden
+
+The playable loop around the agentic loop. Plant a product, send it to the swarm,
+and the plot advances through plan, design, build, review, verify and ship as the
+run emits real steps. Tend it with energy between runs, buy fertilizer at the
+market, complete village quests, and harvest the shipped release for coins, gems
+and XP.
+
+A shipped plot opens **Product Studio**: edit the generated HTML, CSS, JavaScript
+or README, publish revisions, preview them in an iframe, and download a runnable
+single-file app. Profile and plots persist in local storage.
+
+## The commons
+
+Walk into the plaza and you join the room: the relay hands you the peers already
+there and your browser opens a WebRTC connection to each. Media is peer-to-peer —
+the relay only forwards SDP and ICE.
+
+Declining the camera prompt is fine, you join as a listener. Public STUN covers the
+same machine and the same LAN; crossing a symmetric NAT needs a TURN server (see
+`.env.example`).
 
 ## Providers
 
-Pick one from the selector in the top bar, or set `PROVIDER` in `.env`.
+Pick one in the top bar, or set `PROVIDER` in `.env`.
 
 | id | What it is | Needs |
 |---|---|---|
@@ -98,20 +108,30 @@ Pick one from the selector in the top bar, or set `PROVIDER` in `.env`.
 | `ollama` | Local models over Ollama | Ollama running locally |
 | `anthropic` | Claude via the Anthropic API | `ANTHROPIC_API_KEY` |
 
-Keys are read by the relay from the environment and never reach the browser.
-Copy `.env.example` to `.env` to configure. If a provider cannot be constructed
-(missing key, missing SDK) the relay falls back to `mock` and says so in the top
-bar instead of failing silently.
+Keys are read by the relay from the environment and never reach the browser. If a
+provider cannot be constructed the relay falls back to `mock` and marks the
+selector, instead of failing silently.
 
-## The commons
+## The art
 
-Click the ground to walk. Step into the circle and you join the room: the relay
-hands you the list of peers already there, and your browser opens a WebRTC
-connection to each. Media is peer-to-peer — the relay only forwards SDP and ICE.
+Every tile, prop and character is generated with `gpt-image-2` and then reduced to
+a pixel grid. `art/manifest.json` holds one prompt per asset, `tools/genart.mjs`
+generates them, and `tools/pixelize.py` crops, downscales, hardens the alpha,
+quantises to 64 colours and packs a single atlas. Character sheets are one image
+of four poses, split on the empty columns between them.
 
-Declining the camera prompt is fine; you join as a listener. Public STUN covers
-the same machine and the same LAN; crossing a symmetric NAT needs a TURN server
-(see `.env.example`).
+```bash
+npm run art                        # generate whatever is missing, then repack
+python3 tools/pixelize.py --selftest
+```
+
+Only `public/art/atlas.png` and `atlas.json` are committed. The 29 MB of raw
+frames are intermediates; regenerating them costs about $1.40.
+
+The renderer draws the world into an offscreen canvas at art resolution and blows
+it up by a whole-number factor, so every pixel on screen is the same size and
+nothing is ever half-interpolated. Labels are drawn afterwards at device
+resolution, where legibility beats pixel purity.
 
 ## HTTP API
 
@@ -126,7 +146,7 @@ curl -X POST localhost:8765/api/runs \
 curl -X POST localhost:8765/api/runs/stop
 ```
 
-WebSocket lives at `/ws` and pushes `snapshot`, `run`, `event`, `agent`,
+The WebSocket at `/ws` pushes `snapshot`, `run`, `step`, `event`, `agent`,
 `handoff`, `provider`, presence and WebRTC signalling messages.
 
 ## Layout
@@ -134,16 +154,21 @@ WebSocket lives at `/ws` and pushes `snapshot`, `run`, `event`, `agent`,
 ```
 server/
   index.js          HTTP + WebSocket, security middleware
-  config.js         env and flag parsing
-  security.js       rate limits, origin checks, body caps, sanitising
   orchestrator.js   the agentic loop
-  state.js          bounded in-memory world state
+  security.js       rate limits, origin checks, body caps, sanitising
   rooms.js          presence + WebRTC signalling
   providers/        mock, ollama, anthropic
 src/
-  world/            three.js town
+  world/
+    World.ts        the 2D renderer
+    map.ts          the village layout
+    theme.ts        palette, tile grid, room rects
+    atlas.ts        spritesheet loader
   ui/               panels
   lib/              WebSocket client, WebRTC mesh
+art/manifest.json   every sprite and its prompt
+tools/              generate art, pack the atlas
+assets/             banner and brand kit
 ```
 
 ## Scripts
@@ -153,13 +178,13 @@ npm run dev        # relay + web
 npm run relay      # relay only
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production bundle
+npm run art        # regenerate the spritesheet
 ```
 
 ## Security
 
 Local-first by default: binds `127.0.0.1`, allowlists origins, and has **no
-authentication**. Read [SECURITY.md](SECURITY.md) before putting it on a
-network.
+authentication**. Read [SECURITY.md](SECURITY.md) before putting it on a network.
 
 ## License
 

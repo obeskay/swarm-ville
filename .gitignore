@@ -16,3 +16,10 @@ ORIGINAL_REQUEST.md
 *.pem
 *.key
 .claude/settings.local.json
+
+# generated art: the atlas in public/art is the artifact, the raw frames are
+# 29 MB of regenerable intermediates (npm run art)
+art/raw/
+
+# banner render output (assets/*.jpg are the committed artifacts)
+build/

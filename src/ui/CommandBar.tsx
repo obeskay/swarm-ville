@@ -10,6 +10,7 @@ interface Props {
 
 /** The only way to start work: one field, one button. */
 export const CommandBar = ({ running, disabled, onStart, onStop }: Props) => {
+  const shortcut = navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K";
   const [goal, setGoal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +41,7 @@ export const CommandBar = ({ running, disabled, onStart, onStop }: Props) => {
         maxLength={600}
         disabled={running || disabled}
         onChange={(event) => setGoal(event.target.value)}
-        placeholder={running ? "The swarm is working…" : "What should the swarm work on?"}
+        placeholder={running ? "The swarm is working…" : `Give your five agents an objective   ${shortcut}`}
         aria-label="Objective for the swarm"
       />
       {running ? (
@@ -53,7 +54,6 @@ export const CommandBar = ({ running, disabled, onStart, onStop }: Props) => {
           <span className="sr-only">Start run</span>
         </button>
       )}
-      <kbd>{navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K"}</kbd>
     </form>
   );
 };
