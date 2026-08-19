@@ -15,6 +15,7 @@ import { PROVIDER_IDS, providerStatus } from "./providers/index.js";
 import { bus, snapshot, state, emit, activeRun } from "./state.js";
 import { isRunning, startRun, stopAll, stopRun } from "./orchestrator.js";
 import * as rooms from "./rooms.js";
+import { recall } from "./archive.js";
 
 const json = (res, status, payload) => {
   const body = JSON.stringify(payload);
@@ -82,6 +83,12 @@ const server = http.createServer(async (req, res) => {
       const status = error.message === "run_in_progress" ? 409 : 400;
       json(res, status, { error: error.message });
     }
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/archive") {
+    const query = sanitizeText(url.searchParams.get("q") || "", 200);
+    json(res, 200, { entries: await recall(query) });
     return;
   }
 

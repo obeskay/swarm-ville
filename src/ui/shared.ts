@@ -1,5 +1,6 @@
 export type {
   Agent,
+  ArchiveEntry,
   AgentId,
   AgentState,
   AvatarProfile,

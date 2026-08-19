@@ -78,6 +78,19 @@ adivina.
 El XP y las recompensas son estado del juego, propiedad del huerto. Nunca se
 disfrazan de confianza del modelo ni de una nota de calidad inventada.
 
+## El archivo
+
+Las corridas viven en un búfer circular de 25 y mueren con el proceso, lo que
+hacía de la fase de Alexandria el único paso del bucle que nadie podía volver a
+leer. Ahora escribe una línea JSON por corrida terminada en
+`.data/archive.jsonl` —el objetivo, su nota, el resultado y lo que costó— y el
+cuarto de Memory es donde las relees. Haz clic en Alexandria, abre el archivo y
+busca entre objetivos y notas.
+
+JSONL y no una base de datos porque una línea es el registro entero, `tail -f`
+funciona sobre él, y una línea corrupta te cuesta una corrida en vez del archivo
+completo. Cámbialo de sitio con `ARCHIVE_FILE`.
+
 ## El huerto
 
 El bucle jugable alrededor del bucle de agentes. Siembras un producto, lo mandas al
@@ -148,6 +161,7 @@ curl -X POST localhost:8765/api/runs \
   -H 'content-type: application/json' \
   -d '{"goal":"Añadir rate limiting a la API REST pública"}'
 curl -X POST localhost:8765/api/runs/stop
+curl 'localhost:8765/api/archive?q=rate%20limiting'
 ```
 
 El WebSocket en `/ws` empuja mensajes `snapshot`, `run`, `step`, `event`, `agent`,
@@ -159,6 +173,7 @@ El WebSocket en `/ws` empuja mensajes `snapshot`, `run`, `step`, `event`, `agent
 server/
   index.js          HTTP + WebSocket, middleware de seguridad
   orchestrator.js   el bucle de agentes
+  archive.js        una línea JSON por corrida terminada
   security.js       límites de tasa, chequeo de origen, tope de cuerpo, saneo
   rooms.js          presencia + señalización WebRTC
   providers/        mock, ollama, anthropic
@@ -168,7 +183,7 @@ src/
     map.ts          el trazado del pueblo
     theme.ts        paleta, rejilla de tiles, rectángulos de los cuartos
     atlas.ts        cargador del spritesheet
-  ui/               paneles
+  ui/               paneles, incluido el archivo
   lib/              cliente WebSocket, malla WebRTC
 art/manifest.json   cada sprite con su prompt
 tools/              generar el arte, empaquetar el atlas

@@ -61,6 +61,12 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
 
 产品经验值和奖励属于花园的游戏状态。它们绝不会被包装成模型置信度，或者某个编造出来的质量分。
 
+## 归档
+
+运行记录存在一个容量为 25 的环形缓冲区里，随进程一起消失——这让 Alexandria 的那一步成了整个循环中唯一没人能再读第二遍的环节。现在，每完成一次运行她都会往 `.data/archive.jsonl` 追加一行 JSON：目标、她写的那条笔记、结果，以及花了多少。Memory 工作室就是你回头读它们的地方。点开 Alexandria，打开归档，在目标和笔记里搜索。
+
+用 JSONL 而不是数据库，是因为一行就是一条完整记录，`tail -f` 直接可用，而且一行损坏只损失一次运行，不会毁掉整个归档。用 `ARCHIVE_FILE` 可以改存放位置。
+
 ## 花园
 
 包在智能体循环外面的那层可玩循环。种下一个产品，把它交给蜂群，地块就会随着真实步骤的产生，依次走过规划、设计、构建、评审、验证和交付。两次运行之间可以用能量照料它，在市集买肥料，完成村庄任务，最后收获成品换取金币、宝石和经验。
@@ -109,6 +115,7 @@ curl -X POST localhost:8765/api/runs \
   -H 'content-type: application/json' \
   -d '{"goal":"给公开的 REST API 加上限流"}'
 curl -X POST localhost:8765/api/runs/stop
+curl 'localhost:8765/api/archive?q=rate%20limiting'
 ```
 
 `/ws` 上的 WebSocket 会推送 `snapshot`、`run`、`step`、`event`、`agent`、`handoff`、`provider`，以及在线状态和 WebRTC 信令消息。
@@ -119,6 +126,7 @@ curl -X POST localhost:8765/api/runs/stop
 server/
   index.js          HTTP + WebSocket，安全中间件
   orchestrator.js   智能体循环
+  archive.js        每完成一次运行写一行 JSON
   security.js       限流、来源校验、请求体上限、内容清洗
   rooms.js          在线状态 + WebRTC 信令
   providers/        mock、ollama、anthropic
@@ -128,7 +136,7 @@ src/
     map.ts          村庄布局
     theme.ts        调色板、地砖网格、房间矩形
     atlas.ts        图集加载器
-  ui/               各类面板
+  ui/               各类面板，含归档
   lib/              WebSocket 客户端、WebRTC 网状连接
 art/manifest.json   每个精灵及其提示词
 tools/              生成美术资源、打包图集

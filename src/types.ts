@@ -52,6 +52,21 @@ export interface Run {
   note: string | null;
 }
 
+/** One line of the archivist's file. Written once, never updated. */
+export interface ArchiveEntry {
+  id: string;
+  at: string;
+  goal: string;
+  summary: string;
+  status: string;
+  provider: string;
+  model: string;
+  ms: number;
+  revisions: number;
+  steps: number;
+  tokens: number;
+}
+
 export interface LogEvent {
   id: string;
   agentId: AgentId | string;

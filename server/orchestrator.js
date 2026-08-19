@@ -1,5 +1,6 @@
 import { config } from "./config.js";
 import { resolveProvider } from "./providers/index.js";
+import { remember } from "./archive.js";
 import {
   AGENTS,
   addRun,
@@ -263,7 +264,7 @@ export const startRun = async (goal) => {
       });
 
       emit("handoff", { from: "verifier", to: "archivist" });
-      await runPhase({
+      const archiveStep = await runPhase({
         run,
         phase: "archive",
         context: { goal, work: verifyStep.output },
@@ -273,6 +274,8 @@ export const startRun = async (goal) => {
       });
 
       finish(run, "done", run.note);
+      // After finish(), so the line carries the final status and duration.
+      void remember(run, archiveStep.output);
     } catch (error) {
       finish(run, controller.signal.aborted ? "stopped" : "failed", error.message);
     } finally {

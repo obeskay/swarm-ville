@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Archive, X } from "lucide-react";
 import type { Agent, AgentState, Run } from "./shared";
 import { formatMs, formatTokens } from "./shared";
 
@@ -7,10 +7,11 @@ interface Props {
   state: AgentState;
   run: Run | null;
   onClose: () => void;
+  onOpenArchive: () => void;
 }
 
 /** What this one agent has actually done — no invented confidence scores. */
-export const AgentCard = ({ agent, state, run, onClose }: Props) => {
+export const AgentCard = ({ agent, state, run, onClose, onOpenArchive }: Props) => {
   const steps = (run?.steps ?? []).filter((step) => step.agentId === agent.id);
   const tokens = steps.reduce(
     (total, step) => total + step.usage.inputTokens + step.usage.outputTokens,
@@ -52,6 +53,12 @@ export const AgentCard = ({ agent, state, run, onClose }: Props) => {
         <pre className="agent__output">{latest.error ?? latest.output}</pre>
       ) : (
         <p className="empty">No calls in this run yet.</p>
+      )}
+
+      {agent.id === "archivist" && (
+        <button type="button" className="secondary agent__archive" onClick={onOpenArchive}>
+          <Archive size={13} /> Open the archive
+        </button>
       )}
     </section>
   );

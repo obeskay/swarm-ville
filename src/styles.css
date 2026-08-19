@@ -3036,3 +3036,42 @@ button {
   font: 500 10px var(--mono);
   font-style: normal;
 }
+
+/* The archive's one control: a filter over goals and notes. */
+.memory-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 18px 12px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(12, 10, 7, 0.5);
+  color: var(--ink-faint);
+}
+
+.memory-search input {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  outline: none;
+}
+
+.memory-note {
+  margin: 4px 0 6px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.agent__archive {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 10px;
+}

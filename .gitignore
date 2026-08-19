@@ -23,3 +23,6 @@ art/raw/
 
 # banner render output (assets/*.jpg are the committed artifacts)
 build/
+
+# the archivist writes here
+.data/

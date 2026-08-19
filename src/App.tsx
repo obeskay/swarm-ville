@@ -7,6 +7,7 @@ import { SpatialAudio } from "./lib/spatial";
 import { TopBar } from "./ui/TopBar";
 import { CommandBar } from "./ui/CommandBar";
 import { RunPanel } from "./ui/RunPanel";
+import { MemoryModal } from "./ui/MemoryModal";
 import { AgentCard } from "./ui/AgentCard";
 import { EventLog } from "./ui/EventLog";
 import { CallDock } from "./ui/CallDock";
@@ -145,6 +146,7 @@ export default function App() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
   const [showMarket, setShowMarket] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
   const [avatar, setAvatar] = useState<AvatarProfile>(loadAvatar);
   const [showAvatar, setShowAvatar] = useState(false);
   const [queuedProjectIds, setQueuedProjectIds] = useState<string[]>(loadQueue);
@@ -739,6 +741,7 @@ export default function App() {
           state={agentStates[selectedAgent.id] ?? "idle"}
           run={run}
           onClose={() => setSelected(null)}
+          onOpenArchive={() => setShowMemory(true)}
         />
       )}
 
@@ -786,6 +789,7 @@ export default function App() {
       />
       <QuestBoardModal open={showQuests} quests={quests} onClose={() => setShowQuests(false)} onClaim={claimQuest} />
       <MarketModal open={showMarket} profile={profile} onClose={() => setShowMarket(false)} onBuy={buyMarketItem} />
+      <MemoryModal open={showMemory} onClose={() => setShowMemory(false)} />
       <AvatarModal open={showAvatar} avatar={avatar} onClose={() => setShowAvatar(false)} onSave={saveAvatar} />
       <WorkspaceModal open={Boolean(workspaceProject)} project={workspaceProject} onClose={() => setWorkspaceProjectId(null)} onVisit={visitStudio} onUpdateWorkspace={updateWorkspace} />
     </div>

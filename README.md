@@ -76,6 +76,18 @@ guesses.
 Product XP and rewards are game state owned by the garden. They are never dressed
 up as model confidence or an invented quality score.
 
+## The archive
+
+Runs live in a ring buffer of 25 and die with the process, which made
+Alexandria's phase the one step in the loop nobody could ever read again. She
+now writes one JSON line per finished run to `.data/archive.jsonl` — the goal,
+her note, the outcome and what it cost — and the Memory room is where you read
+them back. Click Alexandria, open the archive, search across goals and notes.
+
+JSONL rather than a database because a line is the whole record, `tail -f` works
+on it, and a corrupt line costs you one run instead of the archive. Set
+`ARCHIVE_FILE` to move it.
+
 ## The garden
 
 The playable loop around the agentic loop. Plant a product, send it to the swarm,
@@ -144,6 +156,7 @@ curl -X POST localhost:8765/api/runs \
   -H 'content-type: application/json' \
   -d '{"goal":"Add rate limiting to the public REST API"}'
 curl -X POST localhost:8765/api/runs/stop
+curl 'localhost:8765/api/archive?q=rate%20limiting'
 ```
 
 The WebSocket at `/ws` pushes `snapshot`, `run`, `step`, `event`, `agent`,
@@ -155,6 +168,7 @@ The WebSocket at `/ws` pushes `snapshot`, `run`, `step`, `event`, `agent`,
 server/
   index.js          HTTP + WebSocket, security middleware
   orchestrator.js   the agentic loop
+  archive.js        one JSON line per finished run
   security.js       rate limits, origin checks, body caps, sanitising
   rooms.js          presence + WebRTC signalling
   providers/        mock, ollama, anthropic
@@ -164,7 +178,7 @@ src/
     map.ts          the village layout
     theme.ts        palette, tile grid, room rects
     atlas.ts        spritesheet loader
-  ui/               panels
+  ui/               panels, including the archive
   lib/              WebSocket client, WebRTC mesh
 art/manifest.json   every sprite and its prompt
 tools/              generate art, pack the atlas

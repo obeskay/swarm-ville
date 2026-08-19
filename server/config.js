@@ -35,6 +35,9 @@ export const config = {
   // last so the usual PaaS convention still works in production.
   port: int(flag("port") ?? process.env.RELAY_PORT ?? process.env.PORT, 8765),
 
+  /** Where the archivist's notes outlive the process. */
+  archiveFile: process.env.ARCHIVE_FILE || ".data/archive.jsonl",
+
   /** Browser origins allowed to reach the API and the WebSocket. */
   allowedOrigins: list(process.env.ALLOWED_ORIGINS).length
     ? list(process.env.ALLOWED_ORIGINS)
