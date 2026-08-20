@@ -185,11 +185,14 @@ export class World {
   private origin = { x: 0, y: 0 };
 
   private readonly keys = new Set<string>();
+  private readonly activePointers = new Map<number, { x: number; y: number }>();
   private wheel = 0;
   private dragging = false;
   private dragged = false;
   private dragStart = { x: 0, y: 0 };
   private camStart = { x: 0, y: 0 };
+  private pinchDistStart = 0;
+  private pinchScaleStart = 1;
 
   private frame = 0;
   private lastTime = 0;
@@ -218,6 +221,7 @@ export class World {
     canvas.addEventListener("pointerdown", this.handlePointerDown);
     canvas.addEventListener("pointermove", this.handlePointerMove);
     canvas.addEventListener("pointerup", this.handlePointerUp);
+    canvas.addEventListener("pointercancel", this.handlePointerCancel);
     canvas.addEventListener("wheel", this.handleWheel, { passive: false });
     window.addEventListener("keydown", this.handleKeyDown);
     window.addEventListener("keyup", this.handleKeyUp);
@@ -354,6 +358,11 @@ export class World {
   // ── agents and peers ───────────────────────────────────────────────────────
 
   setAgents(agents: Agent[]) {
+    const validIds = new Set(agents.map((a) => a.id));
+    for (const id of this.agents.keys()) {
+      if (!validIds.has(id)) this.agents.delete(id);
+    }
+
     const perZone = new Map<string, Agent[]>();
     for (const agent of agents) {
       const list = perZone.get(agent.zone) ?? [];
@@ -362,7 +371,6 @@ export class World {
     }
 
     for (const agent of agents) {
-      if (this.agents.has(agent.id)) continue;
       const rect = zoneTiles[agent.zone] ?? zoneTiles.build;
       const siblings = perZone.get(agent.zone) ?? [agent];
       const slot = siblings.indexOf(agent);
@@ -371,9 +379,19 @@ export class World {
       const spread = (slot + 1) / (siblings.length + 1);
       const worldX = (rect.x + spread * rect.w) / 2 - 12;
       const worldZ = (rect.y + 5 + (slot % 2) * 1.2) / 2 - 8;
-      const actor = new Actor(agent.name, agent.accent, SHEETS[agent.id] ?? "char_player", worldX, worldZ);
-      this.agents.set(agent.id, actor);
       this.workSlot.set(agent.id, slot);
+
+      const existing = this.agents.get(agent.id);
+      if (existing) {
+        existing.label = agent.name;
+        existing.accent = agent.accent;
+        existing.sheet = SHEETS[agent.id] ?? "char_player";
+        existing.homeX = worldToArtX(worldX);
+        existing.homeY = worldToArtY(worldZ);
+      } else {
+        const actor = new Actor(agent.name, agent.accent, SHEETS[agent.id] ?? "char_player", worldX, worldZ);
+        this.agents.set(agent.id, actor);
+      }
     }
   }
 
@@ -508,18 +526,54 @@ export class World {
   };
 
   private handlePointerDown = (event: PointerEvent) => {
-    this.dragging = true;
-    this.dragged = false;
-    this.dragStart = { x: event.clientX, y: event.clientY };
-    this.camStart = { ...this.camTarget };
-    this.canvas?.setPointerCapture(event.pointerId);
+    this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (this.activePointers.size === 1) {
+      this.dragging = true;
+      this.dragged = false;
+      this.dragStart = { x: event.clientX, y: event.clientY };
+      this.camStart = { ...this.camTarget };
+      this.canvas?.setPointerCapture(event.pointerId);
+    } else if (this.activePointers.size === 2) {
+      this.dragged = true;
+      const [p1, p2] = Array.from(this.activePointers.values());
+      this.pinchDistStart = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      this.pinchScaleStart = this.scale;
+      this.dragStart = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      this.camStart = { ...this.camTarget };
+    }
   };
 
   private handlePointerMove = (event: PointerEvent) => {
+    if (!this.activePointers.has(event.pointerId)) return;
+    this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (this.activePointers.size === 2) {
+      const [p1, p2] = Array.from(this.activePointers.values());
+      const currentDist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      const ratio = currentDist / Math.max(20, this.pinchDistStart);
+      if (ratio > 1.35) {
+        this.setZoom(this.pinchScaleStart + 1);
+        this.pinchDistStart = currentDist;
+        this.pinchScaleStart = this.scale;
+      } else if (ratio < 0.72) {
+        this.setZoom(this.pinchScaleStart - 1);
+        this.pinchDistStart = currentDist;
+        this.pinchScaleStart = this.scale;
+      }
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+      const dx = midX - this.dragStart.x;
+      const dy = midY - this.dragStart.y;
+      this.follow = false;
+      this.camTarget = { x: this.camStart.x - dx / this.scale, y: this.camStart.y - dy / this.scale };
+      this.clampCamera();
+      return;
+    }
+
     if (!this.dragging) return;
     const dx = event.clientX - this.dragStart.x;
     const dy = event.clientY - this.dragStart.y;
-    if (Math.abs(dx) + Math.abs(dy) > 6) this.dragged = true;
+    if (Math.abs(dx) + Math.abs(dy) > 8) this.dragged = true;
     if (!this.dragged) return;
     this.follow = false;
     this.camTarget = { x: this.camStart.x - dx / this.scale, y: this.camStart.y - dy / this.scale };
@@ -527,10 +581,38 @@ export class World {
   };
 
   private handlePointerUp = (event: PointerEvent) => {
-    if (!this.dragging) return;
-    this.dragging = false;
-    this.canvas?.releasePointerCapture(event.pointerId);
-    if (!this.dragged) this.pick(event);
+    this.activePointers.delete(event.pointerId);
+    if (this.activePointers.size === 0) {
+      if (!this.dragging) return;
+      this.dragging = false;
+      try {
+        if (this.canvas?.hasPointerCapture(event.pointerId)) {
+          this.canvas.releasePointerCapture(event.pointerId);
+        }
+      } catch {
+        // Pointer capture may have already been released
+      }
+      if (!this.dragged) this.pick(event);
+    } else if (this.activePointers.size === 1) {
+      const remaining = Array.from(this.activePointers.values())[0];
+      this.dragStart = { x: remaining.x, y: remaining.y };
+      this.camStart = { ...this.camTarget };
+    }
+  };
+
+  private handlePointerCancel = (event: PointerEvent) => {
+    this.activePointers.delete(event.pointerId);
+    if (this.activePointers.size === 0) {
+      this.dragging = false;
+      this.dragged = false;
+      try {
+        if (this.canvas?.hasPointerCapture(event.pointerId)) {
+          this.canvas.releasePointerCapture(event.pointerId);
+        }
+      } catch {
+        // Pointer capture may have already been released
+      }
+    }
   };
 
   private handleWheel = (event: WheelEvent) => {
@@ -554,7 +636,8 @@ export class World {
       const frame = this.charFrame(actor.sheet, actor.dir);
       const w = frame?.w ?? 22;
       const h = frame?.h ?? 40;
-      if (Math.abs(artX - actor.x) <= w / 2 + 2 && artY >= actor.y - h - 2 && artY <= actor.y + 3) {
+      // Generous hitboxes for easy touch tapping on mobile & iPad
+      if (Math.abs(artX - actor.x) <= w / 2 + 8 && artY >= actor.y - h - 8 && artY <= actor.y + 8) {
         this.onSelectAgent(id);
         return;
       }
@@ -562,7 +645,7 @@ export class World {
 
     for (let index = 0; index < this.projects.length; index += 1) {
       const rect = this.plotRect(index);
-      if (artX >= rect.x && artX <= rect.x + rect.w && artY >= rect.y - 16 && artY <= rect.y + rect.h) {
+      if (artX >= rect.x - 4 && artX <= rect.x + rect.w + 4 && artY >= rect.y - 20 && artY <= rect.y + rect.h + 8) {
         this.onSelectProject(this.projects[index].id);
         return;
       }
@@ -570,10 +653,10 @@ export class World {
 
     const market = zoneTiles.market;
     if (
-      artX >= market.x * TILE &&
-      artX <= (market.x + market.w) * TILE &&
-      artY >= market.y * TILE &&
-      artY <= (market.y + market.h) * TILE
+      artX >= market.x * TILE - 4 &&
+      artX <= (market.x + market.w) * TILE + 4 &&
+      artY >= market.y * TILE - 4 &&
+      artY <= (market.y + market.h) * TILE + 4
     ) {
       this.onSelectMarket();
       return;
@@ -1020,6 +1103,7 @@ export class World {
     this.canvas?.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas?.removeEventListener("pointermove", this.handlePointerMove);
     this.canvas?.removeEventListener("pointerup", this.handlePointerUp);
+    this.canvas?.removeEventListener("pointercancel", this.handlePointerCancel);
     this.canvas?.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("keydown", this.handleKeyDown);
     window.removeEventListener("keyup", this.handleKeyUp);

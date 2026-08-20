@@ -49,6 +49,20 @@ const QUEUE_STORAGE = "swarm-ville.queue.v1";
 const AVATAR_STORAGE = "swarm-ville.avatar.v1";
 const DEFAULT_PROFILE: GameProfile = { xp: 45, coins: 1320, gems: 51, harvests: 0, energy: 8, maxEnergy: 8, tended: 0, projectsCreated: 0, studioVisits: 0, claimedQuests: [], fertilizer: 1, dailyTended: 0, dailyHarvests: 0, plotLimit: 6 };
 const DEFAULT_AVATAR: AvatarProfile = { name: "You", accent: "#e0a86b", skin: "#f0d7bd" };
+const DEFAULT_AGENTS: Agent[] = [
+  { id: "planner", name: "Atlas", role: "Planner", zone: "plan", accent: "#d9a05b" },
+  { id: "builder", name: "Neo", role: "Builder", zone: "build", accent: "#8fbf8a" },
+  { id: "reviewer", name: "Socrates", role: "Reviewer", zone: "review", accent: "#d98878" },
+  { id: "verifier", name: "Vanguard", role: "Verifier", zone: "review", accent: "#c9a2d4" },
+  { id: "archivist", name: "Alexandria", role: "Archivist", zone: "memory", accent: "#7fa8d4" }
+];
+const DEFAULT_AGENT_STATES: Record<string, AgentState> = {
+  planner: "idle",
+  builder: "idle",
+  reviewer: "idle",
+  verifier: "idle",
+  archivist: "idle"
+};
 const DEFAULT_PROJECTS: Project[] = [
   { id: "project-launch", name: "Launch Garden", kind: "Web app", brief: "A focused launch workspace that keeps a small product moving.", stage: "build", progress: 68, color: "#e0a86b", createdAt: "2026-08-01T12:00:00.000Z" },
   { id: "project-orbit", name: "Orbit API", kind: "Data tool", brief: "A simple service that turns product signals into useful next actions.", stage: "design", progress: 34, color: "#8fbf8a", createdAt: "2026-08-03T12:00:00.000Z" }
@@ -125,8 +139,8 @@ export default function App() {
   const selfIdRef = useRef<string | null>(null);
 
   const [status, setStatus] = useState<Status>("connecting");
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
+  const [agents, setAgents] = useState<Agent[]>(DEFAULT_AGENTS);
+  const [agentStates, setAgentStates] = useState<Record<string, AgentState>>(DEFAULT_AGENT_STATES);
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [provider, setProvider] = useState("mock");
   const [providerNote, setProviderNote] = useState<string | null>(null);
@@ -407,6 +421,11 @@ export default function App() {
     const world = new World();
     worldRef.current = world;
     world.init(canvasRef.current);
+    world.setAgents(DEFAULT_AGENTS);
+    for (const agent of DEFAULT_AGENTS) {
+      world.setAgentState(agent.id, "idle", agent.zone);
+    }
+    world.setProjects(projects);
     world.onSelectAgent = (id) => { setSelected(id); if (id) setSelectedProjectId(null); };
     world.onSelectProject = (id) => { setSelectedProjectId(id); setSelected(null); if (id) world.focusOnProject(id); };
     world.onSelectMarket = () => { dismissGuide(); setSelected(null); setSelectedProjectId(null); setShowMarket(true); };

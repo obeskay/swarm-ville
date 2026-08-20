@@ -57,8 +57,13 @@ body,
   width: 100%;
   height: 100%;
   margin: 0;
+  padding: 0;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
   background: var(--night);
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
 button,
@@ -72,6 +77,7 @@ button {
   border: 0;
   background: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 :focus-visible {
@@ -92,6 +98,7 @@ button {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   isolation: isolate;
 }
 
@@ -111,6 +118,9 @@ button {
   width: 100%;
   height: 100%;
   cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .stage:active {
@@ -928,28 +938,6 @@ button {
   }
 }
 
-@media (max-width: 900px) {
-  .run,
-  .agent {
-    width: calc(100vw - 32px);
-    max-height: 40vh;
-  }
-
-  .agent {
-    top: auto;
-    bottom: 150px;
-  }
-
-  .log {
-    left: 16px;
-    width: auto;
-  }
-
-  .log__list {
-    max-height: 150px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1697,16 +1685,24 @@ button {
   z-index: 100;
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: max(16px, env(safe-area-inset-top, 16px)) max(16px, env(safe-area-inset-right, 16px)) max(16px, env(safe-area-inset-bottom, 16px)) max(16px, env(safe-area-inset-left, 16px));
   background: rgba(20, 18, 16, 0.76);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .modal {
   width: min(650px, 100%);
-  max-height: min(760px, calc(100vh - 36px));
-  overflow: auto;
+  max-width: 100%;
+  max-height: min(760px, calc(100dvh - 36px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   padding: 18px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -2806,86 +2802,84 @@ button {
 
 /* Keep the game readable on a phone: the map remains visible between one
  * active panel and the bottom toolbelt. */
-@media (max-width: 700px) {
-  .app--plot-open .garden {
-    display: none;
-  }
+/* ------------------------------------------------------------- responsive system -- */
 
-  .plot-detail {
-    max-height: calc(100vh - 190px);
-    overflow-y: auto;
-  }
-
+/* Tablet & iPad (701px to 1024px) */
+@media (max-width: 1024px) {
   .garden {
-    top: 58px;
-    right: 16px;
-    left: 16px;
-    width: auto;
-    transform: none;
-  }
-
-  .garden__plots {
-    max-height: 154px;
-    overflow-y: auto;
-  }
-
-  .guide,
-  .plot-detail {
-    top: auto;
-    right: 16px;
-    bottom: 126px;
-    left: 16px;
-    width: auto;
-  }
-
-  .run {
-    top: 58px;
-    right: 16px;
-    left: 16px;
-    width: auto;
-    max-height: calc(100vh - 190px);
-  }
-
-  .run-dock {
-    right: 16px;
-    left: 16px;
-    width: auto;
-  }
-
-  .app--running .garden {
-    display: none;
+    top: max(16px, env(safe-area-inset-top, 16px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    left: auto;
+    width: 300px;
+    max-width: calc(100vw - 32px);
   }
 
   .agent {
     top: auto;
-    right: 16px;
-    bottom: 126px;
-    left: 16px;
-    width: auto;
+    right: max(16px, env(safe-area-inset-right, 16px));
+    bottom: max(88px, env(safe-area-inset-bottom, 88px));
+    left: auto;
+    width: min(340px, calc(100vw - 32px));
+    max-height: 52vh;
+  }
+
+  .plot-detail {
+    top: auto;
+    right: max(16px, env(safe-area-inset-right, 16px));
+    bottom: max(88px, env(safe-area-inset-bottom, 88px));
+    left: auto;
+    width: min(340px, calc(100vw - 32px));
+    max-height: 52vh;
+  }
+
+  .run {
+    top: max(58px, env(safe-area-inset-top, 58px));
+    left: max(16px, env(safe-area-inset-left, 16px));
+    right: auto;
+    width: min(440px, calc(100vw - 32px));
+    max-height: 52vh;
   }
 
   .log {
-    right: 16px;
-    bottom: 68px;
-    left: auto;
-    width: min(220px, calc(100vw - 32px));
-  }
-
-  .map-controls {
-    bottom: 68px;
-  }
-
-  .map-controls small {
-    display: none;
+    left: max(16px, env(safe-area-inset-left, 16px));
+    bottom: max(88px, env(safe-area-inset-bottom, 88px));
+    width: min(280px, calc(100vw - 32px));
   }
 
   .command {
-    bottom: 16px;
-    width: calc(100vw - 32px);
+    bottom: max(18px, env(safe-area-inset-bottom, 18px));
+    width: min(520px, calc(100% - 32px));
   }
 
-  .call {
-    bottom: 126px;
+  .workspace-modal {
+    width: min(840px, 100%);
+    max-height: min(780px, calc(100dvh - 36px));
+  }
+
+  .workspace-body {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+}
+
+/* Mobile First (<= 700px) */
+@media (max-width: 700px) {
+  .app--plot-open .garden,
+  .app--running .garden {
+    display: none;
+  }
+
+  .topbar {
+    top: max(10px, env(safe-area-inset-top, 10px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    gap: 8px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .topbar__right {
+    gap: 5px;
+    flex-shrink: 1;
+    min-width: 0;
   }
 
   .topbar__right .select,
@@ -2893,18 +2887,131 @@ button {
     display: none;
   }
 
+  .brand__copy strong {
+    font-size: 13px;
+  }
+
+  .avatar-chip {
+    max-width: 110px;
+    padding: 0 7px 0 4px;
+    font-size: 10px;
+  }
+
+  .garden {
+    top: max(52px, env(safe-area-inset-top, 52px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+    max-width: calc(100vw - 20px);
+    transform: none;
+    padding: 10px;
+  }
+
+  .garden__plots {
+    max-height: 140px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .guide,
+  .plot-detail,
+  .agent {
+    top: auto;
+    right: max(10px, env(safe-area-inset-right, 10px));
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 150px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .run {
+    top: max(52px, env(safe-area-inset-top, 52px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 150px);
+    overflow-y: auto;
+  }
+
+  .run-dock {
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+  }
+
+  .log {
+    right: max(10px, env(safe-area-inset-right, 10px));
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+    left: auto;
+    width: min(220px, calc(100vw - 20px));
+  }
+
+  .map-controls {
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+  }
+
+  .map-controls small {
+    display: none;
+  }
+
+  .map-controls__button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .command {
+    bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 20px);
+    max-width: calc(100vw - 20px);
+    padding: 5px 5px 5px 12px;
+  }
+
+  .command input {
+    font-size: 13px;
+    height: 36px;
+  }
+
+  .command__go,
+  .command__stop {
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .call {
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+  }
+
+  .modal-layer {
+    padding: max(10px, env(safe-area-inset-top, 10px)) max(10px, env(safe-area-inset-right, 10px)) max(10px, env(safe-area-inset-bottom, 10px)) max(10px, env(safe-area-inset-left, 10px));
+  }
+
+  .modal {
+    max-height: calc(100dvh - 20px);
+    padding: 14px;
+  }
+
   .workspace-modal {
-    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 20px);
   }
 
   .workspace-toolbar {
     align-items: flex-start;
     flex-direction: column;
+    padding: 8px 10px;
+    gap: 6px;
   }
 
   .workspace-toolbar > div {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .workspace-body {
@@ -2916,101 +3023,60 @@ button {
     display: flex;
     gap: 5px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
   }
 
   .workspace-files button {
     width: auto;
     min-width: max-content;
+    white-space: nowrap;
   }
 
   .workspace-code,
   .workspace-preview {
-    height: calc(100vh - 250px);
+    height: calc(100dvh - 270px);
     max-height: none;
   }
 
   .library-modal {
-    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 20px);
   }
 
   .library-stats {
-    gap: 5px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
   }
 
   .library-stats span {
+    padding: 6px;
+  }
+
+  .library-stats strong {
+    font-size: 13px;
+  }
+
+  .library-row {
+    flex-wrap: wrap;
+    gap: 6px;
     padding: 8px;
   }
 
-  .library-row__actions .secondary:first-child {
-    padding: 0 7px;
-  }
-}
-
-.project-existing__row strong,
-.project-existing__row small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-existing__row strong {
-  color: var(--ink-soft);
-  font-size: 10px;
-}
-
-.project-existing__row small {
-  margin-top: 2px;
-  color: var(--ink-faint);
-  font: 8px var(--mono);
-}
-
-.project-existing__row b {
-  color: var(--sage);
-  font: 8px var(--mono);
-  font-weight: 500;
-}
-
-@media (max-width: 900px) {
-  .garden {
-    top: 60px;
-    left: auto;
-    right: 16px;
-    width: 300px;
-    transform: none;
+  .library-row__actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 4px;
   }
 
-  .plot-detail {
-    top: auto;
-    right: 16px;
-    left: auto;
-    bottom: 92px;
-  }
-}
-
-@media (max-width: 620px) {
-  .garden {
-    top: 58px;
-    right: 12px;
-    left: 12px;
-    width: auto;
-  }
-
-  .plot-detail {
-    right: 12px;
-    bottom: 86px;
-    left: 12px;
-    width: auto;
+  .library-row__actions .secondary {
+    padding: 0 9px;
+    min-height: 32px;
   }
 
   .kind-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .avatar-chip {
-    max-width: 118px;
   }
 }
 
