@@ -1,4 +1,13 @@
-import type { Agent, AgentId, AgentState, AvatarProfile, Peer, Project } from "../types";
+import type {
+  Agent,
+  AgentId,
+  AgentState,
+  AvatarProfile,
+  Peer,
+  Project,
+  WorldContextMenuEvent,
+  WorldContextMenuTarget
+} from "../types";
 import { loadAtlas } from "./atlas";
 import type { Atlas, Dir, Frame } from "./atlas";
 import { buildMap } from "./map";
@@ -74,6 +83,13 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
+  age: number;
+  color: string;
+}
+
+interface Waypoint {
+  x: number;
+  y: number;
   age: number;
   color: string;
 }
@@ -175,6 +191,7 @@ export class World {
   private selectedProjectId: string | null = null;
   private readonly arcs: Arc[] = [];
   private readonly particles: Particle[] = [];
+  private readonly waypoints: Waypoint[] = [];
 
   private scale = 1;
   private dpr = 1;
@@ -193,6 +210,7 @@ export class World {
   private camStart = { x: 0, y: 0 };
   private pinchDistStart = 0;
   private pinchScaleStart = 1;
+  private longPressTimer: number | null = null;
 
   private frame = 0;
   private lastTime = 0;
@@ -204,6 +222,7 @@ export class World {
   onSelectAgent: (id: AgentId | null) => void = () => {};
   onSelectProject: (id: string | null) => void = () => {};
   onSelectMarket: () => void = () => {};
+  onContextMenu: (event: WorldContextMenuEvent) => void = () => {};
   onSelfMoved: (x: number, z: number) => void = () => {};
   onCommonsChange: (inside: boolean) => void = () => {};
 
@@ -222,6 +241,7 @@ export class World {
     canvas.addEventListener("pointermove", this.handlePointerMove);
     canvas.addEventListener("pointerup", this.handlePointerUp);
     canvas.addEventListener("pointercancel", this.handlePointerCancel);
+    canvas.addEventListener("contextmenu", this.handleContextMenu);
     canvas.addEventListener("wheel", this.handleWheel, { passive: false });
     window.addEventListener("keydown", this.handleKeyDown);
     window.addEventListener("keyup", this.handleKeyUp);
@@ -506,6 +526,33 @@ export class World {
     this.clampCamera();
   }
 
+  focusOnAgent(id: AgentId) {
+    const actor = this.agents.get(id);
+    if (!actor) return;
+    this.follow = false;
+    this.camTarget = { x: actor.x, y: actor.y };
+    this.clampCamera();
+  }
+
+  focusOnLocation(worldX: number, worldZ: number) {
+    this.follow = false;
+    this.camTarget = { x: worldToArtX(worldX), y: worldToArtY(worldZ) };
+    this.clampCamera();
+  }
+
+  walkTo(worldX: number, worldZ: number) {
+    if (!this.self) return;
+    const clampedX = clamp(worldX, BOUNDS.minX, BOUNDS.maxX);
+    const clampedZ = clamp(worldZ, BOUNDS.minZ, BOUNDS.maxZ);
+    this.self.moveTo(clampedX, clampedZ);
+    this.engage();
+    this.addWaypoint(worldToArtX(clampedX), worldToArtY(clampedZ), this.selfAccent || "#e0a86b");
+  }
+
+  addWaypoint(artX: number, artY: number, color = "#e0a86b") {
+    this.waypoints.push({ x: artX, y: artY, age: 0, color });
+  }
+
   // ── input ──────────────────────────────────────────────────────────────────
 
   private handleKeyDown = (event: KeyboardEvent) => {
@@ -525,7 +572,69 @@ export class World {
     this.keys.clear();
   };
 
+  private resolveTarget(artX: number, artY: number, worldX: number, worldZ: number): WorldContextMenuTarget {
+    for (const [id, actor] of this.agents) {
+      const frame = this.charFrame(actor.sheet, actor.dir);
+      const w = frame?.w ?? 22;
+      const h = frame?.h ?? 40;
+      if (Math.abs(artX - actor.x) <= w / 2 + 10 && artY >= actor.y - h - 10 && artY <= actor.y + 10) {
+        return { type: "agent", agentId: id };
+      }
+    }
+
+    for (let index = 0; index < this.projects.length; index += 1) {
+      const rect = this.plotRect(index);
+      if (artX >= rect.x - 6 && artX <= rect.x + rect.w + 6 && artY >= rect.y - 20 && artY <= rect.y + rect.h + 8) {
+        return { type: "plot", projectId: this.projects[index].id };
+      }
+    }
+
+    const market = zoneTiles.market;
+    if (
+      artX >= market.x * TILE - 6 &&
+      artX <= (market.x + market.w) * TILE + 6 &&
+      artY >= market.y * TILE - 6 &&
+      artY <= (market.y + market.h) * TILE + 6
+    ) {
+      return { type: "market" };
+    }
+
+    const inCommons = Math.hypot(worldX - COMMONS.x, worldZ - COMMONS.z) < COMMONS.w / 2;
+    if (inCommons) {
+      return { type: "commons" };
+    }
+
+    return { type: "ground" };
+  }
+
+  private triggerContextMenu(screenX: number, screenY: number) {
+    if (!this.canvas) return;
+    const bounds = this.canvas.getBoundingClientRect();
+    const artX = this.origin.x + (screenX - bounds.left) / this.scale;
+    const artY = this.origin.y + (screenY - bounds.top) / this.scale;
+    const worldX = clamp(artToWorldX(artX), BOUNDS.minX, BOUNDS.maxX);
+    const worldZ = clamp(artToWorldZ(artY), BOUNDS.minZ, BOUNDS.maxZ);
+    const target = this.resolveTarget(artX, artY, worldX, worldZ);
+
+    this.onContextMenu({
+      screenX,
+      screenY,
+      worldX,
+      worldZ,
+      artX,
+      artY,
+      target
+    });
+  }
+
+  private handleContextMenu = (event: MouseEvent) => {
+    event.preventDefault();
+    this.triggerContextMenu(event.clientX, event.clientY);
+  };
+
   private handlePointerDown = (event: PointerEvent) => {
+    if (event.button === 2) return;
+
     this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (this.activePointers.size === 1) {
       this.dragging = true;
@@ -533,7 +642,21 @@ export class World {
       this.dragStart = { x: event.clientX, y: event.clientY };
       this.camStart = { ...this.camTarget };
       this.canvas?.setPointerCapture(event.pointerId);
+
+      if (event.pointerType === "touch") {
+        if (this.longPressTimer) window.clearTimeout(this.longPressTimer);
+        const { clientX, clientY } = event;
+        this.longPressTimer = window.setTimeout(() => {
+          if (!this.dragged && this.canvas) {
+            this.triggerContextMenu(clientX, clientY);
+          }
+        }, 450);
+      }
     } else if (this.activePointers.size === 2) {
+      if (this.longPressTimer) {
+        window.clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
       this.dragged = true;
       const [p1, p2] = Array.from(this.activePointers.values());
       this.pinchDistStart = Math.hypot(p1.x - p2.x, p1.y - p2.y);
@@ -573,7 +696,13 @@ export class World {
     if (!this.dragging) return;
     const dx = event.clientX - this.dragStart.x;
     const dy = event.clientY - this.dragStart.y;
-    if (Math.abs(dx) + Math.abs(dy) > 8) this.dragged = true;
+    if (Math.abs(dx) + Math.abs(dy) > 8) {
+      this.dragged = true;
+      if (this.longPressTimer) {
+        window.clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+    }
     if (!this.dragged) return;
     this.follow = false;
     this.camTarget = { x: this.camStart.x - dx / this.scale, y: this.camStart.y - dy / this.scale };
@@ -581,6 +710,10 @@ export class World {
   };
 
   private handlePointerUp = (event: PointerEvent) => {
+    if (this.longPressTimer) {
+      window.clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
     this.activePointers.delete(event.pointerId);
     if (this.activePointers.size === 0) {
       if (!this.dragging) return;
@@ -601,6 +734,10 @@ export class World {
   };
 
   private handlePointerCancel = (event: PointerEvent) => {
+    if (this.longPressTimer) {
+      window.clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
     this.activePointers.delete(event.pointerId);
     if (this.activePointers.size === 0) {
       this.dragging = false;
@@ -617,8 +754,6 @@ export class World {
 
   private handleWheel = (event: WheelEvent) => {
     event.preventDefault();
-    // Zoom levels are whole numbers, so a single tick must not jump one. Wait
-    // for a deliberate amount of scrolling before stepping.
     this.wheel += event.deltaY;
     if (Math.abs(this.wheel) < 120) return;
     this.setZoom(this.scale + (this.wheel < 0 ? 1 : -1));
@@ -636,7 +771,6 @@ export class World {
       const frame = this.charFrame(actor.sheet, actor.dir);
       const w = frame?.w ?? 22;
       const h = frame?.h ?? 40;
-      // Generous hitboxes for easy touch tapping on mobile & iPad
       if (Math.abs(artX - actor.x) <= w / 2 + 8 && artY >= actor.y - h - 8 && artY <= actor.y + 8) {
         this.onSelectAgent(id);
         return;
@@ -667,6 +801,7 @@ export class World {
       const worldZ = clamp(artToWorldZ(artY), BOUNDS.minZ, BOUNDS.maxZ);
       this.self.moveTo(worldX, worldZ);
       this.engage();
+      this.addWaypoint(artX, artY, this.selfAccent || "#e0a86b");
       return;
     }
 
@@ -971,6 +1106,33 @@ export class World {
 
     this.drawArcs(ctx);
 
+    for (const wp of this.waypoints) {
+      const progress = wp.age / 0.8;
+      const radius = 3 + progress * 12;
+      const alpha = clamp(1 - progress, 0, 1);
+      ctx.strokeStyle = wp.color;
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(
+        Math.round(wp.x - this.origin.x),
+        Math.round(wp.y - this.origin.y),
+        Math.round(radius),
+        0,
+        Math.PI * 2
+      );
+      ctx.stroke();
+
+      ctx.fillStyle = wp.color;
+      ctx.globalAlpha = alpha;
+      ctx.fillRect(
+        Math.round(wp.x - this.origin.x) - 1,
+        Math.round(wp.y - this.origin.y) - 1,
+        2,
+        2
+      );
+    }
+
     for (const particle of this.particles) {
       ctx.globalAlpha = clamp(1 - particle.age / 1.4, 0, 1);
       ctx.fillStyle = particle.color;
@@ -1070,6 +1232,10 @@ export class World {
       this.arcs[index].age += dt;
       if (this.arcs[index].age >= 1.5) this.arcs.splice(index, 1);
     }
+    for (let index = this.waypoints.length - 1; index >= 0; index -= 1) {
+      this.waypoints[index].age += dt;
+      if (this.waypoints[index].age >= 0.8) this.waypoints.splice(index, 1);
+    }
     for (let index = this.particles.length - 1; index >= 0; index -= 1) {
       const particle = this.particles[index];
       particle.age += dt;
@@ -1099,11 +1265,16 @@ export class World {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    if (this.longPressTimer) {
+      window.clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
     cancelAnimationFrame(this.frame);
     this.canvas?.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas?.removeEventListener("pointermove", this.handlePointerMove);
     this.canvas?.removeEventListener("pointerup", this.handlePointerUp);
     this.canvas?.removeEventListener("pointercancel", this.handlePointerCancel);
+    this.canvas?.removeEventListener("contextmenu", this.handleContextMenu);
     this.canvas?.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("keydown", this.handleKeyDown);
     window.removeEventListener("keyup", this.handleKeyUp);
@@ -1113,6 +1284,7 @@ export class World {
     this.peers.clear();
     this.arcs.length = 0;
     this.particles.length = 0;
+    this.waypoints.length = 0;
     this.terrain = null;
     this.atlas = null;
     this.self = null;

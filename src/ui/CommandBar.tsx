@@ -4,15 +4,23 @@ import { ArrowUp, Square } from "lucide-react";
 interface Props {
   running: boolean;
   disabled: boolean;
+  prefill?: string;
   onStart: (goal: string) => void;
   onStop: () => void;
 }
 
 /** The only way to start work: one field, one button. */
-export const CommandBar = ({ running, disabled, onStart, onStop }: Props) => {
+export const CommandBar = ({ running, disabled, prefill, onStart, onStop }: Props) => {
   const shortcut = navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K";
   const [goal, setGoal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (prefill) {
+      setGoal(prefill);
+      inputRef.current?.focus();
+    }
+  }, [prefill]);
 
   useEffect(() => {
     const focusOnShortcut = (event: KeyboardEvent) => {

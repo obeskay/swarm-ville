@@ -22,6 +22,7 @@ import { ProjectLibraryModal } from "./ui/ProjectLibraryModal";
 import { QuestBoardModal } from "./ui/QuestBoardModal";
 import { AvatarModal } from "./ui/AvatarModal";
 import { MarketModal } from "./ui/MarketModal";
+import { ContextMenu } from "./ui/ContextMenu";
 import { getQuests } from "./lib/quests";
 import { buildWorkspace } from "./lib/workspace";
 import type {
@@ -37,7 +38,8 @@ import type {
   ReleaseArtifact,
   Run,
   ServerMessage,
-  MarketItemId
+  MarketItemId,
+  WorldContextMenuEvent
 } from "./types";
 
 const EVENT_LIMIT = 60;
@@ -165,6 +167,8 @@ export default function App() {
   const [showAvatar, setShowAvatar] = useState(false);
   const [queuedProjectIds, setQueuedProjectIds] = useState<string[]>(loadQueue);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<WorldContextMenuEvent | null>(null);
+  const [commandPrefill, setCommandPrefill] = useState<string | undefined>(undefined);
   const activeProjectRef = useRef<string | null>(null);
   const queueRef = useRef<string[]>([]);
   const advanceQueueRef = useRef(false);
@@ -429,6 +433,7 @@ export default function App() {
     world.onSelectAgent = (id) => { setSelected(id); if (id) setSelectedProjectId(null); };
     world.onSelectProject = (id) => { setSelectedProjectId(id); setSelected(null); if (id) world.focusOnProject(id); };
     world.onSelectMarket = () => { dismissGuide(); setSelected(null); setSelectedProjectId(null); setShowMarket(true); };
+    world.onContextMenu = (event) => { setContextMenu(event); };
     world.onSelfMoved = (x, z) => {
       spatialRef.current?.listener(x, z);
       relayRef.current?.send({ type: "presence:move", x, z });
@@ -691,6 +696,22 @@ export default function App() {
     worldRef.current?.focusOnProject(id);
   }, [dismissGuide]);
 
+  const removeProject = useCallback((projectId: string) => {
+    setProjects((previous) => previous.filter((p) => p.id !== projectId));
+    if (selectedProjectId === projectId) setSelectedProjectId(null);
+    showReward("Plot removed", "Soil cleared for a new project seed.");
+  }, [selectedProjectId, showReward]);
+
+  const copyText = useCallback((text: string, title = "Copied to clipboard") => {
+    void navigator.clipboard.writeText(text).then(() => {
+      showReward(title, text.length > 40 ? `${text.slice(0, 40)}…` : text);
+    }).catch(() => undefined);
+  }, [showReward]);
+
+  const prefillGoal = useCallback((prompt: string) => {
+    setCommandPrefill(prompt);
+  }, []);
+
   return (
     <div className={`app ${running ? "app--running" : ""} ${selectedProject ? "app--plot-open" : ""}`}>
       <canvas ref={canvasRef} className="stage" aria-label="Live map of the swarm" />
@@ -792,8 +813,43 @@ export default function App() {
       <CommandBar
         running={running}
         disabled={status !== "online"}
+        prefill={commandPrefill}
         onStart={(goal) => { activeProjectRef.current = null; send({ type: "run:start", goal }); }}
         onStop={() => send({ type: "run:stop" })}
+      />
+
+      <ContextMenu
+        menu={contextMenu}
+        agents={agents}
+        agentStates={agentStates}
+        projects={projects}
+        profile={profile}
+        running={running}
+        activeProjectId={activeProjectId}
+        queuedProjectIds={queuedProjectIds}
+        inCall={inCall}
+        onClose={() => setContextMenu(null)}
+        onSelectAgent={(id) => { dismissGuide(); setSelected(id); setSelectedProjectId(null); }}
+        onWalkTo={(x, z) => { dismissGuide(); worldRef.current?.walkTo(x, z); }}
+        onFocusAgent={(id) => worldRef.current?.focusOnAgent(id)}
+        onFocusProject={(id) => worldRef.current?.focusOnProject(id)}
+        onSelectProject={(id) => selectProject(id)}
+        onWorkProject={(proj) => workProject(proj)}
+        onTendProject={(proj) => tendProject(proj)}
+        onFertilizeProject={(proj) => fertilizeProject(proj)}
+        onHarvestProject={harvestProject}
+        onOpenWorkspace={(id) => openWorkspace(id)}
+        onRemoveProject={removeProject}
+        onOpenLibrary={() => { dismissGuide(); setShowLibrary(true); }}
+        onOpenQuests={() => { dismissGuide(); setShowQuests(true); }}
+        onOpenMarket={() => { dismissGuide(); setShowMarket(true); }}
+        onOpenMemory={() => { dismissGuide(); setShowMemory(true); }}
+        onOpenNewProject={() => { dismissGuide(); setShowProject(true); }}
+        onToggleCall={() => (inCall ? leaveCall() : void joinCall())}
+        onBuyMarketItem={buyMarketItem}
+        onResetView={() => { setSelected(null); setSelectedProjectId(null); worldRef.current?.resetView(); }}
+        onCopyText={copyText}
+        onPrefillGoal={prefillGoal}
       />
 
       <ProjectModal open={showProject} projects={projects} onClose={() => setShowProject(false)} onCreate={createProject} />

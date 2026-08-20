@@ -196,3 +196,20 @@ export type ServerMessage =
   | { type: "room:peer-left"; data: { id: string } }
   | { type: "room:full"; data: { capacity: number } }
   | { type: "rtc:signal"; data: { from: string; payload: unknown } };
+
+export type WorldContextMenuTarget =
+  | { type: "agent"; agentId: AgentId }
+  | { type: "plot"; projectId: string }
+  | { type: "market" }
+  | { type: "commons" }
+  | { type: "ground" };
+
+export interface WorldContextMenuEvent {
+  screenX: number;
+  screenY: number;
+  worldX: number;
+  worldZ: number;
+  artX: number;
+  artY: number;
+  target: WorldContextMenuTarget;
+}

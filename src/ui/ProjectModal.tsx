@@ -11,9 +11,10 @@ const kinds = [
 ] as const;
 
 const starterIdeas = [
-  { label: "Client portal", name: "Client Portal", brief: "A calm portal where customers can see status, documents and next steps.", kind: "web" as const },
-  { label: "AI concierge", name: "AI Concierge", brief: "A helpful assistant that answers common questions and routes the right work.", kind: "agent" as const },
-  { label: "Ops dashboard", name: "Ops Dashboard", brief: "A focused view of the signals a team needs to act on every morning.", kind: "data" as const }
+  { label: "Launch Garden", name: "Launch Garden", brief: "A calm, focused product workspace that keeps builders shipping continuous iterations.", kind: "web" as const },
+  { label: "Orbit Engine", name: "Orbit Engine", brief: "Real-time telemetry and signal processing pipeline turning raw streams into structured decisions.", kind: "data" as const },
+  { label: "Pulse Concierge", name: "Pulse Concierge", brief: "Autonomous AI assistant that resolves complex user inquiries and orchestrates multi-step workflows.", kind: "agent" as const },
+  { label: "Prism Mobile UI", name: "Prism Design Kit", brief: "Universal design system tokens and responsive components for mobile and web surfaces.", kind: "mobile" as const }
 ];
 
 export const ProjectModal = ({ open, projects, onClose, onCreate }: Props) => {
