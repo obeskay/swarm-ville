@@ -10,18 +10,24 @@ export const createOllamaProvider = () => ({
   model: config.ollama.model,
 
   async complete({ system, prompt, maxTokens = 700, signal }) {
-    const response = await fetch(`${config.ollama.url}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal,
-      body: JSON.stringify({
-        model: config.ollama.model,
-        system,
-        prompt,
-        stream: false,
-        options: { num_predict: maxTokens }
-      })
-    });
+    let response;
+    try {
+      response = await fetch(`${config.ollama.url}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal,
+        body: JSON.stringify({
+          model: config.ollama.model,
+          system,
+          prompt,
+          stream: false,
+          options: { num_predict: maxTokens }
+        })
+      });
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      throw new Error(`Ollama unreachable at ${config.ollama.url}. Start 'ollama serve' or select Antigravity (agy -p)`);
+    }
 
     if (!response.ok) throw new Error(`ollama_http_${response.status}`);
 

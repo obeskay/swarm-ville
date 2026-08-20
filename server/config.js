@@ -54,7 +54,7 @@ export const config = {
     ? list(process.env.ALLOWED_ORIGINS)
     : DEFAULT_ORIGINS,
 
-  provider: (process.env.PROVIDER || "mock").toLowerCase(),
+  provider: (process.env.PROVIDER || "agy").toLowerCase(),
 
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || "",

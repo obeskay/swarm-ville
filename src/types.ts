@@ -213,3 +213,37 @@ export interface WorldContextMenuEvent {
   artY: number;
   target: WorldContextMenuTarget;
 }
+
+export interface SpeechBubble {
+  id: string;
+  actorId: AgentId | string;
+  text: string;
+  age: number;
+  duration: number;
+  color?: string;
+  isEmote?: boolean;
+}
+
+export interface AgentArchetype {
+  id: AgentId | string;
+  name: string;
+  role: string;
+  zone: ZoneId;
+  accent: string;
+  sheet: string;
+  iconName?: string;
+  tagline: string;
+  description: string;
+  personality: string;
+  systemPrompt: string;
+  quickPrompts: string[];
+}
+
+export interface AgentChatMessage {
+  id: string;
+  sender: "user" | "agent";
+  agentId: AgentId | string;
+  text: string;
+  timestamp: number;
+}
+
