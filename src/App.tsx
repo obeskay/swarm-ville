@@ -23,6 +23,9 @@ import { QuestBoardModal } from "./ui/QuestBoardModal";
 import { AvatarModal } from "./ui/AvatarModal";
 import { MarketModal } from "./ui/MarketModal";
 import { ContextMenu } from "./ui/ContextMenu";
+import { AgentChatModal } from "./ui/AgentChatModal";
+import { AgentSpawnerDock } from "./ui/AgentSpawnerDock";
+import { getArchetype } from "./lib/archetypes";
 import { getQuests } from "./lib/quests";
 import { buildWorkspace } from "./lib/workspace";
 import type {
@@ -168,11 +171,13 @@ export default function App() {
   const [queuedProjectIds, setQueuedProjectIds] = useState<string[]>(loadQueue);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<WorldContextMenuEvent | null>(null);
+  const [chatAgent, setChatAgent] = useState<Agent | null>(null);
   const [commandPrefill, setCommandPrefill] = useState<string | undefined>(undefined);
   const activeProjectRef = useRef<string | null>(null);
   const queueRef = useRef<string[]>([]);
   const advanceQueueRef = useRef(false);
   const rewardTimerRef = useRef<number | null>(null);
+  const handleAgentDroppedRef = useRef<(agentId: string, worldX: number, worldZ: number, target: import("./types").WorldContextMenuTarget) => void>(() => {});
 
   const [inCall, setInCall] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -434,6 +439,9 @@ export default function App() {
     world.onSelectProject = (id) => { setSelectedProjectId(id); setSelected(null); if (id) world.focusOnProject(id); };
     world.onSelectMarket = () => { dismissGuide(); setSelected(null); setSelectedProjectId(null); setShowMarket(true); };
     world.onContextMenu = (event) => { setContextMenu(event); };
+    world.onAgentDropped = (agentId, worldX, worldZ, target) => {
+      handleAgentDroppedRef.current(agentId, worldX, worldZ, target);
+    };
     world.onSelfMoved = (x, z) => {
       spatialRef.current?.listener(x, z);
       relayRef.current?.send({ type: "presence:move", x, z });
@@ -712,6 +720,62 @@ export default function App() {
     setCommandPrefill(prompt);
   }, []);
 
+  const spawnAgent = useCallback((archetypeId: string, worldX?: number, worldZ?: number) => {
+    const arch = getArchetype(archetypeId);
+    const targetX = worldX ?? (Math.random() * 4 - 2);
+    const targetZ = worldZ ?? (Math.random() * 4 - 2);
+
+    setAgents((prev) => {
+      if (prev.some((a) => a.id === arch.id)) {
+        return prev;
+      }
+      const newAgent: Agent = {
+        id: arch.id as AgentId,
+        name: arch.name,
+        role: arch.role,
+        zone: arch.zone,
+        accent: arch.accent
+      };
+      const nextList = [...prev, newAgent];
+      worldRef.current?.setAgents(nextList);
+      return nextList;
+    });
+
+    worldRef.current?.celebrateSpawn(targetX, targetZ, arch.accent);
+    worldRef.current?.addSpeechBubble(arch.id, "¡Listo para cooperar!", 3.5, false, arch.accent);
+    showReward(`✨ ${arch.name} en el mapa`, `${arch.role} · ¡Listo para trabajar!`);
+  }, [showReward]);
+
+  const summonAgent = useCallback((agentId: string) => {
+    worldRef.current?.summonAgent(agentId);
+    const ag = agents.find((a) => a.id === agentId);
+    showReward(`📢 Llamando a ${ag?.name || "agente"}`, "Se dirige a tu posición actual.");
+  }, [agents, showReward]);
+
+  const summonAll = useCallback(() => {
+    worldRef.current?.summonAll();
+    showReward("📣 Reunión de la Aldea", "Todos los agentes se dirigen hacia ti.");
+  }, [showReward]);
+
+  const handleAgentDropped = useCallback((agentId: string, worldX: number, worldZ: number, target: import("./types").WorldContextMenuTarget) => {
+    const arch = getArchetype(agentId);
+    if (target.type === "plot") {
+      const proj = projects.find((p) => p.id === target.projectId);
+      if (proj) {
+        worldRef.current?.celebrateProject(proj.id);
+        worldRef.current?.addSpeechBubble(agentId, "¡Cuidando plot!", 3.0, false, arch.accent);
+        showReward(`🌱 ${arch.name} asignado`, `Apoyando en «${proj.name}»`);
+        tendProject(proj);
+      }
+    } else {
+      spawnAgent(agentId, worldX, worldZ);
+    }
+  }, [projects, showReward, spawnAgent, tendProject]);
+
+  useEffect(() => {
+    handleAgentDroppedRef.current = handleAgentDropped;
+  }, [handleAgentDropped]);
+
   return (
     <div className={`app ${running ? "app--running" : ""} ${selectedProject ? "app--plot-open" : ""}`}>
       <canvas ref={canvasRef} className="stage" aria-label="Live map of the swarm" />
@@ -772,8 +836,20 @@ export default function App() {
         onClose={() => { setSelectedProjectId(null); worldRef.current?.resetView(); }}
       />}
 
-      {run && runOpen && <RunPanel run={run} agents={agents} onClose={() => setRunOpen(false)} />}
-      {run && !runOpen && <button type="button" className={`run-dock run-dock--${run.status}`} onClick={() => setRunOpen(true)} aria-label="Open latest run"><ListChecks size={13} /><strong>{run.goal}</strong></button>}
+      {run && runOpen && (
+        <RunPanel
+          run={run}
+          agents={agents}
+          onClose={() => setRunOpen(false)}
+          onChatWithAgent={(ag) => setChatAgent(ag)}
+        />
+      )}
+      {run && !runOpen && (
+        <button type="button" className={`run-dock run-dock--${run.status}`} onClick={() => setRunOpen(true)} aria-label="Open latest run">
+          <ListChecks size={13} />
+          <strong>{run.goal}</strong>
+        </button>
+      )}
 
       {selectedAgent && (
         <AgentCard
@@ -782,6 +858,8 @@ export default function App() {
           run={run}
           onClose={() => setSelected(null)}
           onOpenArchive={() => setShowMemory(true)}
+          onChat={(ag) => setChatAgent(ag)}
+          onSummon={(ag) => summonAgent(ag.id)}
         />
       )}
 
@@ -799,6 +877,25 @@ export default function App() {
           onLeave={leaveCall}
         />
       )}
+
+      <AgentSpawnerDock
+        activeAgents={agents}
+        onSpawnAgent={(id, wx, wz) => spawnAgent(id, wx, wz)}
+        onSummonAll={summonAll}
+        onSelectAgent={(id) => {
+          setSelected(id as AgentId);
+          worldRef.current?.focusOnAgent(id as AgentId);
+        }}
+      />
+
+      <AgentChatModal
+        open={Boolean(chatAgent)}
+        agent={chatAgent}
+        projectName={selectedProject?.name}
+        onClose={() => setChatAgent(null)}
+        onSummon={(id) => summonAgent(id)}
+        onAgentSpoke={(id, text) => worldRef.current?.addSpeechBubble(id, text, 4.0)}
+      />
 
       <EventLog events={events} agents={agents} />
 
@@ -850,6 +947,8 @@ export default function App() {
         onResetView={() => { setSelected(null); setSelectedProjectId(null); worldRef.current?.resetView(); }}
         onCopyText={copyText}
         onPrefillGoal={prefillGoal}
+        onChatWithAgent={(ag) => setChatAgent(ag)}
+        onSummonAgent={(ag) => summonAgent(ag.id)}
       />
 
       <ProjectModal open={showProject} projects={projects} onClose={() => setShowProject(false)} onCreate={createProject} />

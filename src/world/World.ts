@@ -5,6 +5,7 @@ import type {
   AvatarProfile,
   Peer,
   Project,
+  SpeechBubble,
   WorldContextMenuEvent,
   WorldContextMenuTarget
 } from "../types";
@@ -192,6 +193,8 @@ export class World {
   private readonly arcs: Arc[] = [];
   private readonly particles: Particle[] = [];
   private readonly waypoints: Waypoint[] = [];
+  private readonly speechBubbles: SpeechBubble[] = [];
+  private activeDropTarget: { worldX: number; worldZ: number; artX: number; artY: number; target: WorldContextMenuTarget; agentId?: string } | null = null;
 
   private scale = 1;
   private dpr = 1;
@@ -225,6 +228,7 @@ export class World {
   onContextMenu: (event: WorldContextMenuEvent) => void = () => {};
   onSelfMoved: (x: number, z: number) => void = () => {};
   onCommonsChange: (inside: boolean) => void = () => {};
+  onAgentDropped: (agentId: string, worldX: number, worldZ: number, target: WorldContextMenuTarget) => void = () => {};
 
   init(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -243,6 +247,9 @@ export class World {
     canvas.addEventListener("pointercancel", this.handlePointerCancel);
     canvas.addEventListener("contextmenu", this.handleContextMenu);
     canvas.addEventListener("wheel", this.handleWheel, { passive: false });
+    canvas.addEventListener("dragover", this.handleDragOver);
+    canvas.addEventListener("dragleave", this.handleDragLeave);
+    canvas.addEventListener("drop", this.handleDrop);
     window.addEventListener("keydown", this.handleKeyDown);
     window.addEventListener("keyup", this.handleKeyUp);
     window.addEventListener("blur", this.handleBlur);
@@ -516,6 +523,96 @@ export class World {
       });
     }
   }
+
+  celebrateSpawn(worldX: number, worldZ: number, color = "#ffd47f") {
+    const artX = worldToArtX(worldX);
+    const artY = worldToArtY(worldZ);
+    for (let n = 0; n < 28; n += 1) {
+      const angle = (n / 28) * Math.PI * 2;
+      const speed = 42 + (n % 4) * 18;
+      this.particles.push({
+        x: artX,
+        y: artY - 14,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 45,
+        age: 0,
+        color: n % 3 === 0 ? "#ffd47f" : n % 2 === 0 ? "#FD82B0" : color
+      });
+    }
+    this.addWaypoint(artX, artY, color);
+    this.addWaypoint(artX, artY, "#ffd47f");
+  }
+
+  addSpeechBubble(actorId: string, text: string, duration = 3.5, isEmote = false, color?: string) {
+    const existingIdx = this.speechBubbles.findIndex((b) => b.actorId === actorId);
+    if (existingIdx >= 0) this.speechBubbles.splice(existingIdx, 1);
+
+    this.speechBubbles.push({
+      id: `bubble-${Date.now()}-${Math.random()}`,
+      actorId,
+      text,
+      age: 0,
+      duration,
+      color,
+      isEmote
+    });
+  }
+
+  summonAgent(id: AgentId | string) {
+    const actor = this.agents.get(id as AgentId);
+    if (!actor || !this.self) return;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 1.6;
+    const targetX = clamp(artToWorldX(this.self.x) + Math.cos(angle) * dist, BOUNDS.minX, BOUNDS.maxX);
+    const targetZ = clamp(artToWorldZ(this.self.y) + Math.sin(angle) * dist, BOUNDS.minZ, BOUNDS.maxZ);
+    actor.moveTo(targetX, targetZ);
+    this.addSpeechBubble(id, "!", 2.2, true, actor.accent);
+    this.addWaypoint(worldToArtX(targetX), worldToArtY(targetZ), actor.accent);
+  }
+
+  summonAll() {
+    if (!this.self) return;
+    const list = Array.from(this.agents.entries());
+    list.forEach(([id, actor], index) => {
+      const angle = ((index + 1) / (list.length + 1)) * Math.PI * 1.5 - Math.PI * 0.75;
+      const dist = 2.2;
+      const targetX = clamp(artToWorldX(this.self!.x) + Math.cos(angle) * dist, BOUNDS.minX, BOUNDS.maxX);
+      const targetZ = clamp(artToWorldZ(this.self!.y) + Math.sin(angle) * dist, BOUNDS.minZ, BOUNDS.maxZ);
+      actor.moveTo(targetX, targetZ);
+      this.addSpeechBubble(id, "¡Llamado!", 2.8, false, actor.accent);
+      this.addWaypoint(worldToArtX(targetX), worldToArtY(targetZ), actor.accent);
+    });
+    this.addWaypoint(this.self.x, this.self.y, "#ffd47f");
+  }
+
+  handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    if (!this.canvas) return;
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    const bounds = this.canvas.getBoundingClientRect();
+    const artX = this.origin.x + (e.clientX - bounds.left) / this.scale;
+    const artY = this.origin.y + (e.clientY - bounds.top) / this.scale;
+    const worldX = clamp(artToWorldX(artX), BOUNDS.minX, BOUNDS.maxX);
+    const worldZ = clamp(artToWorldZ(artY), BOUNDS.minZ, BOUNDS.maxZ);
+    const target = this.resolveTarget(artX, artY, worldX, worldZ);
+    this.activeDropTarget = { worldX, worldZ, artX, artY, target };
+  };
+
+  handleDragLeave = () => {
+    this.activeDropTarget = null;
+  };
+
+  handleDrop = (e: DragEvent) => {
+    e.preventDefault();
+    if (!this.canvas || !this.activeDropTarget) {
+      this.activeDropTarget = null;
+      return;
+    }
+    const archetypeId = e.dataTransfer?.getData("text/plain") || "builder";
+    const { worldX, worldZ, target } = this.activeDropTarget;
+    this.activeDropTarget = null;
+    this.onAgentDropped(archetypeId, worldX, worldZ, target);
+  };
 
   focusOnProject(id: string) {
     const index = this.projects.findIndex((project) => project.id === id);
@@ -1139,6 +1236,20 @@ export class World {
       ctx.fillRect(Math.round(particle.x - this.origin.x), Math.round(particle.y - this.origin.y), 3, 3);
     }
     ctx.globalAlpha = 1;
+
+    if (this.activeDropTarget) {
+      const dt = this.activeDropTarget;
+      const pulse = 0.5 + Math.sin(this.elapsed * 9) * 0.35;
+      ctx.strokeStyle = "#ffd47f";
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = pulse;
+      ctx.beginPath();
+      ctx.ellipse(dt.artX - this.origin.x, dt.artY - this.origin.y, 16, 9, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(254, 205, 12, 0.25)";
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
   }
 
   /**
@@ -1205,6 +1316,42 @@ export class World {
     for (const actor of this.peers.values()) tag(actor, true);
     if (this.self) tag(this.self, false);
 
+    // Render speech bubbles
+    for (const bubble of this.speechBubbles) {
+      let targetActor: Actor | undefined = this.agents.get(bubble.actorId as AgentId);
+      if (!targetActor && (bubble.actorId === "self" || bubble.actorId === "player")) targetActor = this.self ?? undefined;
+      if (!targetActor) continue;
+
+      const frame = this.charFrame(targetActor.sheet, targetActor.dir);
+      const h = frame?.h ?? 40;
+      const x = toScreenX(targetActor.x);
+      const y = toScreenY(targetActor.y - h) - 28;
+
+      ctx.font = bubble.isEmote ? "bold 15px ui-sans-serif, system-ui, sans-serif" : "bold 11px ui-sans-serif, system-ui, sans-serif";
+      const textWidth = ctx.measureText(bubble.text).width;
+      const bw = Math.max(28, textWidth + 16);
+      const bh = bubble.isEmote ? 26 : 22;
+
+      ctx.fillStyle = "rgba(22, 20, 15, 0.94)";
+      ctx.strokeStyle = bubble.color || "#ffd47f";
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 7);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y + bh / 2 - 0.5);
+      ctx.lineTo(x, y + bh / 2 + 5);
+      ctx.lineTo(x + 4, y + bh / 2 - 0.5);
+      ctx.fillStyle = "rgba(22, 20, 15, 0.94)";
+      ctx.fill();
+
+      ctx.fillStyle = "#fef8ec";
+      ctx.fillText(bubble.text, x, y);
+    }
+
     ctx.restore();
   }
 
@@ -1224,10 +1371,15 @@ export class World {
     this.clampCamera();
     this.cam.x = smooth(this.cam.x, this.camTarget.x, 0.035, dt);
     this.cam.y = smooth(this.cam.y, this.camTarget.y, 0.035, dt);
-    // Whole art pixels only, or the tiles crawl against each other as it pans.
     this.origin.x = Math.round(this.cam.x - this.view.width / 2);
     this.origin.y = Math.round(this.cam.y - this.view.height / 2);
 
+    for (let index = this.speechBubbles.length - 1; index >= 0; index -= 1) {
+      this.speechBubbles[index].age += dt;
+      if (this.speechBubbles[index].age >= this.speechBubbles[index].duration) {
+        this.speechBubbles.splice(index, 1);
+      }
+    }
     for (let index = this.arcs.length - 1; index >= 0; index -= 1) {
       this.arcs[index].age += dt;
       if (this.arcs[index].age >= 1.5) this.arcs.splice(index, 1);

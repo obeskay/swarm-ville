@@ -64,6 +64,8 @@ interface Props {
   onResetView: () => void;
   onCopyText: (text: string, label: string) => void;
   onPrefillGoal: (prompt: string) => void;
+  onChatWithAgent?: (agent: Agent) => void;
+  onSummonAgent?: (agent: Agent) => void;
 }
 
 export const ContextMenu = ({
@@ -97,7 +99,9 @@ export const ContextMenu = ({
   onBuyMarketItem,
   onResetView,
   onCopyText,
-  onPrefillGoal
+  onPrefillGoal,
+  onChatWithAgent,
+  onSummonAgent
 }: Props) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -205,6 +209,34 @@ export const ContextMenu = ({
         <div className="context-menu__divider" />
 
         <div className="context-menu__actions">
+          {onChatWithAgent && (
+            <button
+              type="button"
+              className="context-menu__item context-menu__item--highlight"
+              onClick={() => {
+                onChatWithAgent(agent);
+                onClose();
+              }}
+            >
+              <Bot size={13} />
+              <span>Platicar con {agent.name}</span>
+            </button>
+          )}
+
+          {onSummonAgent && (
+            <button
+              type="button"
+              className="context-menu__item"
+              onClick={() => {
+                onSummonAgent(agent);
+                onClose();
+              }}
+            >
+              <Footprints size={13} />
+              <span>Llamar a {agent.name} aquí</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="context-menu__item"
@@ -215,7 +247,7 @@ export const ContextMenu = ({
             }}
           >
             <Eye size={13} />
-            <span>Inspect {agent.name}</span>
+            <span>Ver detalles de {agent.name}</span>
             <kbd className="context-menu__shortcut">I</kbd>
           </button>
 
@@ -228,7 +260,7 @@ export const ContextMenu = ({
             }}
           >
             <Footprints size={13} />
-            <span>Walk over to {agent.name}</span>
+            <span>Caminar hacia {agent.name}</span>
             <kbd className="context-menu__shortcut">W</kbd>
           </button>
 
@@ -241,7 +273,7 @@ export const ContextMenu = ({
             }}
           >
             <Terminal size={13} />
-            <span>Assign task to {agent.name}</span>
+            <span>Asignar tarea a {agent.name}</span>
           </button>
 
           {agent.id === "archivist" ? (
