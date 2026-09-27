@@ -5,7 +5,7 @@
 五个智能体，五间工作室，一座小镇。工作流正在发生的时候就看得见，而不是事后翻日志。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/Node-20%2B-black)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/Node-22%2B-black)](https://nodejs.org)
 [![无需 API key](https://img.shields.io/badge/API%20key-可选-black)](#模型提供方)
 
 [English](README.md) · [Español](README.es.md) · 中文
@@ -24,7 +24,7 @@
 
 ## 快速开始
 
-需要 Node 20+。
+需要 Node 22+。
 
 ```bash
 npm install

@@ -5,7 +5,7 @@
 Five agents, five rooms, one town. Watch the loop happen instead of reading about it afterwards.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/Node-20%2B-black)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/Node-22%2B-black)](https://nodejs.org)
 [![No API key needed](https://img.shields.io/badge/API%20key-optional-black)](#providers)
 
 English · [Español](README.es.md) · [中文](README.zh-CN.md)
@@ -30,7 +30,7 @@ revise. You do not read the state, you look at it.
 
 ## Quick start
 
-Node 20+.
+Node 22+.
 
 ```bash
 npm install

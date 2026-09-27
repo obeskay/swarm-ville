@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "concurrently --names \"relay,web\" -c \"yellow,cyan\" \"npm:dev:relay\" \"npm:dev:web\"",

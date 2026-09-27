@@ -5,7 +5,7 @@
 Cinco agentes, cinco cuartos, un pueblo. Mira el bucle mientras ocurre, en vez de leerlo después.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/Node-20%2B-black)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/Node-22%2B-black)](https://nodejs.org)
 [![Sin API key](https://img.shields.io/badge/API%20key-opcional-black)](#proveedores)
 
 [English](README.md) · Español · [中文](README.zh-CN.md)
@@ -30,7 +30,7 @@ hacia Neo: el revisor pidió corregir. No lees el estado, lo miras.
 
 ## Arranque
 
-Node 20+.
+Node 22+.
 
 ```bash
 npm install
