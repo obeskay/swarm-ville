@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
+import { homedir } from "node:os";
 
 const CROSSTALK_SCRIPT =
   process.env.CROSSTALK_SCRIPT ||
-  "/Users/ov/.gemini/config/plugins/crosstalk/skills/crosstalk/crosstalk.sh";
+  `${homedir()}/.gemini/config/plugins/crosstalk/skills/crosstalk/crosstalk.sh`;
 
 /**
  * Crosstalk multi-model bridge provider.
