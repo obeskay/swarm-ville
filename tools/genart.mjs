@@ -1,26 +1,23 @@
 /**
- * Generate every SwarmVille art asset with gpt-image-2 through the private relay.
+ * Generate every SwarmVille art asset with gpt-image-2 through an OpenAI-compatible
+ * images API: RELAY_URL (base URL, e.g. https://host/openai) and RELAY_KEY.
  * Resumable: an asset whose PNG already exists in art/raw is skipped, so a
  * rerun only fills the gaps. `size` is ignored by the API, so the aspect ratio
  * is asked for inside the prompt and fixed later by tools/pixelize.py.
  */
 import { mkdirSync, existsSync, writeFileSync, readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const RAW = `${ROOT}art/raw`;
 mkdirSync(RAW, { recursive: true });
 
 const manifest = JSON.parse(readFileSync(`${ROOT}art/manifest.json`, "utf8"));
-const KEY =
-  process.env.RELAY_KEY ||
-  execSync(`grep -o 'ANTHROPIC_AUTH_TOKEN="[^"]*"' ~/.zshrc | head -1 | sed 's/.*="//;s/"//'`, {
-    shell: "/bin/zsh"
-  })
-    .toString()
-    .trim();
-
-const ENDPOINT = "https://claude.cloud.obeskay.com/openai/v1/images/generations";
+const { RELAY_URL, RELAY_KEY: KEY } = process.env;
+if (!RELAY_URL || !KEY) {
+  console.error("Set RELAY_URL (an OpenAI-compatible base URL, e.g. https://host/openai) and RELAY_KEY.");
+  process.exit(1);
+}
+const ENDPOINT = `${RELAY_URL.replace(/\/$/, "")}/v1/images/generations`;
 const CONCURRENCY = 6;
 
 const jobs = [

@@ -157,6 +157,7 @@ quantises to 64 colours and packs a single atlas. Character sheets are one image
 of four poses, split on the empty columns between them.
 
 ```bash
+export RELAY_URL=https://host/openai RELAY_KEY=…  # any OpenAI-compatible images API
 npm run art                        # generate whatever is missing, then repack
 python3 tools/pixelize.py --selftest
 ```

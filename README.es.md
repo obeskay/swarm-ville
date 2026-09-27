@@ -164,6 +164,7 @@ una imagen con cuatro poses, separadas por las columnas vacías que quedan entre
 ellas.
 
 ```bash
+export RELAY_URL=https://host/openai RELAY_KEY=…  # cualquier API de imágenes compatible con OpenAI
 npm run art                        # genera lo que falte y vuelve a empaquetar
 python3 tools/pixelize.py --selftest
 ```

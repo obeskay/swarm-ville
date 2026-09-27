@@ -108,6 +108,7 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
 每一块地砖、每一件道具、每一个角色都由 `gpt-image-2` 生成，再压回像素网格。`art/manifest.json` 为每个素材保存一条提示词，`tools/genart.mjs` 负责生成，`tools/pixelize.py` 负责裁剪、缩小、硬化 alpha 通道、量化到 64 色，并打包成单张图集。角色表是一张包含四个朝向的图，靠姿势之间的空列切分。
 
 ```bash
+export RELAY_URL=https://host/openai RELAY_KEY=…  # 任意兼容 OpenAI 的图像 API
 npm run art                        # 补齐缺失的素材并重新打包
 python3 tools/pixelize.py --selftest
 ```
