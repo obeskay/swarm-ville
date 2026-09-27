@@ -2913,16 +2913,17 @@ button {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Above the map controls and the event log, which own the 76px row. */
   .guide,
   .plot-detail,
   .agent {
     top: auto;
     right: max(10px, env(safe-area-inset-right, 10px));
-    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+    bottom: max(138px, env(safe-area-inset-bottom, 138px));
     left: max(10px, env(safe-area-inset-left, 10px));
     width: auto;
     max-width: calc(100vw - 20px);
-    max-height: calc(100dvh - 150px);
+    max-height: calc(100dvh - 212px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -3480,11 +3481,14 @@ button {
    ========================================================================== */
 
 /* -------------------------------------------------- Agent Spawner Dock ---- */
+/* Sits one row above the command bar, clear of the map controls, and under
+   every panel so it can never cover one. */
 .agent-spawner-dock {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
-  z-index: 25;
+  bottom: 80px;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
   background: rgba(22, 19, 15, 0.94);
   border: 1px solid rgba(224, 168, 107, 0.22);
   border-radius: 14px;
@@ -3497,6 +3501,14 @@ button {
   gap: 8px;
   max-width: 480px;
   transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* Below this width the bottom edge belongs to the command bar, the map
+   controls and the event log, and drag-and-drop needs a mouse anyway. */
+@media (max-width: 1024px) {
+  .agent-spawner-dock {
+    display: none;
+  }
 }
 
 .agent-spawner-dock--collapsed {
