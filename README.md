@@ -40,8 +40,9 @@ npm run dev
 Open <http://127.0.0.1:5173>. That starts Vite on 5173 and the relay on 8765;
 Vite proxies `/api` and `/ws`, so the browser only ever talks to one origin.
 
-No API key required. The default `mock` provider runs the whole loop offline,
-revise cycle included, so the town is alive on first boot.
+No API key required. The default provider, `agy`, needs the Antigravity CLI;
+without it the relay falls back to the offline `mock` simulator, which runs the
+whole loop, revise cycle included, so the town is alive on first boot.
 
 Walk with **WASD** or click the ground. Type an objective in the bar at the bottom
 and watch five agents do it.
@@ -135,9 +136,13 @@ Pick one in the top bar, or set `PROVIDER` in `.env`.
 
 | id | What it is | Needs |
 |---|---|---|
-| `mock` | Offline simulator. The default. | nothing |
+| `agy` | Gemini 3.6 Flash through the Antigravity CLI. The default. | `agy` on the PATH |
+| `agy-pro` | Gemini 2.5 Pro through the Antigravity CLI | `agy` on the PATH |
+| `crosstalk` | The crosstalk bridge (`crosstalk.sh ask`) | `agy` on the PATH and `CROSSTALK_SCRIPT` |
+| `claude` | Claude Code, headless (`claude -p`) | `claude` on the PATH |
 | `ollama` | Local models over Ollama | Ollama running locally |
 | `anthropic` | Claude via the Anthropic API | `ANTHROPIC_API_KEY` |
+| `mock` | Offline simulator. The fallback. | nothing |
 
 Keys are read by the relay from the environment and never reach the browser. If a
 provider cannot be constructed the relay falls back to `mock` and marks the
@@ -176,7 +181,7 @@ curl -X POST localhost:8765/api/runs \
   -d '{"goal":"Add rate limiting to the public REST API"}'
 curl -X POST localhost:8765/api/runs/stop
 curl 'localhost:8765/api/archive?q=rate%20limiting'
-curl -X POST localhost:8765/api/releases -d '{"html":"<h1>hi</h1>"}'
+curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hi</h1>"}'
 ```
 
 The WebSocket at `/ws` pushes `snapshot`, `run`, `step`, `event`, `agent`,
@@ -192,7 +197,7 @@ server/
   releases.js       publishes and serves a single-file release
   security.js       rate limits, origin checks, body caps, sanitising
   rooms.js          presence + WebRTC signalling
-  providers/        mock, ollama, anthropic
+  providers/        agy, claude, crosstalk, ollama, anthropic, mock
 src/
   world/
     World.ts        the 2D renderer

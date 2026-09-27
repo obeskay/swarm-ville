@@ -33,7 +33,7 @@ npm run dev
 
 打开 <http://127.0.0.1:5173>。这会同时启动 5173 端口的 Vite 和 8765 端口的中继服务；Vite 会把 `/api` 和 `/ws` 代理过去，所以浏览器只和一个源通信。
 
-不需要任何 API key。默认的 `mock` 提供方会完整离线跑完整个循环，包括返工，所以第一次启动小镇就是活的。
+不需要任何 API key。默认的提供方 `agy` 需要 Antigravity CLI；没有它时，中继会回退到离线的 `mock` 模拟器，完整跑完整个循环，包括返工，所以第一次启动小镇就是活的。
 
 用 **WASD** 走路，或者直接点地面。在底部的输入框里写下一个目标，然后看五个智能体去完成它。
 
@@ -93,9 +93,13 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
 
 | id | 是什么 | 需要 |
 |---|---|---|
-| `mock` | 离线模拟器，默认选项 | 无 |
+| `agy` | 通过 Antigravity CLI 使用 Gemini 3.6 Flash，默认选项 | PATH 上有 `agy` |
+| `agy-pro` | 通过 Antigravity CLI 使用 Gemini 2.5 Pro | PATH 上有 `agy` |
+| `crosstalk` | crosstalk 桥接（`crosstalk.sh ask`） | PATH 上有 `agy`，并设置 `CROSSTALK_SCRIPT` |
+| `claude` | 无界面模式的 Claude Code（`claude -p`） | PATH 上有 `claude` |
 | `ollama` | 通过 Ollama 跑本地模型 | 本地运行中的 Ollama |
 | `anthropic` | 通过 Anthropic API 使用 Claude | `ANTHROPIC_API_KEY` |
+| `mock` | 离线模拟器，回退选项 | 无 |
 
 密钥由中继服务从环境变量读取，永远不会到达浏览器。如果某个提供方无法初始化，中继会回退到 `mock` 并在选择器上做出标记，而不是悄悄失败。
 
@@ -124,7 +128,7 @@ curl -X POST localhost:8765/api/runs \
   -d '{"goal":"给公开的 REST API 加上限流"}'
 curl -X POST localhost:8765/api/runs/stop
 curl 'localhost:8765/api/archive?q=rate%20limiting'
-curl -X POST localhost:8765/api/releases -d '{"html":"<h1>hi</h1>"}'
+curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hi</h1>"}'
 ```
 
 `/ws` 上的 WebSocket 会推送 `snapshot`、`run`、`step`、`event`、`agent`、`handoff`、`provider`，以及在线状态和 WebRTC 信令消息。
@@ -139,7 +143,7 @@ server/
   releases.js       发布并提供单文件交付物
   security.js       限流、来源校验、请求体上限、内容清洗
   rooms.js          在线状态 + WebRTC 信令
-  providers/        mock、ollama、anthropic
+  providers/        agy、claude、crosstalk、ollama、anthropic、mock
 src/
   world/
     World.ts        2D 渲染器

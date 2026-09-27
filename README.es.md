@@ -41,9 +41,10 @@ Abre <http://127.0.0.1:5173>. Eso levanta Vite en el 5173 y el relay en el 8765;
 Vite hace de proxy para `/api` y `/ws`, así que el navegador sólo habla con un
 origen.
 
-No hace falta ninguna API key. El proveedor `mock` que viene por defecto corre el
-bucle entero sin conexión, ciclo de corrección incluido, así que el pueblo está
-vivo desde el primer arranque.
+No hace falta ninguna API key. El proveedor por defecto, `agy`, necesita el CLI
+de Antigravity; sin él, el relay cae al simulador `mock`, que corre el bucle
+entero sin conexión, ciclo de corrección incluido, así que el pueblo está vivo
+desde el primer arranque.
 
 Camina con **WASD** o haz clic en el suelo. Escribe un objetivo en la barra de
 abajo y mira a los cinco agentes hacerlo.
@@ -141,9 +142,13 @@ Elige uno en la barra superior, o pon `PROVIDER` en el `.env`.
 
 | id | Qué es | Necesita |
 |---|---|---|
-| `mock` | Simulador sin conexión. El de por defecto. | nada |
+| `agy` | Gemini 3.6 Flash por el CLI de Antigravity. El de por defecto. | `agy` en el PATH |
+| `agy-pro` | Gemini 2.5 Pro por el CLI de Antigravity | `agy` en el PATH |
+| `crosstalk` | El puente crosstalk (`crosstalk.sh ask`) | `agy` en el PATH y `CROSSTALK_SCRIPT` |
+| `claude` | Claude Code sin interfaz (`claude -p`) | `claude` en el PATH |
 | `ollama` | Modelos locales vía Ollama | Ollama corriendo en local |
 | `anthropic` | Claude por la API de Anthropic | `ANTHROPIC_API_KEY` |
+| `mock` | Simulador sin conexión. El de respaldo. | nada |
 
 Las llaves las lee el relay del entorno y nunca llegan al navegador. Si un
 proveedor no se puede construir, el relay cae a `mock` y marca el selector, en vez
@@ -183,7 +188,7 @@ curl -X POST localhost:8765/api/runs \
   -d '{"goal":"Añadir rate limiting a la API REST pública"}'
 curl -X POST localhost:8765/api/runs/stop
 curl 'localhost:8765/api/archive?q=rate%20limiting'
-curl -X POST localhost:8765/api/releases -d '{"html":"<h1>hi</h1>"}'
+curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hi</h1>"}'
 ```
 
 El WebSocket en `/ws` empuja mensajes `snapshot`, `run`, `step`, `event`, `agent`,
@@ -199,7 +204,7 @@ server/
   releases.js       publica y sirve una entrega de un solo archivo
   security.js       límites de tasa, chequeo de origen, tope de cuerpo, saneo
   rooms.js          presencia + señalización WebRTC
-  providers/        mock, ollama, anthropic
+  providers/        agy, claude, crosstalk, ollama, anthropic, mock
 src/
   world/
     World.ts        el renderer 2D
