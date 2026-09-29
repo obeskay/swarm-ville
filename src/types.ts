@@ -218,6 +218,7 @@ export type ServerMessage =
   | { type: "presence:update"; data: Peer }
   | { type: "presence:move"; data: { id: string; x: number; z: number } }
   | { type: "presence:leave"; data: { id: string } }
+  | { type: "presence:emote"; data: { id: string; emote: string } }
   | { type: "room:joined"; data: { peers: Peer[] } }
   | { type: "room:peer-joined"; data: Peer }
   | { type: "room:peer-left"; data: { id: string } }

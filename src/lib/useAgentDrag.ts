@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { World } from "../world/World";
+import { sfx } from "./sfx";
 
 export interface Spot {
   x: number;
@@ -78,6 +79,7 @@ export const useAgentDrag = ({ getWorld, ready, onDrop, onBlocked }: Options) =>
     if (!current.active) {
       if (Math.hypot(event.clientX - current.x, event.clientY - current.y) < DRAG_THRESHOLD) return;
       current.active = true;
+      sfx.pick();
       document.body.classList.add("is-dragging");
       setDragging(true);
     }

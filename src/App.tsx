@@ -3,6 +3,10 @@ import { World } from "./world/World";
 import { PALETTE_CHOICES } from "./world/theme";
 import { DEFAULT_AGENTS, useSwarm } from "./lib/useSwarm";
 import { useCall } from "./lib/useCall";
+import { EMOTES } from "./lib/emotes";
+import { sfx } from "./lib/sfx";
+import { addShipped, loadStreak, touchStreak } from "./lib/streak";
+import { useLatest, usePresence } from "./lib/usePresence";
 import { t } from "./lib/i18n";
 import type { Key } from "./lib/i18n";
 import { TopBar } from "./ui/TopBar";
@@ -15,6 +19,8 @@ import { AgentCard } from "./ui/AgentCard";
 import { CallBubbles, CallControls } from "./ui/Call";
 import { MemoryModal } from "./ui/MemoryModal";
 import { Settings } from "./ui/Settings";
+import { EmoteLayer } from "./ui/Emotes";
+import type { EmoteEvent } from "./ui/Emotes";
 import { Toasts, useToasts } from "./ui/Toast";
 import type { Spot } from "./lib/useAgentDrag";
 import type { AgentId, ServerMessage } from "./types";
@@ -68,15 +74,30 @@ export default function App() {
   const [, refresh] = useState(0);
   const { items: toasts, notify } = useToasts();
 
+  // Reactions rise from a head for a moment and are gone.
+  const [emotes, setEmotes] = useState<EmoteEvent[]>([]);
+  const emoteKey = useRef(0);
+  const showEmote = useCallback((id: string, emote: string) => {
+    const key = emoteKey.current++;
+    setEmotes((previous) => [...previous.slice(-11), { key, id, emote }]);
+    window.setTimeout(() => setEmotes((previous) => previous.filter((event) => event.key !== key)), 2000);
+  }, []);
+
   // The swarm hears every relay message first, then hands the call its share.
   const routeRef = useRef<(message: ServerMessage) => void>(() => undefined);
   const swarm = useSwarm({
     worldRef,
     onMessage: (message) => routeRef.current(message),
-    onError: (text) => notify(text, "error")
+    onError: (text) => {
+      sfx.error();
+      notify(text, "error");
+    }
   });
   const call = useCall({ send: swarm.send });
-  routeRef.current = call.handleMessage;
+  routeRef.current = (message) => {
+    call.handleMessage(message);
+    if (message.type === "presence:emote") showEmote(message.data.id, message.data.emote);
+  };
 
   const [me, setMe] = useState(loadMe);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -87,6 +108,7 @@ export default function App() {
   const [hint, setHint] = useState(() => !hintSeen());
   const [clock, setClock] = useState(() => Date.now());
   const [flash, setFlash] = useState<{ id: string; n: number } | null>(null);
+  const [streak, setStreak] = useState(loadStreak);
 
   const { run, running, selfId } = swarm;
 
@@ -160,8 +182,23 @@ export default function App() {
     }
     if (run.status !== "done" || !watched.current.delete(run.id)) return;
     worldRef.current?.celebrate();
-    if (run.ownerId === selfId) setResultId(run.id);
-  }, [run, selfId]);
+    sfx.done();
+    if (document.hidden) {
+      finishedAway.current = true;
+      document.title = t("title.done");
+    }
+    if (run.ownerId === selfId) {
+      setResultId(run.id);
+      setStreak(addShipped);
+    } else {
+      // Somebody else's idea finished: worth a look, never worth an interruption.
+      const goal = run.goal.length > 34 ? `${run.goal.slice(0, 34)}…` : run.goal;
+      notify(t("toast.finished", { name: run.ownerName ?? t("guest"), goal }), "info", {
+        label: t("toast.view"),
+        run: () => setResultId(run.id)
+      });
+    }
+  }, [run, selfId, notify]);
 
   // A finished run leaves the bar by itself.
   useEffect(() => {
@@ -174,6 +211,21 @@ export default function App() {
   const currentStep = running ? [...(run?.steps ?? [])].reverse().find((step) => step.status === "running") : undefined;
   const worker = currentStep && swarm.agentById.get(currentStep.agentId);
   const working = currentStep ? t("run.working", { name: worker?.name ?? "", phase: t(`phase.${currentStep.phase}` as Key) }) : null;
+
+  // The tab says what is going on, and cheers when something finishes while you are elsewhere.
+  const finishedAway = useRef(false);
+  useEffect(() => {
+    document.title = finishedAway.current ? t("title.done") : working ? `${working} · SwarmVille` : "SwarmVille";
+  }, [working]);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.hidden) return;
+      finishedAway.current = false;
+      document.title = "SwarmVille";
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   const selectedAgent = selectedId ? swarm.agentById.get(selectedId) : undefined;
   const resultRun = resultId ? swarm.runs.find((entry) => entry.id === resultId) ?? null : null;
@@ -211,10 +263,57 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [settingsOpen, memoryOpen, resultId, selectedId, runOpen]);
 
+  const lastEmote = useRef(0);
+  const { send: sendToRelay } = swarm;
+  const react = useCallback(
+    (id: string) => {
+      const now = performance.now();
+      if (now - lastEmote.current < 500) return;
+      lastEmote.current = now;
+      sfx.emote();
+      sendToRelay({ type: "presence:emote", emote: id });
+    },
+    [sendToRelay]
+  );
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      const emote = EMOTES[Number(event.key) - 1];
+      if (emote) react(emote.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [react]);
+
   const submit = (goal: string, spot?: Spot) => {
     swarm.start(goal, spot);
+    sfx.drop();
     notify(t(running || queue.length > 0 ? "command.queued" : "command.started"));
+    const next = touchStreak(streak);
+    if (next !== streak) {
+      setStreak(next);
+      if (next.count >= 2) notify(t("streak.toast", { n: next.count }));
+    }
   };
+
+  /* ---------------------------------------------------------- transitions ---- */
+
+  // Everything that opens also leaves: it stays mounted a moment, animating out.
+  const settingsShown = usePresence(settingsOpen);
+  const memoryShown = usePresence(memoryOpen);
+  const resultShown = usePresence(resultRun !== null);
+  const resultLatest = useLatest(resultRun);
+  const sheetOpen = selectedAgent !== undefined || (runOpen && run !== null);
+  const sheetShown = usePresence(sheetOpen);
+  const sheetAgent = useLatest(selectedAgent ?? null);
+  const sheetKind = useRef<"agent" | "run">("run");
+  if (selectedAgent) sheetKind.current = "agent";
+  else if (runOpen) sheetKind.current = "run";
+  const pillShown = usePresence(showPill && run !== null);
+  const pillRun = useLatest(showPill ? run : null);
 
   return (
     <div className="app">
@@ -224,25 +323,41 @@ export default function App() {
         status={swarm.status}
         peers={swarm.peers}
         inCall={call.inCall}
+        streak={streak.count}
+        onEmote={react}
         onToggleCall={() => (call.inCall ? call.leave() : void call.join())}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <Board jobs={swarm.queue} selfId={selfId} working={working} onBack={swarm.back} onCancel={swarm.cancel} highlight={flash} />
+      <Board
+        jobs={swarm.queue}
+        done={swarm.runs.filter((entry) => entry.status === "done")}
+        selfId={selfId}
+        working={working}
+        onBack={(id) => {
+          sfx.back();
+          swarm.back(id);
+        }}
+        onCancel={swarm.cancel}
+        onOpenResult={(entry) => setResultId(entry.id)}
+        highlight={flash}
+      />
 
       {hint && <p className="hint sq">{t("hint.move")}</p>}
 
-      {selectedAgent ? (
-        <AgentCard
-          agent={selectedAgent}
-          state={swarm.agentStates[selectedAgent.id] ?? "idle"}
-          run={run}
-          onClose={() => setSelectedId(null)}
-          onOpenArchive={() => setMemoryOpen(true)}
-        />
-      ) : (
-        runOpen && run && <RunPanel run={run} agents={swarm.agents} onClose={() => setRunOpen(false)} />
-      )}
+      {sheetShown.mounted &&
+        (sheetKind.current === "agent" && sheetAgent ? (
+          <AgentCard
+            agent={sheetAgent}
+            state={swarm.agentStates[sheetAgent.id] ?? "idle"}
+            run={run}
+            presence={sheetShown.state}
+            onClose={() => setSelectedId(null)}
+            onOpenArchive={() => setMemoryOpen(true)}
+          />
+        ) : (
+          run && <RunPanel run={run} agents={swarm.agents} state={sheetShown.state} onClose={() => setRunOpen(false)} />
+        ))}
 
       <CallBubbles
         getWorld={getWorld}
@@ -268,17 +383,20 @@ export default function App() {
         />
       )}
 
+      <EmoteLayer getWorld={getWorld} events={emotes} />
+
       <div className="bottom">
-        {showPill && run && (
+        {pillShown.mounted && pillRun && (
           <RunPill
-            run={run}
+            run={pillRun}
             agents={swarm.agents}
-            mine={run.ownerId === selfId}
+            mine={pillRun.ownerId === selfId}
+            state={pillShown.state}
             onOpen={() => {
               setSelectedId(null);
               setRunOpen(!runOpen);
             }}
-            onResult={() => setResultId(run.id)}
+            onResult={() => setResultId(pillRun.id)}
             onStop={swarm.stop}
           />
         )}
@@ -287,21 +405,27 @@ export default function App() {
 
       <Toasts items={toasts} />
 
-      <Settings
-        open={settingsOpen}
-        name={me.name}
-        accent={me.accent}
-        provider={swarm.provider}
-        providers={swarm.providers}
-        running={running}
-        onClose={() => setSettingsOpen(false)}
-        onName={(name) => setMe((previous) => ({ ...previous, name }))}
-        onAccent={(accent) => setMe((previous) => ({ ...previous, accent }))}
-        onProvider={swarm.setProvider}
-        onLanguage={() => refresh((tick) => tick + 1)}
-      />
-      <MemoryModal open={memoryOpen} onClose={() => setMemoryOpen(false)} />
-      {resultRun && <ResultCard run={resultRun} onClose={() => setResultId(null)} notify={notify} />}
+      {settingsShown.mounted && (
+        <Settings
+          open={settingsOpen}
+          state={settingsShown.state}
+          name={me.name}
+          accent={me.accent}
+          provider={swarm.provider}
+          providers={swarm.providers}
+          running={running}
+          shipped={streak.shipped}
+          onClose={() => setSettingsOpen(false)}
+          onName={(name) => setMe((previous) => ({ ...previous, name }))}
+          onAccent={(accent) => setMe((previous) => ({ ...previous, accent }))}
+          onProvider={swarm.setProvider}
+          onLanguage={() => refresh((tick) => tick + 1)}
+        />
+      )}
+      {memoryShown.mounted && <MemoryModal open={memoryOpen} state={memoryShown.state} onClose={() => setMemoryOpen(false)} />}
+      {resultShown.mounted && resultLatest && (
+        <ResultCard run={resultLatest} state={resultShown.state} onClose={() => setResultId(null)} notify={notify} />
+      )}
     </div>
   );
 }

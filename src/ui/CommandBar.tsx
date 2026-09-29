@@ -115,7 +115,7 @@ export const CommandBar = ({ disabled, showIdeas, color, getWorld, onSubmit, onH
           maxLength={600}
           disabled={disabled}
           onChange={(event) => setGoal(event.target.value)}
-          placeholder={t("command.placeholder")}
+          placeholder={disabled ? t("command.offline") : t("command.placeholder")}
           aria-label={t("command.placeholder")}
           autoComplete="off"
         />

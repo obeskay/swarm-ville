@@ -1,0 +1,10 @@
+{
+  "name": "SwarmVille",
+  "short_name": "SwarmVille",
+  "description": "Leave an agent working in a shared office.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f3fb",
+  "theme_color": "#f4f3fb",
+  "icons": [{ "src": "/swarmville-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

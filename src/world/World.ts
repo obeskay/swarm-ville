@@ -56,6 +56,8 @@ const LOBBY_SLOTS: [number, number][] = [
   [2, 7.2], [4, 7.2], [6, 7.2], [8, 7.2], [10, 7.2]
 ];
 
+const TAG_FONT = "600 11px ui-sans-serif, system-ui, sans-serif";
+
 /** Props that cast no shadow: they hang on a wall rather than stand on the floor. */
 const FLAT = new Set(["window"]);
 
@@ -112,6 +114,8 @@ class Actor {
   glide = false;
   /** 1 while a freshly dropped agent is in the air, easing to 0 as it lands. */
   fall = 0;
+  /** Seconds until an idle agent takes its next little stroll. */
+  stroll = 4 + Math.random() * 8;
 
   constructor(
     public label: string,
@@ -196,6 +200,7 @@ export class World {
   /** Agents that people left on the map, one per job in the line. */
   private readonly jobActors = new Map<string, Actor>();
   private dropPreview: { x: number; y: number } | null = null;
+  private readonly tagCache = new Map<string, { canvas: HTMLCanvasElement; width: number; height: number; pad: number }>();
   private readonly arcs: Arc[] = [];
   private readonly particles: Particle[] = [];
   private readonly waypoints: Waypoint[] = [];
@@ -340,7 +345,9 @@ export class World {
 
   private resize = () => {
     if (!this.canvas) return;
-    this.dpr = clamp(Math.round(window.devicePixelRatio || 1), 1, 2);
+    const dpr = clamp(Math.round(window.devicePixelRatio || 1), 1, 2);
+    if (dpr !== this.dpr) this.tagCache.clear();
+    this.dpr = dpr;
     const width = this.canvas.clientWidth || window.innerWidth;
     const height = this.canvas.clientHeight || window.innerHeight;
     this.canvas.width = Math.floor(width * this.dpr);
@@ -497,6 +504,29 @@ export class World {
       x: (actor.x - this.origin.x) * this.scale,
       y: (actor.y - (frame?.h ?? 40) - this.origin.y) * this.scale
     };
+  }
+
+  /**
+   * Agents with nothing to do shuffle a few steps around their spot and come
+   * back, so a quiet office is still a living one. Busy agents never stroll:
+   * where they stand is data, and it must not be decoration.
+   */
+  private strollIfIdle(actor: Actor, dt: number) {
+    if (actor.busy) {
+      actor.stroll = 3 + Math.random() * 6;
+      return;
+    }
+    actor.stroll -= dt;
+    if (actor.stroll > 0) return;
+    const away = Math.hypot(actor.x - actor.homeX, actor.y - actor.homeY) > 4;
+    if (away) {
+      actor.goHome();
+      actor.stroll = 5 + Math.random() * 9;
+    } else {
+      actor.targetX = actor.homeX + (Math.random() - 0.5) * 60;
+      actor.targetY = actor.homeY + (Math.random() - 0.5) * 20;
+      actor.stroll = 2 + Math.random() * 2.5;
+    }
   }
 
   // ── agents people left on the map ──────────────────────────────────────────
@@ -1039,40 +1069,81 @@ export class World {
     ctx.globalAlpha = 1;
   }
 
-  /** A soft white tag with a coloured dot: readable on floor, wall and video alike. */
+  /**
+   * A soft white tag with a coloured dot. Drawn once into a bitmap and reused:
+   * a blurred shadow costs real time when it is repeated for every name on
+   * every frame, and a name almost never changes.
+   */
+  private tagBitmap(text: string, dot: string, quiet: boolean) {
+    const key = `${text}|${dot}|${quiet}|${this.dpr}`;
+    const cached = this.tagCache.get(key);
+    if (cached) return cached;
+
+    const measure = document.createElement("canvas").getContext("2d");
+    if (!measure) return null;
+    measure.font = TAG_FONT;
+    const width = Math.ceil(measure.measureText(text).width) + 26;
+    const pad = 12;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil((width + pad * 2) * this.dpr);
+    canvas.height = Math.ceil((20 + pad * 2) * this.dpr);
+    const c = canvas.getContext("2d");
+    if (!c) return null;
+    c.scale(this.dpr, this.dpr);
+    c.font = TAG_FONT;
+    c.textBaseline = "middle";
+
+    c.save();
+    c.shadowColor = "rgba(70, 60, 130, 0.22)";
+    c.shadowBlur = 8;
+    c.shadowOffsetY = 2;
+    c.fillStyle = quiet ? "rgba(255, 255, 255, 0.82)" : "rgba(255, 255, 255, 0.96)";
+    c.beginPath();
+    c.roundRect(pad, pad, width, 20, 8);
+    c.fill();
+    c.restore();
+    c.fillStyle = dot;
+    c.beginPath();
+    c.arc(pad + 10, pad + 10, 3.5, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = palette.ink;
+    c.fillText(text, pad + 19, pad + 10.5);
+
+    if (this.tagCache.size > 160) this.tagCache.clear();
+    const entry = { canvas, width: width + pad * 2, height: 20 + pad * 2, pad };
+    this.tagCache.set(key, entry);
+    return entry;
+  }
+
   private tag(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, dot: string, quiet = false) {
-    ctx.font = "600 11px ui-sans-serif, system-ui, sans-serif";
-    const width = ctx.measureText(text).width + 26;
-    ctx.save();
-    ctx.shadowColor = "rgba(70, 60, 130, 0.22)";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = quiet ? "rgba(255, 255, 255, 0.82)" : "rgba(255, 255, 255, 0.96)";
-    ctx.beginPath();
-    ctx.roundRect(x - width / 2, y - 10, width, 20, 8);
-    ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = dot;
-    ctx.beginPath();
-    ctx.arc(x - width / 2 + 10, y, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = palette.ink;
-    ctx.textAlign = "left";
-    ctx.fillText(text, x - width / 2 + 19, y + 0.5);
-    ctx.textAlign = "center";
+    const bitmap = this.tagBitmap(text, dot, quiet);
+    if (!bitmap) return;
+    ctx.drawImage(bitmap.canvas, x - bitmap.width / 2, y - bitmap.height / 2, bitmap.width, bitmap.height);
   }
 
   /** Three dots that rise and fall in turn: this agent is thinking. */
   private thinking(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-    ctx.save();
-    ctx.shadowColor = "rgba(70, 60, 130, 0.22)";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
-    ctx.beginPath();
-    ctx.roundRect(x - 17, y - 9, 34, 18, 9);
-    ctx.fill();
-    ctx.restore();
+    let bubble = this.tagCache.get("thinking");
+    if (!bubble) {
+      const pad = 12;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil((34 + pad * 2) * this.dpr);
+      canvas.height = Math.ceil((18 + pad * 2) * this.dpr);
+      const c = canvas.getContext("2d");
+      if (c) {
+        c.scale(this.dpr, this.dpr);
+        c.shadowColor = "rgba(70, 60, 130, 0.22)";
+        c.shadowBlur = 8;
+        c.shadowOffsetY = 2;
+        c.fillStyle = "rgba(255, 255, 255, 0.96)";
+        c.beginPath();
+        c.roundRect(pad, pad, 34, 18, 9);
+        c.fill();
+      }
+      bubble = { canvas, width: 34 + pad * 2, height: 18 + pad * 2, pad };
+      this.tagCache.set("thinking", bubble);
+    }
+    ctx.drawImage(bubble.canvas, x - bubble.width / 2, y - bubble.height / 2, bubble.width, bubble.height);
     ctx.fillStyle = color;
     for (let n = 0; n < 3; n += 1) {
       const lift = Math.max(0, Math.sin(this.elapsed * 6 - n * 0.9)) * 3;
@@ -1139,7 +1210,10 @@ export class World {
     this.lastTime = time;
     this.elapsed = time / 1000;
 
-    for (const actor of this.agents.values()) actor.update(dt);
+    for (const actor of this.agents.values()) {
+      this.strollIfIdle(actor, dt);
+      actor.update(dt);
+    }
     for (const actor of this.peers.values()) actor.update(dt);
     for (const actor of this.jobActors.values()) {
       const falling = actor.fall > 0;

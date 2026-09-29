@@ -13,6 +13,7 @@ interface Props {
   onOpen: () => void;
   onResult: () => void;
   onStop: () => void;
+  state?: "open" | "closed";
 }
 
 const PHASES = ["plan", "build", "review", "verify", "archive"] as const;
@@ -21,7 +22,7 @@ const PHASES = ["plan", "build", "review", "verify", "archive"] as const;
  * One line that says where the swarm is: five dots for the five phases, the name
  * of whoever is working, and a clock. Everything deeper is one tap away.
  */
-export const RunPill = ({ run, agents, mine, onOpen, onResult, onStop }: Props) => {
+export const RunPill = ({ run, agents, mine, onOpen, onResult, onStop, state = "open" }: Props) => {
   const running = run.status === "running";
   const [now, setNow] = useState(() => Date.now());
 
@@ -46,7 +47,7 @@ export const RunPill = ({ run, agents, mine, onOpen, onResult, onStop }: Props) 
           : t("board.working");
 
   return (
-    <div className={`pill sq pill--${run.status}`}>
+    <div className={`pill sq pill--${run.status}`} data-state={state}>
       <button type="button" className="pill__main" onClick={onOpen} aria-label={t("run.details")}>
         <span className="steps" aria-hidden>
           {PHASES.map((phase) => (

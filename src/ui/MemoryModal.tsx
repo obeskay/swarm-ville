@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Archive, Search, X } from "lucide-react";
 import type { ArchiveEntry } from "./shared";
 import { formatMs, formatTokens } from "./shared";
+import { apiFetch } from "../lib/access";
 import { t } from "../lib/i18n";
 
 interface Props {
   open: boolean;
+  state?: "open" | "closed";
   onClose: () => void;
 }
 
@@ -14,7 +16,7 @@ interface Props {
  * watching; this is the only view of the ones you are not, and it outlives the
  * relay because it is read back off disk rather than out of the ring buffer.
  */
-export const MemoryModal = ({ open, onClose }: Props) => {
+export const MemoryModal = ({ open, state = "open", onClose }: Props) => {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,7 +28,7 @@ export const MemoryModal = ({ open, onClose }: Props) => {
     const timer = window.setTimeout(async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/archive?q=${encodeURIComponent(query)}`, {
+        const response = await apiFetch(`/api/archive?q=${encodeURIComponent(query)}`, {
           signal: controller.signal
         });
         const body = (await response.json()) as { entries?: ArchiveEntry[] };
@@ -43,10 +45,8 @@ export const MemoryModal = ({ open, onClose }: Props) => {
     };
   }, [open, query]);
 
-  if (!open) return null;
-
   return (
-    <div className="scrim" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="scrim" data-state={state} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="modal sq" role="dialog" aria-modal="true" aria-labelledby="memory-title">
         <header className="modal__head">
           <div>

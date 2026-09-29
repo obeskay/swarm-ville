@@ -4,7 +4,7 @@
  */
 :root {
   --bg: #f4f3fb;
-  --surface: rgba(255, 255, 255, 0.86);
+  --surface: rgba(255, 255, 255, 0.93);
   --solid: #ffffff;
   --ink: #262338;
   --ink-2: #6a6885;
@@ -141,12 +141,14 @@ body.is-dragging * {
   pointer-events: none;
 }
 
-.topbar > *,
+.topbar__left > *,
 .topbar__right > * {
   pointer-events: auto;
 }
 
+.topbar__left,
 .topbar__right {
+  position: relative;
   display: flex;
   gap: 8px;
   pointer-events: none;
@@ -161,7 +163,6 @@ body.is-dragging * {
   padding: 0 14px;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadow-1);
   animation: rise 0.45s var(--ease-pop) both;
 }
@@ -232,7 +233,6 @@ body.is-dragging * {
   height: 40px;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadow-1);
   transition: transform 0.2s var(--ease-pop), background 0.15s, color 0.15s;
   animation: rise 0.45s var(--ease-pop) both;
@@ -331,7 +331,6 @@ body.is-dragging * {
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadow-1);
   animation: rise 0.5s var(--ease-pop) both;
 }
@@ -345,10 +344,32 @@ body.is-dragging * {
   text-align: left;
 }
 
-.board__head svg:last-child {
+.board__chevron {
   margin-left: auto;
   color: var(--ink-3);
-  transition: transform 0.25s var(--ease-out);
+  transition: transform 0.3s var(--ease-out);
+}
+
+.board[data-open="false"] .board__chevron {
+  transform: rotate(-90deg);
+}
+
+.board__body {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-height: 0;
+  transition: grid-template-rows 0.34s var(--ease-out);
+}
+
+.board[data-open="false"] .board__body {
+  grid-template-rows: 0fr;
+}
+
+.board__inner {
+  min-height: 0;
+  overflow: hidden auto;
+  padding: 0 8px 8px;
+  overscroll-behavior: contain;
 }
 
 .flip {
@@ -356,6 +377,7 @@ body.is-dragging * {
 }
 
 .count {
+  animation: bump 0.35s var(--ease-pop);
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--accent-soft);
@@ -364,11 +386,12 @@ body.is-dragging * {
 }
 
 .board__list {
+  position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   margin: 0;
-  padding: 0 8px 8px;
-  overflow: auto;
+  padding: 0;
   list-style: none;
 }
 
@@ -424,13 +447,24 @@ body.is-dragging * {
 }
 
 .bar {
+  position: relative;
   display: block;
   height: 3px;
   margin-top: 6px;
+  overflow: hidden;
   border-radius: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  background-size: 200% 100%;
-  animation: sweep 1.4s linear infinite;
+  background: var(--accent-soft);
+}
+
+/* Moves by transform only, so it stays on the compositor. */
+.bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: sweep 1.3s var(--ease-out) infinite;
 }
 
 .avatar {
@@ -476,6 +510,12 @@ body.is-dragging * {
   border-color: transparent;
   background: var(--accent);
   color: #fff;
+  animation: bump 0.35s var(--ease-pop);
+}
+
+.vote span {
+  display: inline-block;
+  animation: bump 0.3s var(--ease-pop);
 }
 
 .vote:disabled {
@@ -518,7 +558,6 @@ body.is-dragging * {
   padding: 8px 13px;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px);
   box-shadow: var(--shadow-1);
   color: var(--ink-2);
   font-weight: 520;
@@ -670,7 +709,6 @@ body.is-dragging * {
   padding: 6px 8px 6px 6px;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadow-1);
   animation: rise 0.45s var(--ease-pop) both;
 }
@@ -735,7 +773,6 @@ body.is-dragging * {
   overflow: auto;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadow-2);
   animation: slide 0.35s var(--ease-out) both;
 }
@@ -897,7 +934,6 @@ body.is-dragging * {
   padding: 10px 16px;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px);
   box-shadow: var(--shadow-1);
   color: var(--ink-2);
   font-weight: 520;
@@ -943,7 +979,6 @@ body.is-dragging * {
   padding: 8px;
   border: 1px solid var(--line);
   background: var(--surface);
-  backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadow-1);
   animation: rise 0.45s var(--ease-pop) both;
 }
@@ -1262,10 +1297,10 @@ body.is-dragging * {
 
 @keyframes sweep {
   from {
-    background-position: 200% 0;
+    transform: translateX(-100%);
   }
   to {
-    background-position: -200% 0;
+    transform: translateX(250%);
   }
 }
 
@@ -1388,4 +1423,340 @@ body.is-dragging * {
   .brand strong {
     display: none;
   }
+
+  /* Two ideas are plenty of nudge on a small screen. */
+  .suggestion:nth-child(3) {
+    display: none;
+  }
+}
+
+
+/* ---------------------------------------------------- the shelf, reactions ---- */
+
+.avatar--small {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+
+.shelf {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.shelf h3 {
+  margin: 0 4px 6px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.shelf ul {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shelf__item {
+  --r: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px 6px 6px;
+  color: var(--ink-2);
+  text-align: left;
+  transition: background 0.15s, color 0.15s, transform 0.2s var(--ease-pop);
+}
+
+.shelf__item:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+  transform: translateX(2px);
+}
+
+.shelf__goal {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.streak {
+  gap: 5px;
+  padding: 0 12px;
+  color: #d97a1c;
+}
+
+.streak svg {
+  animation: flicker 1.8s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.icon-btn--on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.emote-bar {
+  --r: var(--r-lg);
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  background: var(--solid);
+  box-shadow: var(--shadow-2);
+  animation: pop 0.35s var(--ease-pop) both;
+  transform-origin: 100% 0;
+}
+
+.emote-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 22px;
+  transition: transform 0.2s var(--ease-pop), background 0.15s;
+}
+
+.emote-btn:hover {
+  background: var(--accent-soft);
+  transform: translateY(-3px) scale(1.15);
+}
+
+.emote-btn:active {
+  transform: scale(0.9);
+}
+
+.emotes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.emote {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+
+.emote i {
+  position: absolute;
+  top: -28px;
+  left: -16px;
+  font-size: 30px;
+  font-style: normal;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(50, 40, 110, 0.25));
+  animation: float-up 1.9s var(--ease-out) both;
+}
+
+.popover__foot {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  text-align: center;
+}
+
+.field__hint {
+  color: var(--ink-3);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast--leaving {
+  animation: toast-out 0.26s var(--ease-out) both;
+}
+
+.toast__action {
+  pointer-events: auto;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 700;
+}
+
+.toast__action:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ------------------------------------------------------------- leaving ---- */
+
+.sheet[data-state="closed"] {
+  animation: slide-out 0.24s var(--ease-out) both;
+  pointer-events: none;
+}
+
+.pill[data-state="closed"] {
+  animation: sink 0.24s var(--ease-out) both;
+  pointer-events: none;
+}
+
+.scrim[data-state="closed"] {
+  animation: fade-out 0.22s both;
+  pointer-events: none;
+}
+
+.scrim[data-state="closed"] .modal,
+.scrim[data-state="closed"] .popover {
+  animation: pop-out 0.22s var(--ease-out) both;
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.25);
+  }
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.14) rotate(3deg);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.5);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.25);
+  }
+  30% {
+    transform: translateY(-16px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-74px) scale(1.05) rotate(8deg);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.94);
+  }
+}
+
+@keyframes slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes sink {
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* ---------------------------------------------------------------- lock ---- */
+
+.lock {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(60% 50% at 50% 30%, #ebe7ff, var(--bg));
+}
+
+.lock__card {
+  --r: 30px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 10px;
+  width: min(360px, 100%);
+  padding: 28px 24px 24px;
+  background: #fff;
+  box-shadow: var(--shadow-2);
+  text-align: center;
+  animation: pop 0.5s var(--ease-pop) both;
+}
+
+.lock__icon {
+  --r: 18px;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.lock__card h1 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.lock__card p {
+  margin: 0 0 6px;
+  color: var(--ink-2);
+}
+
+.lock__row {
+  --r: var(--r-lg);
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--line-2);
+}
+
+.lock__row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 16px;
+}
+
+.lock__card small {
+  color: var(--err);
+  font-weight: 600;
 }

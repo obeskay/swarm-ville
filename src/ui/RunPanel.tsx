@@ -11,6 +11,7 @@ interface Props {
   run: Run;
   agents: Agent[];
   onClose: () => void;
+  state?: "open" | "closed";
 }
 
 const StepRow = ({ step, agent }: { step: Step; agent?: Agent }) => {
@@ -55,11 +56,11 @@ const StepRow = ({ step, agent }: { step: Step; agent?: Agent }) => {
   );
 };
 
-export const RunPanel = ({ run, agents, onClose }: Props) => {
+export const RunPanel = ({ run, agents, onClose, state = "open" }: Props) => {
   const byId = new Map(agents.map((agent) => [agent.id, agent]));
 
   return (
-    <aside className="sheet sq" aria-label={t("run.details")}>
+    <aside className="sheet sq" aria-label={t("run.details")} data-state={state}>
       <header className="sheet__head">
         <p className="sheet__goal">{run.goal}</p>
         <button type="button" className="icon-btn icon-btn--flat sq" onClick={onClose} aria-label={t("close")}>

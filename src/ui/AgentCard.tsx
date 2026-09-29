@@ -11,17 +11,18 @@ interface Props {
   run: Run | null;
   onClose: () => void;
   onOpenArchive: () => void;
+  presence?: "open" | "closed";
 }
 
 /** Who this is and what they last did. Nothing to configure, nothing to learn. */
-export const AgentCard = ({ agent, state, run, onClose, onOpenArchive }: Props) => {
+export const AgentCard = ({ agent, state, run, onClose, onOpenArchive, presence = "open" }: Props) => {
   const steps = (run?.steps ?? []).filter((step) => step.agentId === agent.id);
   const latest = steps[steps.length - 1];
   const summary = formatAgentOutput(latest?.output || latest?.error || "", agent.role);
   const role = t(`role.${agent.id}` as Key);
 
   return (
-    <aside className="sheet sq" aria-label={agent.name}>
+    <aside className="sheet sq" aria-label={agent.name} data-state={presence}>
       <header className="sheet__head">
         <span className="avatar avatar--big" style={{ background: agent.accent }} aria-hidden>
           {agent.name[0]}

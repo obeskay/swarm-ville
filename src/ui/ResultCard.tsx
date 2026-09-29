@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Link2, X } from "lucide-react";
+import { Download, Link2, Rocket, X } from "lucide-react";
+import { apiFetch } from "../lib/access";
 import { deliverable } from "../lib/deliverable";
+import { getJeanUrl, isJeanUrl, jeanBrief } from "../lib/jean";
 import { t } from "../lib/i18n";
 import type { Run } from "./shared";
 
 interface Props {
   run: Run;
   onClose: () => void;
+  state?: "open" | "closed";
   notify: (text: string, tone?: "info" | "error") => void;
 }
 
@@ -15,7 +18,7 @@ interface Props {
  * running; either way you get the plain-language wrap-up, and one button to
  * turn a page into a link you can send to someone.
  */
-export const ResultCard = ({ run, onClose, notify }: Props) => {
+export const ResultCard = ({ run, onClose, notify, state = "open" }: Props) => {
   const { html, summary } = useMemo(() => deliverable(run), [run]);
   const [busy, setBusy] = useState(false);
 
@@ -29,7 +32,7 @@ export const ResultCard = ({ run, onClose, notify }: Props) => {
     if (!html || busy) return;
     setBusy(true);
     try {
-      const response = await fetch("/api/releases", {
+      const response = await apiFetch("/api/releases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ html })
@@ -56,8 +59,17 @@ export const ResultCard = ({ run, onClose, notify }: Props) => {
     URL.revokeObjectURL(url);
   };
 
+  // Jean has no door to knock on, so the hand-off is a brief to paste, plus a
+  // shortcut to the Jean you told us about.
+  const toJean = async () => {
+    await navigator.clipboard.writeText(jeanBrief(run)).catch(() => undefined);
+    notify(t("result.jeanCopied"));
+    const url = getJeanUrl();
+    if (isJeanUrl(url)) window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
-    <div className="scrim" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="scrim" data-state={state} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="modal sq" role="dialog" aria-modal="true" aria-label={t("result.title")}>
         <header className="modal__head">
           <div>
@@ -75,8 +87,13 @@ export const ResultCard = ({ run, onClose, notify }: Props) => {
         )}
         {summary && <p className="summary">{summary}</p>}
 
-        {html && (
-          <footer className="modal__foot">
+        <footer className="modal__foot">
+          <button type="button" className="btn sq" onClick={() => void toJean()}>
+            <Rocket size={15} aria-hidden />
+            {t("result.jean")}
+          </button>
+          {html && (
+            <>
             <button type="button" className="btn sq" onClick={download}>
               <Download size={15} aria-hidden />
               {t("result.download")}
@@ -85,8 +102,9 @@ export const ResultCard = ({ run, onClose, notify }: Props) => {
               <Link2 size={15} aria-hidden />
               {t("result.publish")}
             </button>
-          </footer>
-        )}
+            </>
+          )}
+        </footer>
       </section>
     </div>
   );
