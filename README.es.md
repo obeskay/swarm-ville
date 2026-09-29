@@ -2,7 +2,7 @@
 
 <img src="assets/banner-es.jpg" alt="SwarmVille — un bucle de agentes por el que puedes caminar" width="100%">
 
-Cinco agentes, cinco cuartos, un pueblo. Mira el bucle mientras ocurre, en vez de leerlo después.
+Deja un agente trabajando en una oficina compartida. Arrástralo al piso, apoya las ideas de otras personas, habla cara a cara.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-22%2B-black)](https://nodejs.org)
@@ -14,19 +14,19 @@ Cinco agentes, cinco cuartos, un pueblo. Mira el bucle mientras ocurre, en vez d
 
 ---
 
-## El problema
+## Qué es
 
-Un bucle de agentes es un muro de texto. Planear, construir, revisar, corregir,
-verificar: cinco llamadas al modelo que pasan más rápido de lo que puedes leerlas,
-y cuando algo falla acabas subiendo por el log a ver cuál de los pasos se rompió.
+Un bucle de agentes es un muro de texto. SwarmVille lo dibuja como una oficina por la
+que puedes caminar, y lo convierte en algo que varias personas hacen juntas:
 
-La información nunca fue el problema. Lo era la **forma**. Un log es un mal medio
-para algo que en realidad son cinco actores, un relevo y un ciclo.
+- **Deja un agente.** Escribe lo que quieres, luego levanta a tu agente y suéltalo
+  donde quieras en el piso. Se queda ahí trabajando mientras tú haces otra cosa.
+- **Apoya una idea.** Las ideas de todos esperan en una sola fila, el **Tablón**.
+  Apoyar una la sube, así que la gente decide qué construye el enjambre después.
+- **Habla cara a cara.** Entra a la sala común y tu cámara aparece sobre tu cabeza,
+  en una burbuja squircle. El video va de persona a persona.
 
-Así que SwarmVille dibuja el bucle como un lugar. Atlas de pie en su escritorio del
-cuarto de Plan, con un aro encendido a sus pies: eso es una llamada al modelo en
-curso. Un arco entre Neo y Socrates: eso es el relevo. Socrates caminando de vuelta
-hacia Neo: el revisor pidió corregir. No lees el estado, lo miras.
+Sin pantalla de configuración, sin jerga: un campo, un botón, un gesto.
 
 ## Arranque
 
@@ -37,104 +37,85 @@ npm install
 npm run dev
 ```
 
-Abre <http://127.0.0.1:5173>. Eso levanta Vite en el 5173 y el relay en el 8765;
-Vite hace de proxy para `/api` y `/ws`, así que el navegador sólo habla con un
-origen.
+Abre <http://127.0.0.1:5173>. Eso levanta Vite en 5173 y el relay en 8765; Vite hace
+proxy de `/api` y `/ws`, así el navegador solo habla con un origen.
 
-No hace falta ninguna API key. El proveedor por defecto, `agy`, necesita el CLI
-de Antigravity; sin él, el relay cae al simulador `mock`, que corre el bucle
-entero sin conexión, ciclo de corrección incluido, así que el pueblo está vivo
-desde el primer arranque.
+No hace falta API key. El proveedor por defecto, `agy`, necesita la CLI de
+Antigravity; sin ella el relay cae al simulador `mock`, que corre el bucle completo,
+con su ciclo de corrección, y te devuelve una páginita web de verdad.
 
-Camina con **WASD** o haz clic en el suelo. Escribe un objetivo en la barra de
-abajo y mira a los cinco agentes hacerlo.
+Camina con **WASD** o toca el piso. **Esc** vuelve a la vista general.
+
+## Dejar un agente
+
+1. Escribe tu idea en la barra de abajo, o toca una de las sugerencias.
+2. Pulsa **Dejar mi agente**, o agarra al agente de color a la izquierda de la barra y
+   suéltalo donde quieras. El cursor de guante se cierra sobre él; un anillo marca
+   dónde va a caer, y cae desde arriba.
+3. Se queda ahí con tres puntitos que saltan mientras el enjambre trabaja. Haz clic
+   en él para encontrar su tarjeta en el Tablón.
+
+Arrastrar usa eventos de puntero, no el drag-and-drop de HTML, así que también
+funciona con el dedo. **Esc** devuelve al agente a la barra.
+
+## La fila
+
+Un enjambre, muchas personas: las ideas se turnan. El relay guarda una sola fila:
+
+- la idea que corre va primero; el resto se ordena por cuántas personas la apoyan y
+  después por quién llegó antes;
+- no puedes apoyar tu propia idea, y apoyar dos veces lo deshace;
+- puedes retirar tus ideas en espera y detener tu propia corrida;
+- quien se va pierde sus ideas en espera y sus votos. Una corrida que ya empezó sigue:
+  dejar un agente y alejarse es justamente la idea.
+
+Los límites son `QUEUE_MAX` (12 ideas en total) y `JOBS_PER_PEER` (2 por persona).
+
+## Lo que recibes
+
+Cuando una corrida termina, lo que entregó el constructor se abre en una tarjeta. Si
+el objetivo era algo que corre en un navegador, el constructor entrega una página HTML
+autocontenida y la ves funcionando en una vista previa aislada. **Publicar enlace** la
+escribe en `.data/releases/` y copia una dirección que el relay sirve en `/r/<id>`;
+**Descargar** te da el archivo. Si no, recibes el resumen en lenguaje sencillo.
+
+A propósito no es Vercel ni GitHub. Una herramienta que escucha en `127.0.0.1` y no
+tiene autenticación no debería guardar un token de despliegue. La página se sirve con
+`Content-Security-Policy: sandbox`: corre, pero no puede leer el almacenamiento de
+esta app; mira [SECURITY.md](SECURITY.md).
 
 ## El bucle
 
 ```
 plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ──▶ archive
             ▲               │
-            └─── REVISE ────┘   (con tope en MAX_REVISIONS)
+            └─── REVISE ────┘   (acotado por MAX_REVISIONS)
 ```
 
-Cada fase es una llamada al modelo hecha por un agente. El veredicto del revisor es
-lo que cierra el ciclo: `VERDICT: REVISE` devuelve el control al constructor.
-
-Cada objetivo recibe las mismas cinco llamadas, sea del tamaño que sea. Con
-`DECOMPOSE=1` cambia la etapa de construcción: al planificador ya se le piden
-pasos ordenados, así que el plan se lee como lista de tareas y el constructor las
-toma de una en una —una llamada al modelo por paso, etiquetada `Build 2/4` en el
-panel de la corrida—. Cuesta una llamada por paso, por eso viene apagado y por
-eso no cambia nada más del bucle.
+Cada fase es una llamada al modelo hecha por un agente, y el veredicto del revisor
+cierra el bucle: `VERDICT: REVISE` devuelve el control al constructor.
 
 | Agente | Fase | Cuarto |
 |---|---|---|
-| Atlas | Planear | Plan |
-| Neo | Construir | Build |
-| Socrates | Revisar | Review |
-| Vanguard | Verificar | Review |
-| Alexandria | Archivar | Memory |
+| Atlas | Plan | Plan |
+| Neo | Build | Build |
+| Socrates | Review | Review |
+| Vanguard | Verify | Review |
+| Alexandria | Archive | Memoria |
 
-## Nada de lo que ves está inventado
+Con `DECOMPOSE=1` el constructor toma el plan paso a paso, una llamada al modelo por
+paso. Cuesta una llamada por paso, por eso viene apagado.
 
-Cada llamada al modelo queda registrada como un **paso**, y cada paso lleva su
-latencia real, los tokens de entrada y de salida, el número de intento, la salida
-completa y el motivo del fallo si falló. Dónde está parado un agente y si tiene el
-aro encendido sale de esos mismos registros, no de una animación de progreso que
-adivina.
-
-El XP y las recompensas son estado del juego, propiedad del huerto. Nunca se
-disfrazan de confianza del modelo ni de una nota de calidad inventada.
+Nada de lo que ves está inventado. Cada llamada al modelo es un **paso** con su
+latencia, tokens, intento y salida completa; dónde está parado un agente y si está
+pensando sale de esos registros, no de una animación que adivina.
 
 ## El archivo
 
-Las corridas viven en un búfer circular de 25 y mueren con el proceso, lo que
-hacía de la fase de Alexandria el único paso del bucle que nadie podía volver a
-leer. Ahora escribe una línea JSON por corrida terminada en
-`.data/archive.jsonl` —el objetivo, su nota, el resultado y lo que costó— y el
-cuarto de Memory es donde las relees. Haz clic en Alexandria, abre el archivo y
-busca entre objetivos y notas.
-
-JSONL y no una base de datos porque una línea es el registro entero, `tail -f`
-funciona sobre él, y una línea corrupta te cuesta una corrida en vez del archivo
-completo. Cámbialo de sitio con `ARCHIVE_FILE`.
-
-## El huerto
-
-El bucle jugable alrededor del bucle de agentes. Siembras un producto, lo mandas al
-enjambre, y el plantío avanza por plan, diseño, construcción, revisión,
-verificación y entrega conforme la ejecución emite pasos reales. Entre ejecuciones
-lo riegas con energía, compras fertilizante en el mercado, completas encargos del
-pueblo y cosechas la entrega para ganar monedas, gemas y XP.
-
-Un plantío entregado abre el **Estudio de Producto**: editas el HTML, CSS,
-JavaScript o README generado, publicas revisiones, las previsualizas en un iframe y
-te descargas una app de un solo archivo lista para correr. El perfil y los plantíos
-se guardan en el almacenamiento local del navegador.
-
-## Una dirección para una entrega
-
-El Estudio de Producto siempre supo armar una app de un solo archivo; el bucle
-terminaba en tu carpeta de descargas y nada más. **Publish** escribe ese
-documento en `.data/releases/` y el relay lo sirve en `/r/<id>`, así que un
-plantío entregado es algo que puedes abrir en otra pestaña o pasarle a alguien de
-la misma red.
-
-A propósito no es Vercel ni GitHub. Una herramienta que escucha en `127.0.0.1` y
-no tiene autenticación no tiene por qué guardar un token de despliegue. El
-documento se sirve con `Content-Security-Policy: sandbox`, así que una entrega
-corre pero no puede leer el almacenamiento de esta app — ver
-[SECURITY.md](SECURITY.md).
-
-## La plaza
-
-Entra a la plaza y te unes a la sala: el relay te pasa la lista de quienes ya están
-ahí y tu navegador abre una conexión WebRTC con cada uno. El audio y el video van
-punto a punto — el relay sólo reenvía SDP e ICE.
-
-Puedes rechazar el permiso de cámara sin problema: entras como oyente. El STUN
-público cubre la misma máquina y la misma red local; cruzar un NAT simétrico
-requiere un servidor TURN (mira `.env.example`).
+Alexandria escribe una línea JSON por corrida terminada en `.data/archive.jsonl`: el
+objetivo, su nota, el resultado y lo que costó. Haz clic en ella para abrir la memoria
+y buscar. JSONL porque una línea es el registro completo, `tail -f` funciona, y una
+línea corrupta cuesta una corrida en vez del archivo. `ARCHIVE_FILE` lo mueve.
 
 ## Proveedores
 
@@ -179,51 +160,58 @@ dispositivo, donde importa más que se lean que la pureza del píxel.
 
 ## API HTTP
 
-El relay se usa sin la interfaz.
+El relay se puede usar sin la interfaz.
 
 ```bash
 curl localhost:8765/api/health
 curl localhost:8765/api/state
+# 201 {run} si el enjambre estaba libre, 202 {queued, job} si entró a la fila
 curl -X POST localhost:8765/api/runs \
   -H 'content-type: application/json' \
-  -d '{"goal":"Añadir rate limiting a la API REST pública"}'
+  -d '{"goal":"Una landing para mi clase de yoga"}'
 curl -X POST localhost:8765/api/runs/stop
-curl 'localhost:8765/api/archive?q=rate%20limiting'
-curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hi</h1>"}'
+curl 'localhost:8765/api/archive?q=yoga'
+curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hola</h1>"}'
 ```
 
-El WebSocket en `/ws` empuja mensajes `snapshot`, `run`, `step`, `event`, `agent`,
-`handoff`, `provider`, de presencia y de señalización WebRTC.
+El WebSocket en `/ws` empuja `snapshot`, `run`, `step`, `event`, `agent`, `handoff`,
+`queue`, `provider`, presencia y señalización WebRTC. Acepta `run:start {goal, at?}`,
+`run:stop`, `queue:back {id}`, `queue:cancel {id}`, `presence:name`, `presence:move`,
+`room:join`, `room:leave` y `rtc:signal`. Una corrida pertenece a la conexión que la
+dejó; solo esa conexión puede detenerla.
 
 ## Estructura
 
 ```
 server/
   index.js          HTTP + WebSocket, middleware de seguridad
+  queue.js          la fila compartida de ideas (pura, con pruebas)
   orchestrator.js   el bucle de agentes
   archive.js        una línea JSON por corrida terminada
   releases.js       publica y sirve una entrega de un solo archivo
-  security.js       límites de tasa, chequeo de origen, tope de cuerpo, saneo
+  security.js       límites de tasa, orígenes, tamaños, saneado
   rooms.js          presencia + señalización WebRTC
   providers/        agy, claude, crosstalk, ollama, anthropic, mock
 src/
   world/
-    World.ts        el renderer 2D
-    map.ts          el trazado del pueblo
-    theme.ts        paleta, rejilla de tiles, rectángulos de los cuartos
-    atlas.ts        cargador del spritesheet
-  ui/               paneles, incluido el archivo
-  lib/              cliente WebSocket, malla WebRTC
-art/manifest.json   cada sprite con su prompt
-tools/              generar el arte, empaquetar el atlas
-assets/             banner y kit de marca
+    World.ts        el render 2D y el punto de soltar
+    map.ts          el plano de la oficina
+    sprites.ts      pisos, paredes y muebles, dibujados en código
+    theme.ts        paleta, cuadrícula, rectángulos de las salas
+    atlas.ts        carga del spritesheet de personajes
+  ui/               la barra, el Tablón, la píldora de progreso, el resultado, la llamada
+  lib/              hooks del relay y la llamada, arrastre, i18n (es/en), malla WebRTC
+public/cursors/     los cursores de guante
+art/manifest.json   cada personaje y su prompt
+tools/              generar arte, empaquetar el atlas
 ```
 
 ## Scripts
 
 ```bash
 npm run dev        # relay + web
-npm run relay      # sólo el relay
+npm run relay      # solo el relay
+npm test           # las reglas de la fila
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + bundle de producción
 npm run art        # regenerar el spritesheet
@@ -231,9 +219,10 @@ npm run art        # regenerar el spritesheet
 
 ## Seguridad
 
-Local por defecto: escucha en `127.0.0.1`, valida orígenes contra una lista, y
-**no tiene autenticación**. Lee [SECURITY.md](SECURITY.md) antes de ponerlo en una
-red.
+Local primero: escucha en `127.0.0.1`, permite solo ciertos orígenes y **no tiene
+autenticación**. Quien pueda llegar al relay comparte un enjambre, una fila y un
+presupuesto de llamadas al modelo; la propiedad es por conexión, no por cuenta. Lee
+[SECURITY.md](SECURITY.md) antes de ponerlo en una red.
 
 ## Licencia
 

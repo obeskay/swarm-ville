@@ -2,7 +2,7 @@
 
 <img src="assets/banner-zh.jpg" alt="SwarmVille — 一个可以走进去的智能体工作流" width="100%">
 
-五个智能体，五间工作室，一座小镇。工作流正在发生的时候就看得见，而不是事后翻日志。
+在共享办公室里让智能体替你干活：把它拖到地板上，支持别人的点子，面对面聊天。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-22%2B-black)](https://nodejs.org)
@@ -14,13 +14,18 @@
 
 ---
 
-## 问题在哪
+## 这是什么
 
-一轮智能体工作流就是一面文字墙。规划、构建、评审、返工、验证——五次模型调用滚动的速度比你读的速度还快；等到它出错，你只能往回翻，猜是哪一步坏了。
+智能体工作流是一面文字墙。SwarmVille 把它画成一间可以走动的办公室，并把它变成几个人
+一起做的事：
 
-信息从来不是问题，**形式**才是。一个日志窗口，用来表达五个角色、一次交接和一个循环，本来就不称职。
+- **留下一个智能体。** 写下你想要的东西，然后把你的智能体拎起来，放到地板上任意位置。
+  你去做别的事，它留在那里继续工作。
+- **支持一个点子。** 所有人的点子在**公告板**上排成一队。支持某个点子会让它往前排，
+  于是由大家决定蜂群接下来做什么。
+- **面对面聊天。** 走进公共区，你的摄像头会出现在头顶的圆角气泡里。视频是点对点传输的。
 
-所以 SwarmVille 把这个循环画成了一个地方。Atlas 站在规划室的书桌前，脚下亮着一圈光：那是一次正在进行的模型调用。Neo 和 Socrates 之间划过一道弧线：那是交接。Socrates 又走回 Neo 那边：评审给了返工。你不是在读状态，你是在看状态。
+没有设置页面，没有术语：一个输入框，一个按钮，一个手势。
 
 ## 快速开始
 
@@ -31,61 +36,75 @@ npm install
 npm run dev
 ```
 
-打开 <http://127.0.0.1:5173>。这会同时启动 5173 端口的 Vite 和 8765 端口的中继服务；Vite 会把 `/api` 和 `/ws` 代理过去，所以浏览器只和一个源通信。
+打开 <http://127.0.0.1:5173>。这会在 5173 启动 Vite，在 8765 启动 relay；Vite 代理
+`/api` 和 `/ws`，所以浏览器始终只和一个源通信。
 
-不需要任何 API key。默认的提供方 `agy` 需要 Antigravity CLI；没有它时，中继会回退到离线的 `mock` 模拟器，完整跑完整个循环，包括返工，所以第一次启动小镇就是活的。
+不需要 API key。默认提供方 `agy` 需要 Antigravity CLI；没有它时 relay 会退回离线的
+`mock` 模拟器，跑完整个循环（包含修改环节），并交出一个真实的小网页。
 
-用 **WASD** 走路，或者直接点地面。在底部的输入框里写下一个目标，然后看五个智能体去完成它。
+用 **WASD** 行走，或点击地板。按 **Esc** 回到全景。
+
+## 留下一个智能体
+
+1. 在底部输入栏写下你的点子，或点一个建议。
+2. 点 **留下我的智能体**，或抓起输入栏左边那个彩色智能体，放到你想要的位置。手套光标会
+   握住它；地上的圆环标出落点，它会从空中落下来。
+3. 它站在那里，头顶三个跳动的小点，蜂群在处理它。点击它就能在公告板上找到对应的卡片。
+
+拖拽使用指针事件而不是 HTML 拖放，所以手指也能用。按 **Esc** 把智能体放回去。
+
+## 队列
+
+一个蜂群，很多人，所以点子要轮流。relay 只维护一个队列：
+
+- 正在运行的点子排第一，其余按支持人数排序，人数相同则先到先得；
+- 不能支持自己的点子，重复支持等于取消；
+- 可以撤回自己排队中的点子，也可以停止自己的运行；
+- 离开的人会失去排队中的点子和他们投出的票。已经开始的运行会继续：
+  留下智能体然后走开，正是这个设计的意义。
+
+上限是 `QUEUE_MAX`（总共 12 个点子）和 `JOBS_PER_PEER`（每人 2 个）。
+
+## 你会得到什么
+
+运行结束后，构建者的交付物会在卡片中打开。如果目标是能在浏览器里运行的东西，构建者会交出
+一个自包含的 HTML 页面，你可以在隔离的预览中看到它运行。**发布链接**会把它写入
+`.data/releases/`，并复制 relay 在 `/r/<id>` 提供的地址；**下载**给你文件本身。否则你会
+得到一段通俗的总结。
+
+刻意不接 Vercel 或 GitHub：一个绑定在 `127.0.0.1`、没有认证的工具，不该持有部署令牌。页面
+在 `Content-Security-Policy: sandbox` 下提供，能运行，但读不到本应用的存储；见
+[SECURITY.md](SECURITY.md)。
 
 ## 循环
 
 ```
 plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ──▶ archive
             ▲               │
-            └─── REVISE ────┘   （由 MAX_REVISIONS 限制次数）
+            └─── REVISE ────┘   （受 MAX_REVISIONS 限制）
 ```
 
-每个阶段都是某一个智能体的一次模型调用。真正闭合循环的是评审的结论：`VERDICT: REVISE` 会把控制权交回给构建者。
+每个阶段是一个智能体的一次模型调用，评审的结论收尾：`VERDICT: REVISE` 会把控制权交回构建者。
 
-不管目标多大，每次都是同样的五次调用。设置 `DECOMPOSE=1` 会改变构建阶段：既然规划者本来就被要求输出有序步骤，那份计划就被当作任务清单来读，构建者一次只做一步——每步一次模型调用，在运行面板里标成 `Build 2/4`。代价是每一步多一次调用，所以它默认关闭，也因此循环里的其他部分一概不变。
-
-| 智能体 | 阶段 | 工作室 |
+| 智能体 | 阶段 | 房间 |
 |---|---|---|
-| Atlas | 规划 | Plan |
-| Neo | 构建 | Build |
-| Socrates | 评审 | Review |
-| Vanguard | 验证 | Review |
-| Alexandria | 归档 | Memory |
+| Atlas | Plan | Plan |
+| Neo | Build | Build |
+| Socrates | Review | Review |
+| Vanguard | Verify | Review |
+| Alexandria | Archive | Memory |
 
-## 屏幕上没有一处是编造的
+设置 `DECOMPOSE=1` 后，构建者按编号一步一步处理计划，每步一次模型调用。每步多一次调用，
+所以默认关闭。
 
-每次模型调用都会记录成一个**步骤**，每个步骤都带着真实耗时、输入与输出 token 数、第几次尝试、完整输出，以及失败时的原因。智能体站在哪里、脚下的光圈亮不亮，都是从这些记录推导出来的，不是一个靠猜的进度动画。
-
-产品经验值和奖励属于花园的游戏状态。它们绝不会被包装成模型置信度，或者某个编造出来的质量分。
+屏幕上没有一处是编造的。每次模型调用都是一个**步骤**，带有延迟、token、尝试次数和完整输出；
+智能体站在哪里、是否在思考，都来自这些记录，而不是靠猜的动画。
 
 ## 归档
 
-运行记录存在一个容量为 25 的环形缓冲区里，随进程一起消失——这让 Alexandria 的那一步成了整个循环中唯一没人能再读第二遍的环节。现在，每完成一次运行她都会往 `.data/archive.jsonl` 追加一行 JSON：目标、她写的那条笔记、结果，以及花了多少。Memory 工作室就是你回头读它们的地方。点开 Alexandria，打开归档，在目标和笔记里搜索。
-
-用 JSONL 而不是数据库，是因为一行就是一条完整记录，`tail -f` 直接可用，而且一行损坏只损失一次运行，不会毁掉整个归档。用 `ARCHIVE_FILE` 可以改存放位置。
-
-## 花园
-
-包在智能体循环外面的那层可玩循环。种下一个产品，把它交给蜂群，地块就会随着真实步骤的产生，依次走过规划、设计、构建、评审、验证和交付。两次运行之间可以用能量照料它，在市集买肥料，完成村庄任务，最后收获成品换取金币、宝石和经验。
-
-已交付的地块会打开 **产品工作室**：编辑生成的 HTML、CSS、JavaScript 或 README，发布修订版，在 iframe 里预览，或者下载一个可直接运行的单文件应用。个人档案和地块保存在浏览器本地存储里。
-
-## 给交付物一个地址
-
-产品工作室一直能打包出单文件应用，只是这个循环最后停在了你的下载文件夹里。点 **Publish**，这份文档会被写进 `.data/releases/`，由中继服务在 `/r/<id>` 提供访问——于是一块已交付的地块变成了你可以在新标签页打开、或者直接发给同一网络里某个人的东西。
-
-刻意不接 Vercel，也不接 GitHub。一个绑定在 `127.0.0.1`、完全没有鉴权的工具，不该保管任何部署令牌。文档带着 `Content-Security-Policy: sandbox` 返回，所以交付物能运行，却读不到这个应用的存储——见 [SECURITY.md](SECURITY.md)。
-
-## 广场
-
-走进广场就等于加入房间：中继服务会把已经在场的人告诉你，你的浏览器随即和每个人建立 WebRTC 连接。音视频是点对点的——中继只转发 SDP 和 ICE。
-
-拒绝摄像头授权也没关系，你会以旁听者的身份加入。公共 STUN 足够覆盖同一台机器和同一个局域网；要穿越对称型 NAT 需要 TURN 服务器（见 `.env.example`）。
+Alexandria 每完成一次运行就往 `.data/archive.jsonl` 写一行 JSON：目标、她的笔记、结果和成本。
+点击她即可打开记忆并搜索。用 JSONL 是因为一行就是完整记录，`tail -f` 可用，一行损坏只损失
+一次运行而不是整个归档。`ARCHIVE_FILE` 可以改位置。
 
 ## 模型提供方
 
@@ -119,59 +138,68 @@ python3 tools/pixelize.py --selftest
 
 ## HTTP 接口
 
-不用界面也能使用中继服务。
+不用界面也能使用 relay。
 
 ```bash
 curl localhost:8765/api/health
 curl localhost:8765/api/state
+# 蜂群空闲时返回 201 {run}，进入队列时返回 202 {queued, job}
 curl -X POST localhost:8765/api/runs \
   -H 'content-type: application/json' \
-  -d '{"goal":"给公开的 REST API 加上限流"}'
+  -d '{"goal":"给我的瑜伽课做一个落地页"}'
 curl -X POST localhost:8765/api/runs/stop
-curl 'localhost:8765/api/archive?q=rate%20limiting'
+curl 'localhost:8765/api/archive?q=yoga'
 curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hi</h1>"}'
 ```
 
-`/ws` 上的 WebSocket 会推送 `snapshot`、`run`、`step`、`event`、`agent`、`handoff`、`provider`，以及在线状态和 WebRTC 信令消息。
+`/ws` 上的 WebSocket 会推送 `snapshot`、`run`、`step`、`event`、`agent`、`handoff`、`queue`、
+`provider`、在线状态和 WebRTC 信令。它接受 `run:start {goal, at?}`、`run:stop`、
+`queue:back {id}`、`queue:cancel {id}`、`presence:name`、`presence:move`、`room:join`、
+`room:leave` 和 `rtc:signal`。一次运行属于留下它的那个连接，只有该连接能停止它。
 
 ## 目录结构
 
 ```
 server/
-  index.js          HTTP + WebSocket，安全中间件
+  index.js          HTTP + WebSocket、安全中间件
+  queue.js          共享的点子队列（纯逻辑，有单元测试）
   orchestrator.js   智能体循环
-  archive.js        每完成一次运行写一行 JSON
+  archive.js        每次完成的运行写一行 JSON
   releases.js       发布并提供单文件交付物
-  security.js       限流、来源校验、请求体上限、内容清洗
+  security.js       限流、来源校验、请求体上限、清洗
   rooms.js          在线状态 + WebRTC 信令
   providers/        agy、claude、crosstalk、ollama、anthropic、mock
 src/
   world/
-    World.ts        2D 渲染器
-    map.ts          村庄布局
-    theme.ts        调色板、地砖网格、房间矩形
-    atlas.ts        图集加载器
-  ui/               各类面板，含归档
-  lib/              WebSocket 客户端、WebRTC 网状连接
-art/manifest.json   每个精灵及其提示词
-tools/              生成美术资源、打包图集
-assets/             横幅与品牌资源
+    World.ts        2D 渲染与放置目标
+    map.ts          办公室布局
+    sprites.ts      地板、墙和家具，用代码绘制
+    theme.ts        调色板、格子、房间矩形
+    atlas.ts        角色精灵图加载
+  ui/               输入栏、公告板、进度条、结果卡、通话
+  lib/              relay 与通话 hooks、拖拽、i18n（es/en）、WebRTC 网格
+public/cursors/     手套光标
+art/manifest.json   每个角色及其提示词
+tools/              生成美术、打包图集
 ```
 
 ## 脚本
 
 ```bash
-npm run dev        # 中继 + 前端
-npm run relay      # 只启动中继
+npm run dev        # relay + 网页
+npm run relay      # 只启动 relay
+npm test           # 队列的规则
 npm run typecheck  # tsc --noEmit
 npm run build      # 类型检查 + 生产构建
-npm run art        # 重新生成图集
+npm run art        # 重新生成精灵图
 ```
 
 ## 安全
 
-默认只在本地运行：绑定 `127.0.0.1`，按白名单校验来源，并且**没有任何鉴权**。把它放到网络上之前，请先读 [SECURITY.md](SECURITY.md)。
+默认本地优先：绑定 `127.0.0.1`，限制来源，并且**没有认证**。能访问 relay 的所有人共享同一个
+蜂群、同一个队列和同一份模型调用预算；归属按连接而不是按账号。放到网络上之前请先读
+[SECURITY.md](SECURITY.md)。
 
 ## 许可证
 
-MIT —— 见 [LICENSE](LICENSE)。
+MIT — 见 [LICENSE](LICENSE)。

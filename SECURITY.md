@@ -25,7 +25,8 @@ requires putting an authenticating proxy in front of it.
 | Connection cap and ping/pong reaping of half-open sockets | `server/index.js` |
 | Goal input is length-capped and stripped of control characters | `server/security.js` |
 | Runs, steps and events live in bounded ring buffers | `server/state.js` |
-| Only one run executes at a time; a second request gets `409` | `server/orchestrator.js` |
+| Only one run executes at a time; the rest wait in a bounded line (`QUEUE_MAX`, `JOBS_PER_PEER`) | `server/queue.js`, `server/orchestrator.js` |
+| A run can be stopped, and a waiting idea withdrawn, only by the connection that left it | `server/queue.js` |
 | `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` | `server/index.js` |
 
 ## Secrets

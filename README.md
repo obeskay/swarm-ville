@@ -2,7 +2,7 @@
 
 <img src="assets/banner-en.jpg" alt="SwarmVille — an agentic loop you can walk around in" width="100%">
 
-Five agents, five rooms, one town. Watch the loop happen instead of reading about it afterwards.
+Leave an agent working in a shared office. Drag it onto the floor, back other people's ideas, talk face to face.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-22%2B-black)](https://nodejs.org)
@@ -14,19 +14,19 @@ English · [Español](README.es.md) · [中文](README.zh-CN.md)
 
 ---
 
-## The problem
+## What it is
 
-An agentic loop is a wall of text. Plan, build, review, revise, verify — five model
-calls that scroll past faster than you can read them, and by the time it fails you
-are scrolling back up trying to work out which step went wrong and why.
+An agentic loop is a wall of text. SwarmVille renders it as an office you can walk
+around, and turns it into something several people do together:
 
-The information was never the problem. The **shape** was. A log is a bad medium for
-something that is really five actors, a handoff, and a cycle.
+- **Leave an agent.** Type what you want, then pick your agent up and set it down
+  anywhere on the floor. It stays there, working, while you do something else.
+- **Back an idea.** Everyone's ideas wait in one line on the **Board**. Backing one
+  moves it up, so the crowd decides what the swarm builds next.
+- **Talk face to face.** Walk into the commons and your camera appears above your
+  head, squircle bubble and all. Media is peer-to-peer.
 
-So SwarmVille renders the loop as a place. Atlas is standing at a desk in the Plan
-room with a lit ring: that is a model call in flight. An arc between Neo and
-Socrates: that is the handoff. Socrates walking back to Neo: the reviewer said
-revise. You do not read the state, you look at it.
+No setup screen, no jargon: one field, one button, one gesture.
 
 ## Quick start
 
@@ -37,15 +37,52 @@ npm install
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173>. That starts Vite on 5173 and the relay on 8765;
-Vite proxies `/api` and `/ws`, so the browser only ever talks to one origin.
+Open <http://127.0.0.1:5173>. That starts Vite on 5173 and the relay on 8765; Vite
+proxies `/api` and `/ws`, so the browser only ever talks to one origin.
 
 No API key required. The default provider, `agy`, needs the Antigravity CLI;
 without it the relay falls back to the offline `mock` simulator, which runs the
-whole loop, revise cycle included, so the town is alive on first boot.
+whole loop, revise cycle included, and hands back a real little web page.
 
-Walk with **WASD** or click the ground. Type an objective in the bar at the bottom
-and watch five agents do it.
+Walk with **WASD** or tap the floor. **Esc** goes back to the wide shot.
+
+## Leaving an agent
+
+1. Write your idea in the bar at the bottom, or tap one of the suggestions.
+2. Press **Leave my agent**, or grab the coloured agent at the left of the bar and
+   drop it where you like. The glove cursor closes around it; a ring shows where it
+   will land, and it drops in from above.
+3. It stands there with three bouncing dots while the swarm works on it. Click it
+   to find its card on the Board.
+
+Dragging uses pointer events, not HTML drag-and-drop, so it works with a finger
+too. Press **Esc** to put the agent back.
+
+## The line
+
+One swarm, many people, so ideas take turns. The relay keeps a single queue:
+
+- the running idea is first, the rest are ordered by how many people back them,
+  then by who arrived first;
+- you cannot back your own idea, and backing twice takes it back;
+- you can withdraw your own waiting ideas, and stop your own run;
+- a person who leaves loses their waiting ideas and their votes. A run that is
+  already going keeps going: leaving an agent and walking away is the point.
+
+Limits are `QUEUE_MAX` (12 ideas in total) and `JOBS_PER_PEER` (2 each).
+
+## What you get back
+
+When a run finishes, the builder's deliverable opens in a card. If the objective
+was something that runs in a browser, the builder hands over one self-contained
+HTML page and you see it working in a sandboxed preview. **Publish link** writes
+it to `.data/releases/` and copies an address the relay serves at `/r/<id>`;
+**Download** gives you the file. Otherwise you get the plain-language summary.
+
+Deliberately not Vercel or GitHub. A tool that binds to `127.0.0.1` and has no
+authentication has no business holding a deploy token. The page is served under
+`Content-Security-Policy: sandbox`, so it runs but cannot read this app's storage;
+see [SECURITY.md](SECURITY.md).
 
 ## The loop
 
@@ -55,15 +92,8 @@ plan ──▶ build ──▶ review ──┬── PASS ──▶ verify ─�
             └─── REVISE ────┘   (bounded by MAX_REVISIONS)
 ```
 
-Each phase is one model call by one agent. The reviewer's verdict closes the loop:
-`VERDICT: REVISE` sends control back to the builder.
-
-Every objective gets the same five calls, however large it is. Setting
-`DECOMPOSE=1` changes the build stage: the planner is already asked for ordered
-steps, so the plan is read as a task list and the builder takes one step at a
-time — one model call each, labelled `Build 2/4` in the run panel. It costs a
-call per step, which is why it is off by default and why nothing else in the
-loop changes.
+Each phase is one model call by one agent, and the reviewer's verdict closes the
+loop: `VERDICT: REVISE` sends control back to the builder.
 
 | Agent | Phase | Room |
 |---|---|---|
@@ -73,62 +103,19 @@ loop changes.
 | Vanguard | Verify | Review |
 | Alexandria | Archive | Memory |
 
-## Nothing on screen is invented
+Set `DECOMPOSE=1` and the builder takes the plan one numbered step at a time, one
+model call each. It costs a call per step, which is why it is off by default.
 
-Every model call is recorded as a **step**, and every step carries wall-clock
-latency, input and output tokens, the attempt number, the full output, and the
-failure reason if it failed. Where an agent is standing and whether its ring is
-lit are derived from those same records — not from a progress animation that
-guesses.
-
-Product XP and rewards are game state owned by the garden. They are never dressed
-up as model confidence or an invented quality score.
+Nothing on screen is invented. Every model call is a **step** with its latency,
+tokens, attempt and full output, and where an agent stands and whether it is
+thinking comes from those records, not from an animation that guesses.
 
 ## The archive
 
-Runs live in a ring buffer of 25 and die with the process, which made
-Alexandria's phase the one step in the loop nobody could ever read again. She
-now writes one JSON line per finished run to `.data/archive.jsonl` — the goal,
-her note, the outcome and what it cost — and the Memory room is where you read
-them back. Click Alexandria, open the archive, search across goals and notes.
-
-JSONL rather than a database because a line is the whole record, `tail -f` works
-on it, and a corrupt line costs you one run instead of the archive. Set
-`ARCHIVE_FILE` to move it.
-
-## The garden
-
-The playable loop around the agentic loop. Plant a product, send it to the swarm,
-and the plot advances through plan, design, build, review, verify and ship as the
-run emits real steps. Tend it with energy between runs, buy fertilizer at the
-market, complete village quests, and harvest the shipped release for coins, gems
-and XP.
-
-A shipped plot opens **Product Studio**: edit the generated HTML, CSS, JavaScript
-or README, publish revisions, preview them in an iframe, and download a runnable
-single-file app. Profile and plots persist in local storage.
-
-## An address for a release
-
-Product Studio could always build a single-file app; the loop just ended in your
-downloads folder. **Publish** writes that document to `.data/releases/` and the
-relay serves it at `/r/<id>`, so a shipped plot is something you can open in
-another tab or hand to somebody on the same network.
-
-Deliberately not Vercel or GitHub. A tool that binds to `127.0.0.1` and has no
-authentication has no business holding a deploy token. The document is served
-under `Content-Security-Policy: sandbox`, so a release runs but cannot read this
-app's storage — see [SECURITY.md](SECURITY.md).
-
-## The commons
-
-Walk into the plaza and you join the room: the relay hands you the peers already
-there and your browser opens a WebRTC connection to each. Media is peer-to-peer —
-the relay only forwards SDP and ICE.
-
-Declining the camera prompt is fine, you join as a listener. Public STUN covers the
-same machine and the same LAN; crossing a symmetric NAT needs a TURN server (see
-`.env.example`).
+Alexandria writes one JSON line per finished run to `.data/archive.jsonl`: the
+goal, her note, the outcome and what it cost. Click her to open the memory and
+search it. JSONL because a line is the whole record, `tail -f` works on it, and a
+corrupt line costs one run instead of the archive. Set `ARCHIVE_FILE` to move it.
 
 ## Providers
 
@@ -150,8 +137,9 @@ selector, instead of failing silently.
 
 ## The art
 
-Every tile, prop and character is generated with `gpt-image-2` and then reduced to
-a pixel grid. `art/manifest.json` holds one prompt per asset, `tools/genart.mjs`
+The characters are generated with `gpt-image-2` and then reduced to a pixel grid.
+The floors, walls and furniture are drawn in code (`src/world/sprites.ts`), so the
+whole look of the office is a palette in `src/world/theme.ts`. `art/manifest.json` holds one prompt per asset, `tools/genart.mjs`
 generates them, and `tools/pixelize.py` crops, downscales, hardens the alpha,
 quantises to 64 colours and packs a single atlas. Character sheets are one image
 of four poses, split on the empty columns between them.
@@ -162,8 +150,8 @@ npm run art                        # generate whatever is missing, then repack
 python3 tools/pixelize.py --selftest
 ```
 
-Only `public/art/atlas.png` and `atlas.json` are committed. The 29 MB of raw
-frames are intermediates; regenerating them costs about $1.40.
+Only `public/art/atlas.png` and `atlas.json` are committed. The raw frames are
+intermediates.
 
 The renderer draws the world into an offscreen canvas at art resolution and blows
 it up by a whole-number factor, so every pixel on screen is the same size and
@@ -177,22 +165,27 @@ The relay is usable without the UI.
 ```bash
 curl localhost:8765/api/health
 curl localhost:8765/api/state
+# 201 {run} when the swarm was idle, 202 {queued, job} when it joined the line
 curl -X POST localhost:8765/api/runs \
   -H 'content-type: application/json' \
-  -d '{"goal":"Add rate limiting to the public REST API"}'
+  -d '{"goal":"A landing page for my yoga class"}'
 curl -X POST localhost:8765/api/runs/stop
-curl 'localhost:8765/api/archive?q=rate%20limiting'
+curl 'localhost:8765/api/archive?q=yoga'
 curl -X POST localhost:8765/api/releases -d '{"html":"<!doctype html><h1>hi</h1>"}'
 ```
 
 The WebSocket at `/ws` pushes `snapshot`, `run`, `step`, `event`, `agent`,
-`handoff`, `provider`, presence and WebRTC signalling messages.
+`handoff`, `queue`, `provider`, presence and WebRTC signalling messages. It accepts
+`run:start {goal, at?}`, `run:stop`, `queue:back {id}`, `queue:cancel {id}`,
+`presence:name`, `presence:move`, `room:join`, `room:leave` and `rtc:signal`.
+A run belongs to the connection that left it; only that connection can stop it.
 
 ## Layout
 
 ```
 server/
   index.js          HTTP + WebSocket, security middleware
+  queue.js          the shared line of ideas (pure, unit-tested)
   orchestrator.js   the agentic loop
   archive.js        one JSON line per finished run
   releases.js       publishes and serves a single-file release
@@ -201,15 +194,16 @@ server/
   providers/        agy, claude, crosstalk, ollama, anthropic, mock
 src/
   world/
-    World.ts        the 2D renderer
-    map.ts          the village layout
+    World.ts        the 2D renderer and the drop target
+    map.ts          the office layout
+    sprites.ts      floors, walls and furniture, drawn in code
     theme.ts        palette, tile grid, room rects
-    atlas.ts        spritesheet loader
-  ui/               panels, including the archive
-  lib/              WebSocket client, WebRTC mesh
-art/manifest.json   every sprite and its prompt
+    atlas.ts        character spritesheet loader
+  ui/               the bar, the Board, the run pill, the result card, the call
+  lib/              relay + call hooks, drag, i18n (es/en), WebRTC mesh
+public/cursors/     the glove cursors
+art/manifest.json   every character and its prompt
 tools/              generate art, pack the atlas
-assets/             banner and brand kit
 ```
 
 ## Scripts
@@ -217,6 +211,7 @@ assets/             banner and brand kit
 ```bash
 npm run dev        # relay + web
 npm run relay      # relay only
+npm test           # the queue's rules
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production bundle
 npm run art        # regenerate the spritesheet
@@ -225,7 +220,9 @@ npm run art        # regenerate the spritesheet
 ## Security
 
 Local-first by default: binds `127.0.0.1`, allowlists origins, and has **no
-authentication**. Read [SECURITY.md](SECURITY.md) before putting it on a network.
+authentication**. Everyone who can reach the relay shares one swarm, one line and
+one budget of model calls; ownership is per connection, not per account. Read
+[SECURITY.md](SECURITY.md) before putting it on a network.
 
 ## License
 
