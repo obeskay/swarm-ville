@@ -61,6 +61,27 @@ export const config = {
     ? list(process.env.ALLOWED_ORIGINS)
     : DEFAULT_ORIGINS,
 
+  /**
+   * The built app (`npm run build`). When this folder holds an index.html the
+   * relay serves it, so one process is the whole deployment. Relative paths
+   * resolve against the working directory, like ARCHIVE_FILE.
+   */
+  staticDir: process.env.STATIC_DIR || "dist",
+
+  /**
+   * Off by default. Set, every API call and the WebSocket need it, and the app
+   * shows a lock screen first. It is the only thing between the internet and
+   * your model budget once HOST is not loopback.
+   */
+  accessCode: (process.env.ACCESS_CODE || "").trim(),
+
+  /**
+   * Off by default. On, the client address for rate limiting is the first entry
+   * of X-Forwarded-For. Only turn it on when the relay is reachable through your
+   * reverse proxy alone, otherwise anyone can pick their own address.
+   */
+  trustProxy: bool(process.env.TRUST_PROXY),
+
   provider: (process.env.PROVIDER || "agy").toLowerCase(),
 
   anthropic: {

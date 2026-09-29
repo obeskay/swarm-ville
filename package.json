@@ -12,6 +12,7 @@
     "dev:web": "vite --port 5173 --strictPort",
     "dev:relay": "node --watch server/index.js --port 8765",
     "relay": "node server/index.js",
+    "start": "node server/index.js",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

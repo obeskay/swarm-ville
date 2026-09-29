@@ -1,0 +1,26 @@
+# Keep the build context small and keep secrets out of the image.
+node_modules
+dist
+.git
+.github
+.data
+.env
+.env.*
+.vite
+.claude
+.agents
+*.log
+*.pem
+*.key
+ORIGINAL_REQUEST.md
+
+# Regenerable art intermediates and banner render output (not needed to build).
+art/raw
+build
+
+# Not needed inside the image.
+assets
+tools
+Dockerfile
+docker-compose.yml
+.dockerignore

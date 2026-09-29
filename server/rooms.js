@@ -64,6 +64,20 @@ export const spot = (raw) => {
   return Number.isFinite(x) && Number.isFinite(z) ? { x: clamp(x, -11, 11), z: clamp(z, -7, 7) } : null;
 };
 
+/** The only reactions the relay passes along: anything else is dropped, never echoed. */
+export const EMOTES = new Set(["wave", "clap", "heart", "fire", "party"]);
+const EMOTE_GAP_MS = 400;
+
+/** Tells everyone, sender included, that this person reacted. Spam is dropped quietly. */
+export const emote = (id, kind, now = Date.now()) => {
+  const peer = peers.get(id);
+  if (!peer || !EMOTES.has(kind)) return false;
+  if (now - (peer.lastEmote ?? 0) < EMOTE_GAP_MS) return false;
+  peer.lastEmote = now;
+  broadcast({ type: "presence:emote", data: { id, emote: kind } });
+  return true;
+};
+
 export const setName = (id, rawName) => {
   const peer = peers.get(id);
   if (!peer) return;

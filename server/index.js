@@ -1,16 +1,20 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
 
 import { config } from "./config.js";
 import {
+  checkAccess,
   clientKey,
   httpLimiter,
   isAllowedOrigin,
+  exposureWarning,
   readJsonBody,
   sanitizeText,
   socketLimiter
 } from "./security.js";
+import { createStaticHandler } from "./static.js";
 import { PROVIDER_IDS, providerStatus } from "./providers/index.js";
 import { bus, snapshot, state, emit, activeRun } from "./state.js";
 import { isRunning, startRun, stopAll, stopRun } from "./orchestrator.js";
@@ -28,6 +32,10 @@ const queue = createQueue({
   emit: (items) => emit("queue", { items })
 });
 
+// The built app, when there is one. Without a build the relay is API-only, which
+// is what `npm run dev` wants (Vite serves the page and proxies here).
+const app = createStaticHandler(config.staticDir);
+
 const json = (res, status, payload) => {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
@@ -39,17 +47,37 @@ const json = (res, status, payload) => {
   res.end(body);
 };
 
+/**
+ * Parses the request target. `new URL` throws on inputs like `//` or a Host
+ * header with a space in it, and a throw inside these async handlers is an
+ * unhandled rejection that ends the process, so anybody could stop the relay
+ * with one request. The Host header is not used for anything here, hence the
+ * fixed base.
+ */
+const parseUrl = (req) => {
+  try {
+    return new URL(req.url || "/", "http://relay.local");
+  } catch {
+    return null;
+  }
+};
+
 const applyCors = (req, res) => {
   const origin = req.headers.origin;
-  if (origin && isAllowedOrigin(origin)) {
+  if (origin && isAllowedOrigin(origin, req)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Access-Code");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   }
 };
 
 const server = http.createServer(async (req, res) => {
+  // The page and its files come first and answer to nobody: a navigation sends
+  // no Origin header, the lock screen has to load before anyone has a code, and
+  // fetching a dozen assets must not use up the API's rate limit.
+  if (app && (await app.handle(req, res))) return;
+
   applyCors(req, res);
 
   if (req.method === "OPTIONS") {
@@ -58,7 +86,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (!isAllowedOrigin(req.headers.origin)) {
+  if (!isAllowedOrigin(req.headers.origin, req)) {
     json(res, 403, { error: "origin_not_allowed" });
     return;
   }
@@ -68,10 +96,62 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const url = parseUrl(req);
+  if (!url) {
+    json(res, 400, { error: "bad_request" });
+    return;
+  }
 
+  // Public on purpose: a load balancer or a lock screen has to be able to ask.
+  // It says whether a code is needed and never what the code is.
   if (req.method === "GET" && url.pathname === "/api/health") {
-    json(res, 200, { status: "ok", running: isRunning(), peers: rooms.peerCount() });
+    json(res, 200, {
+      status: "ok",
+      running: isRunning(),
+      peers: rooms.peerCount(),
+      locked: Boolean(config.accessCode)
+    });
+    return;
+  }
+
+  // Published releases are public pages (their own sandbox keeps them harmless),
+  // so they sit in front of the access code.
+  if (req.method === "GET" && url.pathname.startsWith("/r/")) {
+    const html = await readRelease(url.pathname.slice(3));
+    if (!html) {
+      json(res, 404, { error: "not_found" });
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      // The document is user-authored and served from the relay's own origin.
+      // `sandbox` drops it into an opaque origin, so a published release cannot
+      // read this app's storage or call its API with anybody's cookies.
+      "Content-Security-Policy": "sandbox allow-scripts allow-forms;",
+      "Referrer-Policy": "no-referrer"
+    });
+    res.end(html);
+    return;
+  }
+
+  // Everything below is the API. Deny by default: with a code set, anything
+  // that is not listed as public above needs it, so a path the router does not
+  // know about cannot slip past.
+  const access = checkAccess(req, url);
+  if (access === "blocked") {
+    json(res, 429, { error: "rate_limited" });
+    return;
+  }
+  if (access !== "ok") {
+    json(res, 401, { error: "access_code_required" });
+    return;
+  }
+
+  // Lets the client test a code without opening a socket. Reaching this line
+  // means the gate above accepted it (or there is no code at all).
+  if (req.method === "GET" && url.pathname === "/api/access") {
+    json(res, 200, { ok: true });
     return;
   }
 
@@ -95,27 +175,6 @@ const server = http.createServer(async (req, res) => {
       const full = error.message === "queue_full" || error.message === "too_many_jobs";
       json(res, full ? 429 : 400, { error: error.message });
     }
-    return;
-  }
-
-  // Served before the origin check: a browser navigating to a page sends no
-  // Origin header, and this is a page rather than an API call.
-  if (req.method === "GET" && url.pathname.startsWith("/r/")) {
-    const html = await readRelease(url.pathname.slice(3));
-    if (!html) {
-      json(res, 404, { error: "not_found" });
-      return;
-    }
-    res.writeHead(200, {
-      "Content-Type": "text/html; charset=utf-8",
-      "X-Content-Type-Options": "nosniff",
-      // The document is user-authored and served from the relay's own origin.
-      // `sandbox` drops it into an opaque origin, so a published release cannot
-      // read this app's storage or call its API with anybody's cookies.
-      "Content-Security-Policy": "sandbox allow-scripts allow-forms;",
-      "Referrer-Policy": "no-referrer"
-    });
-    res.end(html);
     return;
   }
 
@@ -155,10 +214,22 @@ const wss = new WebSocketServer({
 });
 
 server.on("upgrade", (req, socket, head) => {
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const url = parseUrl(req);
 
-  if (url.pathname !== "/ws" || !isAllowedOrigin(req.headers.origin)) {
+  if (!url || url.pathname !== "/ws" || !isAllowedOrigin(req.headers.origin, req)) {
     socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
+    socket.destroy();
+    return;
+  }
+
+  // A browser cannot set headers on a WebSocket, so the code rides in `?code=`.
+  const access = checkAccess(req, url);
+  if (access !== "ok") {
+    socket.write(
+      access === "blocked"
+        ? "HTTP/1.1 429 Too Many Requests\r\n\r\n"
+        : "HTTP/1.1 401 Unauthorized\r\n\r\n"
+    );
     socket.destroy();
     return;
   }
@@ -264,6 +335,10 @@ wss.on("connection", (ws) => {
         rooms.movePeer(peerId, message.x, message.z);
         return;
 
+      case "presence:emote":
+        rooms.emote(peerId, message.emote);
+        return;
+
       case "room:join":
         rooms.joinRoom(peerId);
         return;
@@ -320,6 +395,16 @@ server.listen(config.port, config.host, () => {
     .map((entry) => entry.id)
     .join(", ");
   console.log(`SwarmVille relay  http://${config.host}:${config.port}`);
+  console.log(
+    app
+      ? `  app:      serving ${app.root}`
+      : `  app:      not served (no index.html in ${resolve(config.staticDir)}). Run \`npm run build\`, or use \`npm run dev\`.`
+  );
+  console.log(
+    `  access:   ${config.accessCode ? "code required (ACCESS_CODE is set)" : "open, no ACCESS_CODE set"}`
+  );
   console.log(`  provider: ${state.provider}   available: ${ready}`);
-  console.log(`  origins:  ${config.allowedOrigins.join(", ")}`);
+  console.log(`  origins:  ${config.allowedOrigins.join(", ")}, and this server's own address`);
+  const warning = exposureWarning(config.host, Boolean(config.accessCode));
+  if (warning) for (const line of warning) console.warn(`  ${line}`);
 });

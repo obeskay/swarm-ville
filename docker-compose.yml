@@ -1,0 +1,31 @@
+# One service: the relay and the built app on one port.
+#
+#   docker compose up -d --build
+#   open http://localhost:8765
+#
+# Settings go in a .env file next to this one (copy .env.example). See DEPLOY.md.
+services:
+  swarmville:
+    build: .
+    image: swarm-ville
+    restart: unless-stopped
+    ports:
+      # Bound to this machine only, which is right when a reverse proxy such as
+      # Caddy sits in front. To reach it from other machines use "8765:8765",
+      # and set ACCESS_CODE in .env first.
+      - "127.0.0.1:8765:8765"
+    # Optional: without a .env file everything below still works (mock provider).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Fixed here so a HOST or PORT copied from .env.example cannot make the
+      # container unreachable. `environment` wins over `env_file`.
+      HOST: 0.0.0.0
+      PORT: "8765"
+    volumes:
+      # The archive and published releases survive rebuilds and restarts.
+      - swarmville-data:/app/.data
+
+volumes:
+  swarmville-data:
