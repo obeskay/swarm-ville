@@ -34,10 +34,8 @@ const broadcast = (message, exceptId = null) => {
   }
 };
 
-// Arrivals stand on the south lane, clear of the commons circle — walking in
-// is what joins the call, so nobody should start out already in it.
-// The main street, one step short of the commons: a guest lands in the middle
-// of the village without the proximity call opening a camera on arrival.
+// Arrivals stand in the doorway of the build room, clear of the commons —
+// walking in is what joins the call, so nobody should start out already in it.
 const SPAWN = { x: 0.25, z: -2.5 };
 
 export const addPeer = (id, send) => {
@@ -55,6 +53,15 @@ export const removePeer = (id) => {
   if (peer.inRoom) leaveRoom(id);
   peers.delete(id);
   broadcast({ type: "presence:leave", data: { id } });
+};
+
+export const nameOf = (id) => peers.get(id)?.name ?? "Guest";
+
+/** A point on the map from untrusted input, clamped to where people can stand; null if it is not one. */
+export const spot = (raw) => {
+  const x = Number(raw?.x);
+  const z = Number(raw?.z);
+  return Number.isFinite(x) && Number.isFinite(z) ? { x: clamp(x, -11, 11), z: clamp(z, -7, 7) } : null;
 };
 
 export const setName = (id, rawName) => {

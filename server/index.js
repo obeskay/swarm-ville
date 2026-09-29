@@ -14,9 +14,19 @@ import {
 import { PROVIDER_IDS, providerStatus } from "./providers/index.js";
 import { bus, snapshot, state, emit, activeRun } from "./state.js";
 import { isRunning, startRun, stopAll, stopRun } from "./orchestrator.js";
+import { createQueue } from "./queue.js";
 import * as rooms from "./rooms.js";
 import { recall } from "./archive.js";
 import { publish, read as readRelease } from "./releases.js";
+
+// One swarm, many people: runs are never started directly, they go through here.
+const queue = createQueue({
+  limits: config.limits,
+  start: (job) =>
+    startRun(job.goal, { id: job.ownerId, name: job.ownerName }, () => queue.finished(job.id)),
+  stop: (job) => stopRun(job.runId),
+  emit: (items) => emit("queue", { items })
+});
 
 const json = (res, status, payload) => {
   const body = JSON.stringify(payload);
@@ -66,7 +76,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && url.pathname === "/api/state") {
-    json(res, 200, snapshot({ providers: providerStatus() }));
+    json(res, 200, snapshot({ providers: providerStatus(), queue: queue.items() }));
     return;
   }
 
@@ -78,11 +88,12 @@ const server = http.createServer(async (req, res) => {
         json(res, 400, { error: "goal_too_short" });
         return;
       }
-      const run = await startRun(goal);
-      json(res, 201, { run });
+      const { job, started } = queue.submit({ goal, ownerId: "http", ownerName: "API" });
+      if (started) json(res, 201, { run: await started });
+      else json(res, 202, { queued: true, job });
     } catch (error) {
-      const status = error.message === "run_in_progress" ? 409 : 400;
-      json(res, status, { error: error.message });
+      const full = error.message === "queue_full" || error.message === "too_many_jobs";
+      json(res, full ? 429 : 400, { error: error.message });
     }
     return;
   }
@@ -181,7 +192,7 @@ wss.on("connection", (ws) => {
 
   send(ws, {
     type: "snapshot",
-    data: snapshot({ providers: providerStatus(), run: activeRun() })
+    data: snapshot({ providers: providerStatus(), run: activeRun(), queue: queue.items() })
   });
   rooms.addPeer(peerId, (message) => send(ws, message));
 
@@ -204,7 +215,13 @@ wss.on("connection", (ws) => {
           return;
         }
         try {
-          await startRun(goal);
+          const { started } = queue.submit({
+            goal,
+            ownerId: peerId,
+            ownerName: rooms.nameOf(peerId),
+            at: rooms.spot(message.at)
+          });
+          await started;
         } catch (error) {
           send(ws, { type: "error", data: { error: error.message } });
         }
@@ -212,7 +229,19 @@ wss.on("connection", (ws) => {
       }
 
       case "run:stop":
-        stopRun(null);
+        try {
+          queue.stopCurrent(peerId);
+        } catch (error) {
+          send(ws, { type: "error", data: { error: error.message } });
+        }
+        return;
+
+      case "queue:back":
+        queue.back(peerId, message.id);
+        return;
+
+      case "queue:cancel":
+        queue.cancel(peerId, message.id);
         return;
 
       case "provider:set": {
@@ -253,6 +282,7 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     rooms.removePeer(peerId);
+    queue.dropOwner(peerId);
     socketLimiter.forget(peerId);
   });
 
@@ -274,6 +304,7 @@ heartbeat.unref();
 
 const shutdown = () => {
   clearInterval(heartbeat);
+  queue.drain();
   stopAll();
   for (const client of wss.clients) client.close(1001, "server shutting down");
   server.close(() => process.exit(0));

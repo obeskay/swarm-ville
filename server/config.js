@@ -97,7 +97,11 @@ export const config = {
     /** Revise cycles allowed before a run is force-finished. */
     maxRevisions: int(process.env.MAX_REVISIONS, 2),
     /** People allowed in the meeting room at once. */
-    roomCapacity: int(process.env.ROOM_CAPACITY, 8)
+    roomCapacity: int(process.env.ROOM_CAPACITY, 8),
+    /** Jobs in the shared queue at once, the running one included. */
+    queueMax: int(process.env.QUEUE_MAX, 12),
+    /** Jobs one peer may have queued or running at once. */
+    jobsPerPeer: int(process.env.JOBS_PER_PEER, 2)
   }
 };
 

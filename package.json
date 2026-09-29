@@ -1,7 +1,7 @@
 {
   "name": "swarm-ville",
   "version": "3.0.0",
-  "description": "A small town you can watch your agents work in — agentic loop orchestration with live observability and a proximity video room.",
+  "description": "A shared office where you leave an agent working: drag it onto the floor, back other people's ideas, talk face to face.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -15,6 +15,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "test": "node --test \"server/**/*.test.js\"",
     "art": "node tools/genart.mjs && python3 tools/pixelize.py"
   },
   "dependencies": {

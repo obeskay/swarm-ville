@@ -41,7 +41,13 @@ const PHASES = {
     label: "Build",
     system:
       "You are the builder of a small software swarm. Carry out the plan and " +
-      "report what you actually changed. Be specific and brief. No preamble.",
+      "hand over the finished deliverable. If the objective is a website, page, " +
+      "app, tool or anything that runs in a browser, the deliverable is ONE " +
+      "complete, self-contained HTML document (inline CSS and JavaScript, no " +
+      "external files or libraries, responsive, readable) inside a single " +
+      "```html block, followed by two plain sentences on what it does. " +
+      "Otherwise write the deliverable itself (the text, the plan, the list) in " +
+      "plain language. No preamble.",
     prompt: ({ goal, plan, critique, task, index, total }) => {
       const changes = critique ? `The reviewer asked for changes:\n${critique}\n\n` : "";
       if (task) {
@@ -96,13 +102,20 @@ export const planTasks = (text) =>
     .filter((line) => line.length > 3)
     .slice(0, config.limits.maxTasks);
 
-/** Output kept per step, so a chatty model cannot bloat the transported run. */
+/**
+ * Output kept per step, so a chatty model cannot bloat the transported run. The
+ * builder gets more room: its output can be a whole page, and half a page is
+ * not a deliverable.
+ */
 const MAX_STEP_OUTPUT = 4000;
+const MAX_BUILD_OUTPUT = 48_000;
 
 const runners = new Map();
 
-const trimOutput = (text) =>
-  text.length > MAX_STEP_OUTPUT ? `${text.slice(0, MAX_STEP_OUTPUT)}…` : text;
+const trimOutput = (text, phase) => {
+  const max = phase === "build" ? MAX_BUILD_OUTPUT : MAX_STEP_OUTPUT;
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+};
 
 const firstLine = (text) => text.split("\n").find((line) => line.trim()) || "working…";
 
@@ -151,7 +164,7 @@ const runPhase = async ({ run, phase, context, attempt, provider, signal, label 
 
     step.status = "done";
     step.ms = Date.now() - started;
-    step.output = trimOutput(result.text);
+    step.output = trimOutput(result.text, phase);
     step.usage = result.usage;
     step.model = result.model;
 
@@ -192,8 +205,14 @@ const finish = (run, status, note = null) => {
   );
 };
 
-/** Starts a run. Only one runs at a time; a second request is rejected. */
-export const startRun = async (goal) => {
+/**
+ * Starts a run. Only one runs at a time; the job queue is what decides who is
+ * next, so a second request here is a bug and is rejected.
+ *
+ * `owner` is who left the objective. `onEnd` is the single hook for the end of
+ * a run — done, failed or stopped — and is how the queue moves on.
+ */
+export const startRun = async (goal, owner = {}, onEnd) => {
   if (runners.size > 0) throw new Error("run_in_progress");
 
   const { provider, fallbackReason } = await resolveProvider(state.provider);
@@ -206,6 +225,8 @@ export const startRun = async (goal) => {
   const run = addRun({
     id: newId("run"),
     goal,
+    ownerId: owner.id ?? null,
+    ownerName: owner.name ?? null,
     status: "running",
     provider: provider.id,
     model: provider.model,
@@ -327,7 +348,9 @@ export const startRun = async (goal) => {
     } catch (error) {
       finish(run, controller.signal.aborted ? "stopped" : "failed", error.message);
     } finally {
+      // Free the slot first: `onEnd` may start the next run right away.
       runners.delete(run.id);
+      onEnd?.(run);
     }
   })();
 

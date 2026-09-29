@@ -11,11 +11,11 @@ export const bus = new EventEmitter();
 
 /** The fixed roster. Each agent owns one phase of the loop and one zone. */
 export const AGENTS = [
-  { id: "planner", name: "Atlas", role: "Planner", zone: "plan", accent: "#d9a05b" },
-  { id: "builder", name: "Neo", role: "Builder", zone: "build", accent: "#8fbf8a" },
-  { id: "reviewer", name: "Socrates", role: "Reviewer", zone: "review", accent: "#d98878" },
-  { id: "verifier", name: "Vanguard", role: "Verifier", zone: "review", accent: "#c9a2d4" },
-  { id: "archivist", name: "Alexandria", role: "Archivist", zone: "memory", accent: "#7fa8d4" }
+  { id: "planner", name: "Atlas", role: "Planner", zone: "plan", accent: "#8b7cf6" },
+  { id: "builder", name: "Neo", role: "Builder", zone: "build", accent: "#4aa3f0" },
+  { id: "reviewer", name: "Socrates", role: "Reviewer", zone: "review", accent: "#f2a03d" },
+  { id: "verifier", name: "Vanguard", role: "Verifier", zone: "review", accent: "#35c0a0" },
+  { id: "archivist", name: "Alexandria", role: "Archivist", zone: "memory", accent: "#ee7fae" }
 ];
 
 export const ZONES = [
@@ -87,5 +87,7 @@ export const snapshot = (extra = {}) => ({
   providerNote: state.providerNote,
   runs: state.runs,
   events: state.events,
+  // The queue lives in its own module; the caller passes the live list.
+  queue: [],
   ...extra
 });

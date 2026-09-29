@@ -4,6 +4,32 @@
  * API key and no network.
  */
 
+const escape = (text) =>
+  String(text).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+
+/** A small real page for the offline simulator, so a finished run always has something to open. */
+const page = (goal) => `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escape(goal)}</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 16px/1.5 system-ui, sans-serif; background: #f4f2fb; color: #262338; }
+  main { max-width: 32rem; margin: 1.5rem; padding: 2rem; border-radius: 28px; background: #fff; box-shadow: 0 12px 40px rgba(70, 60, 130, .14); }
+  h1 { margin: 0 0 .5rem; font-size: 1.6rem; }
+  button { margin-top: 1rem; padding: .7rem 1.2rem; border: 0; border-radius: 14px; background: #8b7cf6; color: #fff; font: inherit; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>${escape(goal)}</h1>
+  <p>Built by the SwarmVille simulator. Connect a real model to get real work.</p>
+  <button onclick="this.textContent = 'Hello from your agent'">Say hello</button>
+</main>
+</body>
+</html>`;
+
 const LINES = {
   plan: (goal) => [
     `Objective: ${goal}`,
@@ -13,10 +39,10 @@ const LINES = {
     "4. Verify against the objective before reporting done."
   ],
   build: (goal) => [
-    `Implementing: ${goal}`,
-    "Wrote the core module and wired it into the existing entry point.",
-    "Kept the public surface unchanged so nothing downstream breaks.",
-    "No new dependencies were introduced."
+    "```html",
+    page(goal),
+    "```",
+    "A single self-contained page: open it in any browser, nothing to install."
   ],
   review: () => [
     "Checked input validation, error paths and resource cleanup.",
