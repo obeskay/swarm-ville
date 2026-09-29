@@ -84,6 +84,37 @@ tiene autenticación no debería guardar un token de despliegue. La página se s
 `Content-Security-Policy: sandbox`: corre, pero no puede leer el almacenamiento de
 esta app; mira [SECURITY.md](SECURITY.md).
 
+## Detalles que lo hacen sentir vivo
+
+- **Reacciones.** Pulsa del **1** al **5** (o la carita de la barra) y 👋 👏 ❤️ 🔥 🎉
+  suben desde tu cabeza, para que todos las vean.
+- **Sonido.** Un golpecito suave al soltar a tu agente, un tic al apoyar una idea y
+  una campanita cuando termina una corrida. Se sintetiza al momento, sin archivos de
+  audio; se apaga en Ajustes.
+- **Una racha.** Deja una idea en días seguidos y aparece una llama en la barra.
+  Vive solo en tu navegador: es un empujoncito para volver, no una cuenta.
+- **El estante.** Bajo el Tablón, lo último que construyó el enjambre, a un clic de su
+  resultado. Cuando termina la idea de otra persona te avisa con un toque discreto.
+- **Vida.** Los agentes sin tarea estiran las piernas; el título de la pestaña dice qué
+  pasa mientras estás en otro lado y celebra cuando algo termina.
+
+Todo lo que se abre también se va, con animación, y los cuadros por segundo se mantienen en 60.
+
+## Llevarlo a Jean
+
+[Jean](https://jean.build) es donde ocurre el trabajo en un repositorio de verdad:
+worktrees, sesiones, tus propios agentes de terminal. No tiene una API pública que
+llamar, así que el puente es el honesto. En una tarjeta de resultado, **Llevar a Jean**
+copia un resumen (objetivo, plan, lo construido, la revisión) para pegarlo en cualquier
+chat de Jean, y abre tu Jean si le diste la dirección en Ajustes. Esa dirección puede
+llevar un token, así que se queda en tu navegador y nunca se manda al relay.
+
+## Despliegue
+
+Un solo proceso sirve la app y el relay: `npm run build && npm start`, o Docker.
+Con `ACCESS_CODE` se vuelve una oficina privada; **Copiar enlace de invitación** en
+Ajustes da un enlace que deja entrar directo. Mira [DEPLOY.md](DEPLOY.md).
+
 ## El bucle
 
 ```
@@ -211,6 +242,7 @@ tools/              generar arte, empaquetar el atlas
 ```bash
 npm run dev        # relay + web
 npm run relay      # solo el relay
+npm start          # la app compilada y el relay en un solo proceso
 npm test           # las reglas de la fila
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + bundle de producción

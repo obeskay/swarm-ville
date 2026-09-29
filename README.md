@@ -84,6 +84,37 @@ authentication has no business holding a deploy token. The page is served under
 `Content-Security-Policy: sandbox`, so it runs but cannot read this app's storage;
 see [SECURITY.md](SECURITY.md).
 
+## Little things that make it feel alive
+
+- **Reactions.** Press **1** to **5** (or the smiley in the top bar) and 👋 👏 ❤️ 🔥 🎉
+  float up from your head, for everyone to see.
+- **Sound.** A soft thud when you set your agent down, a tick when you back an idea,
+  a little chime when a run finishes. Synthesised on the spot, no audio files; off in
+  Settings.
+- **A streak.** Leave an idea on consecutive days and a flame appears in the top bar.
+  It lives in your browser only: it is a nudge to come back, not an account.
+- **The shelf.** Under the Board, the last things the swarm built, one click from
+  their result. When somebody else's idea finishes you get a small nudge to look.
+- **Life.** Agents with nothing to do stretch their legs; the tab title says what is
+  happening while you are elsewhere and cheers when something finishes.
+
+Everything that opens also leaves, with an animation, and the frame rate holds 60.
+
+## Take it to Jean
+
+[Jean](https://jean.build) is where the work on a real repository happens: worktrees,
+sessions, your own CLI agents. It has no public API to call, so the bridge is the
+honest one. In a result card, **Take to Jean** copies a brief (goal, plan, what was
+built, the review) to paste into any Jean chat, and opens your Jean if you told
+Settings its address. That address can carry a token, so it stays in your browser
+and is never sent to the relay.
+
+## Deploy
+
+One process serves the app and the relay: `npm run build && npm start`, or Docker.
+Set `ACCESS_CODE` and it becomes a private office; **Copy invitation link** in
+Settings gives a link that walks people straight in. See [DEPLOY.md](DEPLOY.md).
+
 ## The loop
 
 ```
@@ -211,6 +242,7 @@ tools/              generate art, pack the atlas
 ```bash
 npm run dev        # relay + web
 npm run relay      # relay only
+npm start          # the built app and the relay in one process
 npm test           # the queue's rules
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production bundle

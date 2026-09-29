@@ -9,9 +9,10 @@ Please do not open a public issue for an unpatched vulnerability.
 
 SwarmVille is a **local-first operator tool**. It defaults to binding
 `127.0.0.1` and to an origin allowlist covering only the local dev server. It
-has **no authentication and no authorisation** — anyone who can reach the relay
-can start runs and join the room. Treat exposing it publicly as a decision that
-requires putting an authenticating proxy in front of it.
+has **no accounts and no per-user authorisation** — anyone who can reach the relay
+can start runs and join the room. There is one optional shared secret,
+`ACCESS_CODE`; without it, exposing the relay publicly is a decision that requires
+an authenticating proxy in front of it.
 
 ## What the relay already does
 
@@ -28,6 +29,11 @@ requires putting an authenticating proxy in front of it.
 | Only one run executes at a time; the rest wait in a bounded line (`QUEUE_MAX`, `JOBS_PER_PEER`) | `server/queue.js`, `server/orchestrator.js` |
 | A run can be stopped, and a waiting idea withdrawn, only by the connection that left it | `server/queue.js` |
 | `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` | `server/index.js` |
+| Optional `ACCESS_CODE`: compared in constant time, denies by default for everything not listed as public, 10 wrong guesses a minute per address | `server/security.js` |
+| Same-origin browsers are accepted, but a loopback relay with no code only trusts a `localhost` / `127.x` Host, so DNS rebinding cannot turn a website into an operator | `server/security.js` |
+| A request target that does not parse answers 400 instead of throwing | `server/index.js` |
+| The built app is served traversal-safe (dotfiles, symlinks, encoded and doubled separators all refused) | `server/static.js` |
+| Reactions are five known ids, one per 400 ms per person; anything else is dropped | `server/rooms.js` |
 
 ## Secrets
 
@@ -49,11 +55,27 @@ signalling payload at 16 KB. Media never transits the relay.
 
 ## Model output is untrusted input
 
-Provider responses are rendered as **text only** — never as HTML, and never
-executed. The orchestrator reads exactly one thing out of a model response: a
-`VERDICT: PASS` / `VERDICT: REVISE` line, matched against a fixed pattern. A
-model cannot steer the loop beyond that, and the revise cycle is bounded by
-`MAX_REVISIONS`.
+The run panel, the Board and the archive render provider responses as **text
+only**. The orchestrator reads exactly one thing out of a model response to steer
+the loop: a `VERDICT: PASS` / `VERDICT: REVISE` line, matched against a fixed
+pattern. A model cannot steer the loop beyond that, and the revise cycle is
+bounded by `MAX_REVISIONS`.
+
+## The result preview runs model-written HTML
+
+When the builder hands over a page, the result card shows it running in
+`<iframe sandbox="allow-scripts" srcdoc=…>`. That is the one place model output is
+executed, so it is treated as hostile. Without `allow-same-origin` the page lives
+in an opaque origin. Checked in Chrome from inside the frame: it cannot read
+`localStorage` (where a remembered access code lives), cannot read cookies or the
+app's DOM, cannot navigate the window, cannot call `/api/*` (its `Origin` is
+`null`, which the relay rejects) and cannot open the relay's WebSocket.
+
+What it *can* still do is make requests to other sites, like any web page. Nothing
+of yours is reachable from inside it, but do not paste secrets into a page a model
+wrote. The app shell deliberately sets no `Content-Security-Policy`: a `srcdoc`
+frame inherits its parent's, and a strict one would stop every generated page from
+running.
 
 ## Published releases
 
@@ -79,8 +101,21 @@ binding is you. Delete `.data/releases/` to revoke.
 
 ## Before exposing this to a network
 
-1. Put an authenticating reverse proxy in front of the relay.
-2. Set `ALLOWED_ORIGINS` to your real origin.
-3. Terminate TLS (the client upgrades to `wss://` automatically).
-4. Lower `MAX_CONNECTIONS`, `RATE_LIMIT_RPM` and `ROOM_CAPACITY` to fit.
-5. Remember there is still no per-user identity — add one if you need it.
+1. Set `ACCESS_CODE` (a long random string). The app shows a lock screen, every API
+   call and the socket need the code, and *Copy invitation link* in Settings gives
+   people a `?code=` link that walks them in. The code travels in the WebSocket URL,
+   so it can show up in proxy logs: use TLS and rotate it if a log leaks.
+2. Terminate TLS (the client upgrades to `wss://` automatically; the camera and
+   microphone need HTTPS off `localhost`).
+3. Set `TRUST_PROXY=1` **only** when the relay is reachable through your reverse
+   proxy alone, and make sure the proxy *replaces* `X-Forwarded-For` rather than
+   appending to it; otherwise anyone can pick their own address and defeat every
+   per-address limit, the code's lockout included. Without it, everyone behind one
+   proxy shares one address, and ten wrong guesses lock out all of them for a minute.
+4. Set `ALLOWED_ORIGINS` if the page is served from somewhere other than the relay.
+5. Lower `MAX_CONNECTIONS`, `RATE_LIMIT_RPM`, `ROOM_CAPACITY` and `QUEUE_MAX` to fit.
+6. Remember there is still no per-user identity: everyone with the code shares one
+   swarm, one line and one budget of model calls, and can back, and read, each
+   other's ideas. `/r/<id>` releases and `/api/health` stay public on purpose.
+
+See [DEPLOY.md](DEPLOY.md) for Docker and a copy-paste HTTPS setup.
