@@ -67,21 +67,8 @@ export const zoneTiles: Record<string, TileRect> = {
   lobby: { x: 34, y: 13, w: 12, h: 8 }
 };
 
-/** Tile grid to world units, and back. */
-const tileToWorldX = (tile: number) => tile / 2 - 12;
-const tileToWorldZ = (tile: number) => tile / 2 - 8;
+/** World units (what the relay speaks) to art pixels, and back. */
 export const worldToArtX = (x: number) => (x + 12) * UNIT;
 export const worldToArtY = (z: number) => (z + 8) * UNIT;
 export const artToWorldX = (px: number) => px / UNIT - 12;
 export const artToWorldZ = (py: number) => py / UNIT - 8;
-
-const center = (rect: TileRect) => ({
-  x: tileToWorldX(rect.x + rect.w / 2),
-  z: tileToWorldZ(rect.y + rect.h / 2),
-  w: rect.w / 2,
-  d: rect.h / 2
-});
-
-/** Zone footprints in world units, derived from the tile map so they cannot drift. */
-export const zoneLayout: Record<string, { x: number; z: number; w: number; d: number }> =
-  Object.fromEntries(Object.entries(zoneTiles).map(([id, rect]) => [id, center(rect)]));

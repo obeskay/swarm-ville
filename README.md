@@ -113,7 +113,8 @@ and is never sent to the relay.
 
 One process serves the app and the relay: `npm run build && npm start`, or Docker.
 Set `ACCESS_CODE` and it becomes a private office; **Copy invitation link** in
-Settings gives a link that walks people straight in. See [DEPLOY.md](DEPLOY.md).
+Settings gives a link that walks people straight in. There is a one-click
+Render blueprint too (`render.yaml`). See [DEPLOY.md](DEPLOY.md).
 
 ## The loop
 

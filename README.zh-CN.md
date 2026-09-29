@@ -100,7 +100,7 @@ npm run dev
 
 一个进程同时提供应用和 relay：`npm run build && npm start`，或用 Docker。设置
 `ACCESS_CODE` 就成了私人办公室；设置里的**复制邀请链接**会给出一个直接进入的链接。
-见 [DEPLOY.md](DEPLOY.md)。
+另有 Render 一键部署配置（`render.yaml`）。见 [DEPLOY.md](DEPLOY.md)。
 
 ## 循环
 

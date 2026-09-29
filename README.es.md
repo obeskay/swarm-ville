@@ -113,7 +113,8 @@ llevar un token, así que se queda en tu navegador y nunca se manda al relay.
 
 Un solo proceso sirve la app y el relay: `npm run build && npm start`, o Docker.
 Con `ACCESS_CODE` se vuelve una oficina privada; **Copiar enlace de invitación** en
-Ajustes da un enlace que deja entrar directo. Mira [DEPLOY.md](DEPLOY.md).
+Ajustes da un enlace que deja entrar directo. También hay un plano de un clic
+para Render (`render.yaml`). Mira [DEPLOY.md](DEPLOY.md).
 
 ## El bucle
 

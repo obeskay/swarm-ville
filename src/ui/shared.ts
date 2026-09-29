@@ -3,19 +3,12 @@ export type {
   ArchiveEntry,
   AgentId,
   AgentState,
-  AvatarProfile,
-  GameProfile,
   Job,
   LogEvent,
   Peer,
   ProviderInfo,
-  Project,
-  Quest,
-  ReleaseArtifact,
   Run,
-  Step,
-  WorkspaceFile,
-  MarketItemId
+  Step
 } from "../types";
 export type { Status } from "../lib/ws";
 
@@ -34,7 +27,3 @@ export const clock = (ms: number) => {
   const total = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 };
-
-/** Only the retired event log still reads this. */
-export const formatClock = (ts: number) =>
-  new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });

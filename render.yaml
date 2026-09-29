@@ -1,0 +1,21 @@
+# One-click deploy on Render: https://render.com/deploy?repo=https://github.com/obeskay/swarm-ville
+# It builds the Dockerfile, keeps the app private with a generated ACCESS_CODE
+# (Render dashboard > this service > Environment) and health-checks /api/health.
+# Runs and the line live in memory, so this is a single copy: do not scale it out.
+services:
+  - type: web
+    name: swarm-ville
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: ACCESS_CODE
+        generateValue: true
+      # PROVIDER=mock is pretend agents: no key, no cost. Change it, and add the
+      # matching key (for example ANTHROPIC_API_KEY), to get real work.
+      - key: PROVIDER
+        value: mock
+      # Everyone reaches the relay through one proxy, so per-address limits are
+      # shared: leave room for a few people at once.
+      - key: RATE_LIMIT_RPM
+        value: "600"

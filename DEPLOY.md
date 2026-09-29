@@ -54,6 +54,18 @@ docker compose up -d --build
 
 Check it is alive: open <http://localhost:8765/api/health>. It should say `"status":"ok"`.
 
+## 4. One click on Render
+
+The easiest way to get a private link without owning a server.
+
+1. Open <https://render.com/deploy?repo=https://github.com/obeskay/swarm-ville> (you need a free Render account, and the repository has to be readable by Render).
+2. Accept the plan it shows. Render builds the `Dockerfile` and gives you an `https://…onrender.com` address, which already has the HTTPS the camera needs.
+3. In the Render dashboard open the service, then **Environment**, and copy `ACCESS_CODE`. Send people `https://your-service.onrender.com/?code=THE_CODE`.
+
+It starts with pretend agents (`PROVIDER=mock`). For real ones set `PROVIDER` and its key in the same **Environment** page.
+
+Good to know: the free plan sleeps after a while without visitors (the first visit then takes about a minute), and there is no disk, so the memory of finished runs and published pages is lost on every restart. A paid plan with a disk mounted at `/app/.data` keeps them. Keep it at one copy: the line lives in memory.
+
 ## Putting it on the internet (HTTPS)
 
 Two things need to be true before you share a link:
