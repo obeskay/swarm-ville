@@ -40,6 +40,9 @@ export interface Step {
 export interface Run {
   id: string;
   goal: string;
+  /** Who left the objective. Absent on runs recorded before the queue existed. */
+  ownerId?: string;
+  ownerName?: string;
   status: RunStatus;
   provider: string;
   model: string;
@@ -67,6 +70,24 @@ export interface ArchiveEntry {
   tokens: number;
 }
 
+/**
+ * One objective somebody left with the swarm. The running job is first; the
+ * rest are ordered by how many people back them, then by arrival.
+ */
+export interface Job {
+  id: string;
+  goal: string;
+  ownerId: string;
+  ownerName: string;
+  /** Peer ids that backed the job, which is what moves it up the line. */
+  backers: string[];
+  /** Where the owner set their agent down on the map; null when they just pressed send. */
+  at: { x: number; z: number } | null;
+  status: "running" | "queued";
+  createdAt: number;
+  runId: string | null;
+}
+
 export interface LogEvent {
   id: string;
   agentId: AgentId | string;
@@ -90,6 +111,10 @@ export interface Peer {
   inRoom: boolean;
 }
 
+/*
+ * Garden-game types. Nothing the app renders uses them any more; they stay only
+ * so the retired garden components still compile until they are deleted.
+ */
 export type ProjectStage = "plan" | "design" | "build" | "review" | "verify" | "ship";
 
 export interface WorkspaceFile {
@@ -174,6 +199,7 @@ export interface Snapshot {
   runs: Run[];
   events: LogEvent[];
   run: Run | null;
+  queue: Job[];
 }
 
 export type ServerMessage =
@@ -183,6 +209,7 @@ export type ServerMessage =
   | { type: "event"; data: LogEvent }
   | { type: "agent"; data: { id: AgentId; state: AgentState } }
   | { type: "handoff"; data: { from: AgentId; to: AgentId } }
+  | { type: "queue"; data: { items: Job[] } }
   | { type: "provider"; data: { provider: string; note: string | null } }
   | { type: "error"; data: { error: string } }
   | { type: "presence:self"; data: { id: string } }

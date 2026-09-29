@@ -1,294 +1,213 @@
-import { MAP, TILE, plotTiles, pondTiles, zoneTiles } from "./theme";
+import { MAP, TILE, zoneTiles } from "./theme";
 import type { TileRect } from "./theme";
 
 /**
- * The village, laid out once. Everything here is deterministic — the same seed
- * every load — because a town that rearranges its own trees on refresh reads as
- * a bug, not as life.
+ * The office, laid out once. Everything here is deterministic, because a place
+ * that rearranges its own furniture on refresh reads as a bug, not as life.
  */
 
 export interface PropInstance {
   name: string;
-  /** Art pixels. Sprites are anchored bottom-centre so they stand on the ground. */
+  /** Art pixels. Sprites are anchored bottom-centre so they stand on the floor. */
   x: number;
   y: number;
 }
 
-export interface VillageMap {
-  ground: string[][];
-  /** Flat sprites baked into the terrain: rugs and anything else walked over. */
+/** What is under the walls: the walkable floor of a hallway or a room. */
+export type Floor = "void" | "floor" | "room";
+export type Wall = "" | "wallH" | "wallV" | "wallCap";
+
+export interface OfficeMap {
+  floor: Floor[][];
+  walls: Wall[][];
+  /** Flat sprites baked into the terrain: windows and anything else walked over. */
   decals: PropInstance[];
   props: PropInstance[];
   blocked: Uint8Array;
 }
 
-const mulberry32 = (seed: number) => () => {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
+/** Props a body cannot walk through. Chairs and plants at the edge are walkable. */
+const SOLID = new Set(["desk", "bookshelf", "table_round", "sofa", "armchair", "coffee_table", "board", "plant_pot"]);
 
-/** Props a body cannot walk through. Lamps, signs and flowers are walkable. */
-const SOLID = new Set([
-  "tree",
-  "tree_pine",
-  "rock",
-  "desk",
-  "bookshelf",
-  "stall",
-  "crate",
-  "fountain",
-  "bench"
-]);
+/** Solid props wider than one tile, in tiles. */
+const SPAN: Record<string, number> = { sofa: 2, table_round: 1, coffee_table: 2, board: 2 };
 
-const fill = (ground: string[][], rect: TileRect, tile: string) => {
-  for (let y = rect.y; y < rect.y + rect.h; y += 1) {
-    for (let x = rect.x; x < rect.x + rect.w; x += 1) {
-      if (ground[y]?.[x] !== undefined) ground[y][x] = tile;
-    }
-  }
-};
-
-/** Tile coordinates to the art-pixel point a sprite stands on. */
+/** Tile coordinates to the art-pixel point a sprite stands on. Fractions are fine. */
 const at = (tx: number, ty: number): { x: number; y: number } => ({
   x: (tx + 0.5) * TILE,
   y: (ty + 1) * TILE
 });
 
-/** Furniture per room, as offsets inside the room's own tile rect. */
+const DOOR = 3;
+
 /**
- * Furniture per room, as offsets inside the room's own tile rect. Desks sit at
- * x 2, 5 and 8 because that is where World.setAgentState walks a busy agent;
- * everything else hugs the walls so the middle of the room stays walkable.
+ * Furniture per workroom, as offsets inside the room's own tile rect. Desks sit
+ * at x 2, 5, 8 and 11 because that is where World.setAgentState walks a busy
+ * agent; the rest hugs the walls so the middle of each room stays walkable.
  */
+const workroom = (desks: number[], shelf?: number): [number, number, string][] => [
+  ...desks.flatMap((dx): [number, number, string][] => [[dx, 2, "desk"], [dx, 3.05, "chair"]]),
+  ...(shelf === undefined ? [] : ([[shelf, 2, "bookshelf"]] as [number, number, string][])),
+  [0.5, 6, "plant_pot"]
+];
+
 const FURNITURE: Record<string, [number, number, string][]> = {
-  plan: [
-    [2, 2, "desk"],
-    [5, 2, "desk"],
-    [8, 2, "desk"],
-    [10, 2, "bookshelf"],
-    [0, 5, "plant_pot"],
-    [0, 7, "bench"],
-    [11, 5, "crate"],
-    [11, 7, "lamp"],
-    [1, 8, "sign"]
-  ],
-  build: [
-    [2, 2, "desk"],
-    [5, 2, "desk"],
-    [8, 2, "desk"],
-    [11, 2, "desk"],
-    [0, 5, "crate"],
-    [0, 7, "plant_pot"],
-    [12, 5, "crate"],
-    [12, 7, "lamp"],
-    [1, 8, "sign"]
-  ],
-  review: [
-    [2, 2, "desk"],
-    [5, 2, "desk"],
-    [8, 2, "desk"],
-    [10, 2, "bookshelf"],
-    [0, 5, "bench"],
-    [0, 7, "plant_pot"],
-    [11, 5, "plant_pot"],
-    [11, 7, "lamp"],
-    [1, 8, "sign"]
-  ],
+  plan: [...workroom([2, 5, 8], 10), [10.5, 7, "plant_pot"]],
+  build: [...workroom([2, 5, 8, 11]), [11.5, 7, "plant_pot"]],
+  review: [...workroom([2, 5, 8], 10), [10.5, 7, "plant_pot"]],
   memory: [
-    [2, 2, "desk"],
-    [5, 2, "desk"],
+    ...workroom([2, 5]),
     [8, 2, "bookshelf"],
+    [9, 2, "bookshelf"],
     [10, 2, "bookshelf"],
     [0, 5, "bookshelf"],
-    [2, 5, "bookshelf"],
-    [4, 5, "bookshelf"],
-    [11, 5, "plant_pot"],
-    [11, 7, "lamp"],
-    [1, 8, "sign"]
+    [0, 6, "bookshelf"],
+    [10.5, 7, "plant_pot"]
   ],
   commons: [
-    [6, 4, "fountain"],
-    [1, 4, "plant_pot"],
-    [11, 4, "plant_pot"],
-    [4, 0, "plant_pot"],
-    [8, 0, "plant_pot"],
-    [1, 1, "crate"],
-    [11, 8, "crate"],
-    [2, 2, "bench"],
-    [10, 2, "bench"],
-    [2, 7, "bench"],
-    [10, 7, "bench"],
-    [0, 0, "lamp"],
-    [12, 0, "lamp"],
-    [0, 9, "lamp"],
-    [12, 9, "lamp"],
-    [6, 0, "banner"]
+    [3, 3.4, "table_round"],
+    [3, 1.7, "chair_n"],
+    [3, 4.55, "chair_s"],
+    [1.55, 3.3, "chair_w"],
+    [4.45, 3.3, "chair_e"],
+    [9.5, 3.4, "table_round"],
+    [9.5, 1.7, "chair_n"],
+    [9.5, 4.55, "chair_s"],
+    [8.05, 3.3, "chair_w"],
+    [10.95, 3.3, "chair_e"],
+    [6, 8.2, "sofa"],
+    [6, 6.4, "coffee_table"],
+    [2.5, 8.2, "armchair"],
+    [9.5, 8.2, "armchair"],
+    [0.5, 0.9, "plant_pot"],
+    [12.5, 0.9, "plant_pot"],
+    [12.5, 9, "plant_pot"]
   ],
-  market: [
-    [2, 2, "stall"],
-    [6, 2, "stall"],
-    [10, 2, "stall"],
-    [1, 5, "crate"],
-    [4, 5, "crate"],
-    [8, 5, "plant_pot"],
-    [11, 5, "crate"],
-    [0, 1, "lamp"],
-    [11, 1, "lamp"],
-    [1, 6, "sign"],
-    [6, 0, "banner"]
+  lobby: [
+    [5.5, 1.6, "board"],
+    [2, 5.5, "sofa"],
+    [9, 5.5, "sofa"],
+    [5.5, 5.4, "coffee_table"],
+    [0.5, 1, "plant_pot"],
+    [11.5, 1, "plant_pot"],
+    [0.5, 7, "plant_pot"],
+    [11.5, 7, "plant_pot"]
   ]
 };
 
-const RUGS: Record<string, [number, number]> = {
-  plan: [5, 5],
-  build: [5, 5],
-  review: [6, 5],
-  memory: [7, 6],
-  commons: [6, 7]
-};
+/** The open lounge along the south wall. Anchored to tiles, not to a room. */
+const LOUNGE: [number, number, string][] = [
+  [8, 26.4, "table_round"],
+  [8, 24.7, "chair_n"],
+  [8, 27.55, "chair_s"],
+  [6.55, 26.3, "chair_w"],
+  [9.45, 26.3, "chair_e"],
+  [24.5, 27.5, "sofa"],
+  [24.5, 25.5, "coffee_table"],
+  [20, 27.5, "armchair"],
+  [29, 27.5, "armchair"],
+  [40, 26.4, "table_round"],
+  [40, 24.7, "chair_n"],
+  [40, 27.55, "chair_s"],
+  [38.55, 26.3, "chair_w"],
+  [41.45, 26.3, "chair_e"],
+  [3.5, 25, "plant_pot"],
+  [14, 25, "plant_pot"],
+  [34.5, 25, "plant_pot"],
+  [44.5, 25, "plant_pot"]
+];
 
-export function buildMap(): VillageMap {
-  const random = mulberry32(20260818);
-  const ground: string[][] = Array.from({ length: MAP.h }, () =>
-    Array.from({ length: MAP.w }, () => "grass")
+/** The four rooms behind walls, and the side their doorway is on. */
+const ROOMS: { id: string; door: "south" | "east" }[] = [
+  { id: "plan", door: "south" },
+  { id: "build", door: "south" },
+  { id: "review", door: "south" },
+  { id: "memory", door: "east" }
+];
+
+export function buildMap(): OfficeMap {
+  const floor: Floor[][] = Array.from({ length: MAP.h }, (_, y) =>
+    Array.from({ length: MAP.w }, (_, x) =>
+      x === 0 || y === 0 || x === MAP.w - 1 || y === MAP.h - 1 ? "void" : "floor"
+    )
   );
+  const walls: Wall[][] = Array.from({ length: MAP.h }, () => Array.from({ length: MAP.w }, () => "" as Wall));
   const blocked = new Uint8Array(MAP.w * MAP.h);
   const props: PropInstance[] = [];
   const decals: PropInstance[] = [];
 
-  for (let y = 0; y < MAP.h; y += 1) {
-    for (let x = 0; x < MAP.w; x += 1) {
-      if (random() < 0.14) ground[y][x] = "grass2";
+  const inside = (x: number, y: number) => x >= 0 && y >= 0 && x < MAP.w && y < MAP.h;
+  const wall = (x: number, y: number, kind: Wall) => {
+    if (!inside(x, y)) return;
+    walls[y][x] = kind;
+    blocked[y * MAP.w + x] = 1;
+  };
+  const fill = (rect: TileRect, kind: Floor) => {
+    for (let y = rect.y; y < rect.y + rect.h; y += 1) {
+      for (let x = rect.x; x < rect.x + rect.w; x += 1) if (inside(x, y)) floor[y][x] = kind;
     }
-  }
-
-  // An ellipse, not the rect: a square pond reads as a swimming pool.
-  const pondCx = pondTiles.x + pondTiles.w / 2 - 0.5;
-  const pondCy = pondTiles.y + pondTiles.h / 2 - 0.5;
-  for (let y = pondTiles.y; y < pondTiles.y + pondTiles.h; y += 1) {
-    for (let x = pondTiles.x; x < pondTiles.x + pondTiles.w; x += 1) {
-      const nx = (x - pondCx) / (pondTiles.w / 2);
-      const ny = (y - pondCy) / (pondTiles.h / 2);
-      if (nx * nx + ny * ny <= 1) ground[y][x] = "water";
-    }
-  }
-
-  // Lanes: one street east-west, two north-south through the gaps between
-  // rooms, and a footpath along the top of the garden.
-  fill(ground, { x: 2, y: 11, w: 44, h: 2 }, "path");
-  fill(ground, { x: 15, y: 2, w: 3, h: 21 }, "path");
-  fill(ground, { x: 31, y: 2, w: 3, h: 21 }, "path");
-  fill(ground, { x: 2, y: 23, w: 32, h: 1 }, "path");
-
-  for (const [id, rect] of Object.entries(zoneTiles)) {
-    fill(ground, rect, id === "commons" || id === "market" ? "stone" : "wood");
-  }
-  for (const plot of plotTiles) fill(ground, plot, "soil");
-
-  const block = (tx: number, ty: number) => {
-    if (tx < 0 || ty < 0 || tx >= MAP.w || ty >= MAP.h) return;
-    blocked[ty * MAP.w + tx] = 1;
   };
 
-  for (let y = 0; y < MAP.h; y += 1) {
-    for (let x = 0; x < MAP.w; x += 1) {
-      if (ground[y][x] === "water") block(x, y);
+  // The building's outer wall. Its top shows a face; the other three sides
+  // only show their cap from here.
+  for (let x = 1; x < MAP.w - 1; x += 1) {
+    wall(x, 1, "wallH");
+    wall(x, MAP.h - 2, "wallCap");
+  }
+  for (let y = 2; y < MAP.h - 2; y += 1) {
+    wall(1, y, "wallCap");
+    wall(MAP.w - 2, y, "wallCap");
+  }
+
+  for (const id of ["commons", "lobby"]) fill(zoneTiles[id], "room");
+
+  for (const { id, door } of ROOMS) {
+    const rect = zoneTiles[id];
+    // A room that touches the outer wall simply runs up to it: no double wall.
+    const left = rect.x - 1;
+    const right = rect.x + rect.w;
+    const bottom = rect.y + rect.h;
+    const top = rect.y - 1;
+    const flushLeft = left <= 2;
+    fill(flushLeft ? { ...rect, x: 2, w: rect.w + 1 } : rect, "room");
+
+    if (top > 1) for (let x = flushLeft ? 2 : left; x <= right; x += 1) wall(x, top, "wallH");
+    for (let y = rect.y; y < bottom; y += 1) {
+      if (!flushLeft) wall(left, y, "wallV");
+      const gap = door === "east" && y >= rect.y + 3 && y < rect.y + 3 + DOOR;
+      if (right < MAP.w - 2 && !gap) wall(right, y, "wallV");
+    }
+    const gapFrom = rect.x + Math.floor(rect.w / 2 - DOOR / 2);
+    for (let x = flushLeft ? 2 : left; x <= right; x += 1) {
+      const gap = door === "south" && x >= gapFrom && x < gapFrom + DOOR;
+      if (!gap) wall(x, bottom, "wallH");
     }
   }
 
   const place = (name: string, tx: number, ty: number) => {
     props.push({ name, ...at(tx, ty) });
-    if (SOLID.has(name)) block(tx, ty);
+    if (!SOLID.has(name)) return;
+    const span = SPAN[name] ?? 1;
+    const first = Math.round(tx - (span - 1) / 2 - 0.001);
+    const row = Math.floor(ty);
+    for (let n = 0; n < span; n += 1) {
+      if (inside(first + n, row)) blocked[row * MAP.w + first + n] = 1;
+    }
   };
 
   for (const [id, rect] of Object.entries(zoneTiles)) {
     for (const [dx, dy, name] of FURNITURE[id] ?? []) place(name, rect.x + dx, rect.y + dy);
-    const rug = RUGS[id];
-    if (rug) decals.push({ name: "rug", ...at(rect.x + rug[0], rect.y + rug[1]) });
   }
+  for (const [tx, ty, name] of LOUNGE) place(name, tx, ty);
 
-  // Street furniture: without it the lanes read as one unbroken beige field.
-  for (const x of [6, 10, 22, 26, 38, 42]) place("lamp", x, 12);
-  for (const y of [4, 8, 16, 20]) {
-    place("lamp", 16, y);
-    place("lamp", 32, y);
-  }
-
-  // A shore, so the water meets the grass through something instead of a corner.
-  for (let y = pondTiles.y - 1; y <= pondTiles.y + pondTiles.h; y += 1) {
-    for (let x = pondTiles.x - 1; x <= pondTiles.x + pondTiles.w; x += 1) {
-      if (ground[y]?.[x] === undefined || ground[y][x] === "water") continue;
-      const wet = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(
-        ([dx, dy]) => ground[y + dy]?.[x + dx] === "water"
-      );
-      if (!wet || random() > 0.55) continue;
-      place(random() < 0.5 ? "rock" : "bush", x, y);
-    }
-  }
-
-  // Rooms get a fence with a gap at the front. Without one a wooden floor reads
-  // as a loose platform; with one it reads as a room you walk into.
-  const pushAt = (name: string, x: number, y: number) => props.push({ name, x, y });
-  for (const id of ["plan", "build", "review", "memory"]) {
+  // Windows go on the wall face, in the gaps between the desks.
+  for (const { id } of ROOMS) {
     const rect = zoneTiles[id];
-    const left = rect.x * TILE;
-    const right = (rect.x + rect.w) * TILE;
-    const top = rect.y * TILE;
-    const bottom = (rect.y + rect.h) * TILE;
-    const doorFrom = left + Math.floor(rect.w / 2 - 1.5) * TILE;
-    const doorTo = doorFrom + TILE * 3;
-
-    for (let x = left; x < right; x += 48) {
-      pushAt("fence_h", Math.min(x + 24, right - 24), top + 4);
-      block(Math.floor(x / TILE), rect.y - 1);
-      if (x + 48 <= doorFrom || x >= doorTo) {
-        pushAt("fence_h", Math.min(x + 24, right - 24), bottom + 4);
-        block(Math.floor(x / TILE), rect.y + rect.h);
-      }
-    }
-    for (let y = top; y < bottom; y += 48) {
-      pushAt("fence_v", left + 4, Math.min(y + 48, bottom));
-      pushAt("fence_v", right - 4, Math.min(y + 48, bottom));
-      block(rect.x - 1, Math.floor(y / TILE));
-      block(rect.x + rect.w, Math.floor(y / TILE));
+    const count = Math.floor((rect.w - 2) / 3);
+    for (let n = 0; n < count; n += 1) {
+      decals.push({ name: "window", x: (rect.x + 1 + n * 3) * TILE + 2, y: (rect.y - 1) * TILE + 29 });
     }
   }
 
-  // A wooded edge instead of a wall. The relay clamps players well inside it,
-  // so the ring is decoration that also reads as a boundary.
-  const edge = (tx: number, ty: number) => {
-    const roll = random();
-    place(roll < 0.5 ? "tree" : roll < 0.82 ? "tree_pine" : "bush", tx, ty);
-  };
-  for (let x = 0; x < MAP.w; x += 1) {
-    if (x % 2 === 0) edge(x, 0);
-    if (x % 2 === 1) edge(x, 1);
-    if (x % 2 === 0) edge(x, MAP.h - 1);
-  }
-  for (let y = 2; y < MAP.h - 1; y += 1) {
-    if (y % 2 === 0) edge(0, y);
-    if (y % 2 === 1) edge(1, y);
-    if (y % 2 === 0) edge(MAP.w - 1, y);
-    if (y % 2 === 1) edge(MAP.w - 2, y);
-  }
-
-  // Scatter, only on open grass, so nothing lands in a room or on a lane.
-  for (let y = 2; y < MAP.h - 2; y += 1) {
-    for (let x = 2; x < MAP.w - 2; x += 1) {
-      const tile = ground[y][x];
-      if (tile !== "grass" && tile !== "grass2") continue;
-      if (blocked[y * MAP.w + x]) continue;
-      const roll = random();
-      if (roll > 0.11) continue;
-      if (roll < 0.03) place("tree", x, y);
-      else if (roll < 0.045) place("tree_pine", x, y);
-      else if (roll < 0.065) place("bush", x, y);
-      else if (roll < 0.095) place("flowers", x, y);
-      else place("rock", x, y);
-    }
-  }
-
-  return { ground, decals, props, blocked };
+  return { floor, walls, decals, props, blocked };
 }

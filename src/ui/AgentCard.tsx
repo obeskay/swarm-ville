@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Archive, Bot, ChevronDown, ChevronRight, MessageSquare, Megaphone, Sparkles, X } from "lucide-react";
-import type { Agent, AgentState, Run } from "./shared";
-import { formatMs, formatTokens } from "./shared";
+import { Archive, X } from "lucide-react";
 import { formatAgentOutput } from "../lib/formatter";
+import { t } from "../lib/i18n";
+import type { Key } from "../lib/i18n";
+import { capitalize, formatMs } from "./shared";
+import type { Agent, AgentState, Run } from "./shared";
 
 interface Props {
   agent: Agent;
@@ -10,142 +11,53 @@ interface Props {
   run: Run | null;
   onClose: () => void;
   onOpenArchive: () => void;
-  onChat?: (agent: Agent) => void;
-  onSummon?: (agent: Agent) => void;
 }
 
-export const AgentCard = ({
-  agent,
-  state,
-  run,
-  onClose,
-  onOpenArchive,
-  onChat,
-  onSummon
-}: Props) => {
-  const [showRaw, setShowRaw] = useState(false);
+/** Who this is and what they last did. Nothing to configure, nothing to learn. */
+export const AgentCard = ({ agent, state, run, onClose, onOpenArchive }: Props) => {
   const steps = (run?.steps ?? []).filter((step) => step.agentId === agent.id);
-  const tokens = steps.reduce(
-    (total, step) => total + step.usage.inputTokens + step.usage.outputTokens,
-    0
-  );
   const latest = steps[steps.length - 1];
-  const summary = formatAgentOutput(latest?.output ?? latest?.error ?? "", agent.role);
+  const summary = formatAgentOutput(latest?.output || latest?.error || "", agent.role);
+  const role = t(`role.${agent.id}` as Key);
 
   return (
-    <section className="panel agent-card-aesthetic" aria-label={`${agent.name} details`}>
-      {/* Head */}
-      <header className="agent-card__header">
-        <div className="agent-card__avatar-wrap">
-          <span className="agent-card__avatar" style={{ background: agent.accent }}>
-            <Bot size={18} color="#16140f" />
-          </span>
-          <span className={`agent-card__status-dot agent-card__status-dot--${state}`} />
+    <aside className="sheet sq" aria-label={agent.name}>
+      <header className="sheet__head">
+        <span className="avatar avatar--big" style={{ background: agent.accent }} aria-hidden>
+          {agent.name[0]}
+        </span>
+        <div className="sheet__who">
+          <h2>{agent.name}</h2>
+          <small>
+            {role} · <span className={`state state--${state}`}>{t(`agent.${state}` as Key)}</span>
+          </small>
         </div>
-
-        <div className="agent-card__titles">
-          <div className="agent-card__title-row">
-            <h2>{agent.name}</h2>
-            <span className="agent-card__role-badge" style={{ borderColor: agent.accent, color: agent.accent }}>
-              {agent.role}
-            </span>
-          </div>
-          <p className="agent-card__status-text">
-            {state === "working" ? "⚡ Trabajando en el loop activo..." : "🌱 En reposo · Listo para actuar"}
-          </p>
-        </div>
-
-        <button type="button" className="icon agent-card__close" onClick={onClose} aria-label="Cerrar">
+        <button type="button" className="icon-btn icon-btn--flat sq" onClick={onClose} aria-label={t("close")}>
           <X size={16} />
         </button>
       </header>
 
-      {/* Quick Action Bar (Platicar & Llamar) */}
-      <div className="agent-card__actions-bar">
-        {onChat && (
-          <button
-            type="button"
-            className="agent-card__action-btn agent-card__action-btn--primary"
-            onClick={() => onChat(agent)}
-            title="Abrir conversación directa con el agente"
-          >
-            <MessageSquare size={13} />
-            <span>Platicar</span>
-          </button>
-        )}
-
-        {onSummon && (
-          <button
-            type="button"
-            className="agent-card__action-btn"
-            onClick={() => onSummon(agent)}
-            title="Llamar al agente a tu posición actual"
-          >
-            <Megaphone size={13} />
-            <span>Llamar aquí</span>
-          </button>
-        )}
-      </div>
-
-      {/* Activity Summary (En qué trabaja) */}
-      <div className="agent-card__activity-box">
-        <div className="agent-card__activity-head">
-          <Sparkles size={13} style={{ color: agent.accent }} />
-          <strong>Actividad Reciente</strong>
-          {summary.verdict === "pass" && (
-            <span className="verdict-pill verdict-pill--pass">Aprobado</span>
-          )}
-          {summary.verdict === "revise" && (
-            <span className="verdict-pill verdict-pill--revise">Ajustes</span>
-          )}
-        </div>
-
-        {latest ? (
-          <ul className="agent-card__points-list">
+      {latest ? (
+        <div className="agent__last">
+          <small>
+            {capitalize(t(`phase.${latest.phase}` as Key))} · {latest.status === "running" ? "…" : formatMs(latest.ms)}
+          </small>
+          <ul>
             {summary.points.map((point, index) => (
-              <li key={index}>
-                <span className="bullet-dot" style={{ background: agent.accent }} />
-                <span>{point}</span>
-              </li>
+              <li key={index}>{point}</li>
             ))}
           </ul>
-        ) : (
-          <p className="empty">Sin tareas asignadas en esta ejecución.</p>
-        )}
-      </div>
-
-      {/* Stats row */}
-      <dl className="agent-card__stats-compact">
-        <div>
-          <dt>Llamadas</dt>
-          <dd>{steps.length}</dd>
         </div>
-        <div>
-          <dt>Tokens</dt>
-          <dd>{formatTokens(tokens)}</dd>
-        </div>
-        <div>
-          <dt>Tiempo</dt>
-          <dd>{latest ? formatMs(latest.ms) : "—"}</dd>
-        </div>
-      </dl>
-
-      {/* Technical raw log accordion (optional toggle, clean & out of the way) */}
-      {latest && (
-        <div className="agent-card__raw-toggle">
-          <button type="button" onClick={() => setShowRaw(!showRaw)}>
-            {showRaw ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            <span>{showRaw ? "Ocultar salida técnica" : "Ver salida técnica / prompt"}</span>
-          </button>
-          {showRaw && <pre className="agent__output">{latest.error ?? latest.output}</pre>}
-        </div>
+      ) : (
+        <p className="sheet__empty">{t("agent.nothing")}</p>
       )}
 
       {agent.id === "archivist" && (
-        <button type="button" className="secondary agent__archive" onClick={onOpenArchive}>
-          <Archive size={13} /> Abrir Archivo Histórico
+        <button type="button" className="btn sq" onClick={onOpenArchive}>
+          <Archive size={15} aria-hidden />
+          {t("agent.archive")}
         </button>
       )}
-    </section>
+    </aside>
   );
 };

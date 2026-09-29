@@ -1,26 +1,54 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Square } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowUp, Bot } from "lucide-react";
+import { t } from "../lib/i18n";
+import type { Key } from "../lib/i18n";
+import { useAgentDrag } from "../lib/useAgentDrag";
+import type { Spot } from "../lib/useAgentDrag";
+import type { World } from "../world/World";
 
 interface Props {
-  running: boolean;
   disabled: boolean;
-  prefill?: string;
-  onStart: (goal: string) => void;
-  onStop: () => void;
+  /** Ideas to start from: shown only while nothing else is on screen. */
+  showIdeas: boolean;
+  /** The colour of your agent: yours, so it is recognisable on the map. */
+  color: string;
+  getWorld: () => World | null;
+  onSubmit: (goal: string, spot?: Spot) => void;
+  onHint: (text: string) => void;
 }
 
-/** The only way to start work: one field, one button. */
-export const CommandBar = ({ running, disabled, prefill, onStart, onStop }: Props) => {
-  const shortcut = navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K";
+const SUGGESTIONS: Key[] = ["command.suggest.1", "command.suggest.2", "command.suggest.3"];
+
+/**
+ * The only way to start anything: say what you want, then either press the
+ * button or pick your agent up and set it down where you like.
+ */
+export const CommandBar = ({ disabled, showIdeas, color, getWorld, onSubmit, onHint }: Props) => {
   const [goal, setGoal] = useState("");
+  const [shake, setShake] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (prefill) {
-      setGoal(prefill);
-      inputRef.current?.focus();
-    }
-  }, [prefill]);
+  const trimmed = goal.trim();
+  const ready = trimmed.length >= 4 && !disabled;
+
+  // Nothing to leave with the agent yet: point at the field that needs filling.
+  const nudge = () => {
+    inputRef.current?.focus();
+    onHint(t("command.needIdea"));
+    setShake(true);
+    window.setTimeout(() => setShake(false), 450);
+  };
+
+  const { dragging, ghost, handlers } = useAgentDrag({
+    getWorld,
+    ready,
+    onDrop: (spot) => {
+      onSubmit(trimmed, spot);
+      setGoal("");
+    },
+    onBlocked: nudge
+  });
 
   useEffect(() => {
     const focusOnShortcut = (event: KeyboardEvent) => {
@@ -35,33 +63,77 @@ export const CommandBar = ({ running, disabled, prefill, onStart, onStop }: Prop
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    const trimmed = goal.trim();
-    if (trimmed.length < 4) return;
-    onStart(trimmed);
+    if (!ready) return;
+    onSubmit(trimmed);
     setGoal("");
   };
 
   return (
-    <form className="command" onSubmit={submit}>
-      <input
-        ref={inputRef}
-        value={goal}
-        maxLength={600}
-        disabled={running || disabled}
-        onChange={(event) => setGoal(event.target.value)}
-        placeholder={running ? "The swarm is working…" : `Give your five agents an objective   ${shortcut}`}
-        aria-label="Objective for the swarm"
-      />
-      {running ? (
-        <button type="button" className="command__stop" onClick={onStop}>
-          <Square size={14} /> Stop
-        </button>
-      ) : (
-        <button type="submit" className="command__go" disabled={disabled || goal.trim().length < 4}>
-          <ArrowUp size={16} />
-          <span className="sr-only">Start run</span>
-        </button>
+    <div className="dock">
+      {goal.length === 0 && showIdeas && (
+        <div className="suggestions" aria-label="Ideas">
+          {SUGGESTIONS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className="suggestion sq"
+              onClick={() => {
+                setGoal(t(key));
+                inputRef.current?.focus();
+              }}
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
       )}
-    </form>
+      <form className={`command sq ${shake ? "shake" : ""}`} onSubmit={submit}>
+        <button
+          type="button"
+          className={`agent-chip sq ${ready ? "agent-chip--ready" : ""}`}
+          style={{ background: color }}
+          title={t("command.drag")}
+          aria-label={t("command.drag")}
+          {...handlers}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              if (ready) {
+                onSubmit(trimmed);
+                setGoal("");
+              } else {
+                nudge();
+              }
+            }
+          }}
+        >
+          <Bot size={19} aria-hidden />
+        </button>
+        <input
+          ref={inputRef}
+          value={goal}
+          maxLength={600}
+          disabled={disabled}
+          onChange={(event) => setGoal(event.target.value)}
+          placeholder={t("command.placeholder")}
+          aria-label={t("command.placeholder")}
+          autoComplete="off"
+        />
+        <button type="submit" className={`send sq ${ready ? "send--ready" : ""}`} disabled={!ready} aria-label={t("command.submit")}>
+          <span>{t("command.submit")}</span>
+          <ArrowUp size={16} aria-hidden />
+        </button>
+      </form>
+
+      {dragging &&
+        createPortal(
+          <div className="ghost" ref={ghost} aria-hidden>
+            <span className="ghost__body sq" style={{ background: color }}>
+              <Bot size={22} />
+            </span>
+          </div>,
+          document.body
+        )}
+    </div>
   );
 };

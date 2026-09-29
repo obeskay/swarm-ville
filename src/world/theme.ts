@@ -1,27 +1,43 @@
 /**
- * One palette, shared by the pixel town and the CSS. The tiles carry almost all
- * of the colour now, so these values only cover what is still drawn by hand:
- * shadows, rings, handoff arcs and labels.
+ * One palette for the office and the CSS. The floors, walls and furniture are
+ * drawn in code from these values (see sprites.ts), so changing the mood of the
+ * whole place is a change to this file.
  */
 export const palette = {
-  night: "#16140f",
-  grass: "#7fa86a",
-  path: "#d9c39a",
-  water: "#6fa8b0",
-  timber: "#b98a5e",
-  stone: "#a8a294",
-  ink: "#f4ece0",
-  shadow: "rgba(18, 15, 11, 0.26)"
+  void: "#f4f3fb",
+  floor: "#eceaf8",
+  floorLine: "#e3e0f4",
+  room: "#e6e3f6",
+  roomLine: "#d6d2ee",
+  wallCap: "#dde5ee",
+  wallCapEdge: "#c4d0dd",
+  wallFace: "#b4c2d1",
+  wallShade: "#9dafc1",
+  outline: "#56607a",
+  ink: "#262338",
+  paper: "#ffffff",
+  shadow: "rgba(70, 60, 130, 0.16)"
 } as const;
 
 export const zoneColor: Record<string, string> = {
-  plan: "#e0a86b",
-  build: "#8fb073",
-  review: "#cc7f68",
-  memory: "#79a6c4",
-  commons: "#b18ad6",
-  market: "#e8b25c"
+  plan: "#8b7cf6",
+  build: "#4aa3f0",
+  review: "#f2a03d",
+  memory: "#ee7fae",
+  commons: "#35c0a0",
+  lobby: "#8e98b0"
 };
+
+const PEER_COLORS = ["#8b7cf6", "#4aa3f0", "#f2a03d", "#35c0a0", "#ee7fae", "#e8636b"];
+
+/** A stable colour per person, so the same face has the same dot everywhere. */
+export const peerColor = (id: string) => {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) hash = (hash * 31 + id.charCodeAt(index)) >>> 0;
+  return PEER_COLORS[hash % PEER_COLORS.length];
+};
+
+export const PALETTE_CHOICES = PEER_COLORS;
 
 /** Art pixels per tile, and per world unit. Two tiles make one world unit. */
 export const TILE = 32;
@@ -38,9 +54,9 @@ export interface TileRect {
 }
 
 /**
- * The village in tiles. Three workrooms across the top, the commons and the
- * archive across the middle, the product garden along the bottom, water in the
- * south-east corner. Lanes fill the gaps between them.
+ * The office in tiles. Three workrooms along the top, the memory room and the
+ * commons across the middle, the lobby with the board on the right, and an open
+ * lounge along the south.
  */
 export const zoneTiles: Record<string, TileRect> = {
   plan: { x: 3, y: 2, w: 12, h: 9 },
@@ -48,22 +64,8 @@ export const zoneTiles: Record<string, TileRect> = {
   review: { x: 34, y: 2, w: 12, h: 9 },
   memory: { x: 3, y: 14, w: 12, h: 9 },
   commons: { x: 18, y: 13, w: 13, h: 10 },
-  market: { x: 34, y: 13, w: 12, h: 7 }
+  lobby: { x: 34, y: 13, w: 12, h: 8 }
 };
-
-export const pondTiles: TileRect = { x: 34, y: 22, w: 12, h: 6 };
-
-/** Eight product plots: two rows of four along the south of the map. */
-export const plotTiles: TileRect[] = [
-  { x: 3, y: 25, w: 4, h: 2 },
-  { x: 10, y: 25, w: 4, h: 2 },
-  { x: 18, y: 25, w: 4, h: 2 },
-  { x: 25, y: 25, w: 4, h: 2 },
-  { x: 3, y: 29, w: 4, h: 2 },
-  { x: 10, y: 29, w: 4, h: 2 },
-  { x: 18, y: 29, w: 4, h: 2 },
-  { x: 25, y: 29, w: 4, h: 2 }
-];
 
 /** Tile grid to world units, and back. */
 const tileToWorldX = (tile: number) => tile / 2 - 12;

@@ -1,66 +1,52 @@
-import { UserRound, Users, Video } from "lucide-react";
-import type { ProviderInfo, Status } from "./shared";
+import { Settings, Users, Video } from "lucide-react";
+import { peerColor } from "../world/theme";
+import { t } from "../lib/i18n";
+import type { Key } from "../lib/i18n";
+import { initial } from "./shared";
+import type { Peer, Status } from "./shared";
 
 interface Props {
   status: Status;
-  provider: string;
-  providers: ProviderInfo[];
-  providerNote: string | null;
-  peers: number;
+  peers: Peer[];
   inCall: boolean;
-  avatarName: string;
-  avatarAccent: string;
-  onOpenAvatar: () => void;
-  onProviderChange: (provider: string) => void;
   onToggleCall: () => void;
+  onOpenSettings: () => void;
 }
 
-export const TopBar = ({
-  status,
-  provider,
-  providers,
-  providerNote,
-  peers,
-  inCall,
-  avatarName,
-  avatarAccent,
-  onOpenAvatar,
-  onProviderChange,
-  onToggleCall
-}: Props) => (
+export const TopBar = ({ status, peers, inCall, onToggleCall, onOpenSettings }: Props) => (
   <header className="topbar">
-    <div className="brand">
+    <div className="chip sq brand" title={t(`status.${status}` as Key)}>
       <img className="brand__mark" src="/swarmville-mark.svg" alt="" />
-      <span className="brand__health" title={`Relay ${status}`}><span className={`dot dot--${status}`} aria-hidden /></span>
-      <span className="brand__copy"><strong>SwarmVille</strong></span>
+      <strong>SwarmVille</strong>
+      <span className={`dot dot--${status}`} aria-label={t(`status.${status}` as Key)} />
     </div>
 
     <div className="topbar__right">
-      <button type="button" className="avatar-chip" onClick={onOpenAvatar} title="Open avatar locker">
-        <span className="avatar-chip__dot" style={{ background: avatarAccent }}><UserRound size={12} /></span>
-        <span>{avatarName}</span>
-      </button>
-
-      <label className={`select ${providerNote ? "select--fallback" : ""}`} title={providerNote ?? undefined}>
-        <span className="sr-only">Model provider</span>
-        <select value={provider} onChange={(event) => onProviderChange(event.target.value)}>
-          {providers.map((entry) => (
-            <option key={entry.id} value={entry.id} disabled={!entry.ready}>
-              {entry.label}
-              {entry.ready ? "" : ` · needs ${entry.needs}`}
-            </option>
+      <div className="chip sq people" title={t("call.people", { n: peers.length })}>
+        <span className="faces" aria-hidden>
+          {peers.slice(0, 4).map((peer) => (
+            <i key={peer.id} style={{ background: peerColor(peer.id) }}>
+              {initial(peer.name)}
+            </i>
           ))}
-        </select>
-      </label>
+        </span>
+        <Users size={14} aria-hidden />
+        <b>{peers.length}</b>
+      </div>
 
       <button
         type="button"
-        className={`chip ${inCall ? "chip--live" : ""}`}
+        className={`icon-btn sq ${inCall ? "icon-btn--live" : ""}`}
         onClick={onToggleCall}
-        title={inCall ? "Leave the commons" : "Join the commons and start the call"}
+        aria-pressed={inCall}
+        aria-label={inCall ? t("call.leave") : t("call.join")}
+        title={inCall ? t("call.leave") : t("call.join")}
       >
-        {inCall ? <Video size={14} /> : <Users size={14} />}
-        {peers}
+        <Video size={17} />
+      </button>
+
+      <button type="button" className="icon-btn sq" onClick={onOpenSettings} aria-label={t("settings.title")} title={t("settings.title")}>
+        <Settings size={17} />
       </button>
     </div>
   </header>
