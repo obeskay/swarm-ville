@@ -1,4 +1,5 @@
 import type { ServerMessage } from "../types";
+import { getCode } from "./access";
 
 export type Status = "connecting" | "online" | "offline";
 
@@ -21,12 +22,15 @@ export const connect = (
   let attempt = 0;
   let closed = false;
 
-  const url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`;
+  const socketUrl = () => {
+    const code = getCode();
+    return `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws${code ? `?code=${encodeURIComponent(code)}` : ""}`;
+  };
 
   const open = () => {
     if (closed) return;
     onStatus("connecting");
-    socket = new WebSocket(url);
+    socket = new WebSocket(socketUrl());
 
     socket.onopen = () => {
       attempt = 0;

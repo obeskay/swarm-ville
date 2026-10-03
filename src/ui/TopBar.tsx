@@ -1,67 +1,90 @@
-import { UserRound, Users, Video } from "lucide-react";
-import type { ProviderInfo, Status } from "./shared";
+import { useState } from "react";
+import { Flame, Settings, Smile, Users, Video } from "lucide-react";
+import { peerColor } from "../world/theme";
+import { t } from "../lib/i18n";
+import type { Key } from "../lib/i18n";
+import { EmoteBar } from "./Emotes";
+import { initial } from "./shared";
+import type { Peer, Status } from "./shared";
 
 interface Props {
   status: Status;
-  provider: string;
-  providers: ProviderInfo[];
-  providerNote: string | null;
-  peers: number;
+  peers: Peer[];
   inCall: boolean;
-  avatarName: string;
-  avatarAccent: string;
-  onOpenAvatar: () => void;
-  onProviderChange: (provider: string) => void;
+  /** Days in a row this person has left an idea; shown from the second day. */
+  streak: number;
+  onEmote: (id: string) => void;
   onToggleCall: () => void;
+  onOpenSettings: () => void;
 }
 
-export const TopBar = ({
-  status,
-  provider,
-  providers,
-  providerNote,
-  peers,
-  inCall,
-  avatarName,
-  avatarAccent,
-  onOpenAvatar,
-  onProviderChange,
-  onToggleCall
-}: Props) => (
-  <header className="topbar">
-    <div className="brand">
-      <img className="brand__mark" src="/swarmville-mark.svg" alt="" />
-      <span className="brand__health" title={`Relay ${status}`}><span className={`dot dot--${status}`} aria-hidden /></span>
-      <span className="brand__copy"><strong>SwarmVille</strong></span>
-    </div>
+export const TopBar = ({ status, peers, inCall, streak, onEmote, onToggleCall, onOpenSettings }: Props) => {
+  const [reacting, setReacting] = useState(false);
 
-    <div className="topbar__right">
-      <button type="button" className="avatar-chip" onClick={onOpenAvatar} title="Open avatar locker">
-        <span className="avatar-chip__dot" style={{ background: avatarAccent }}><UserRound size={12} /></span>
-        <span>{avatarName}</span>
-      </button>
+  return (
+    <header className="topbar">
+      <div className="topbar__left">
+        <div className="chip sq brand" title={t(`status.${status}` as Key)}>
+          <img className="brand__mark" src="/swarmville-mark.svg" alt="" />
+          <strong>SwarmVille</strong>
+          <span className={`dot dot--${status}`} aria-label={t(`status.${status}` as Key)} />
+        </div>
+        {streak >= 2 && (
+          <div className="chip sq streak" title={t("streak.title", { n: streak })}>
+            <Flame size={15} aria-hidden />
+            <b>{streak}</b>
+          </div>
+        )}
+      </div>
 
-      <label className={`select ${providerNote ? "select--fallback" : ""}`} title={providerNote ?? undefined}>
-        <span className="sr-only">Model provider</span>
-        <select value={provider} onChange={(event) => onProviderChange(event.target.value)}>
-          {providers.map((entry) => (
-            <option key={entry.id} value={entry.id} disabled={!entry.ready}>
-              {entry.label}
-              {entry.ready ? "" : ` · needs ${entry.needs}`}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="topbar__right">
+        <div className="chip sq people" title={t("call.people", { n: peers.length })}>
+          <span className="faces" aria-hidden>
+            {peers.slice(0, 4).map((peer) => (
+              <i key={peer.id} style={{ background: peerColor(peer.id) }}>
+                {initial(peer.name)}
+              </i>
+            ))}
+          </span>
+          <Users size={14} aria-hidden />
+          <b>{peers.length}</b>
+        </div>
 
-      <button
-        type="button"
-        className={`chip ${inCall ? "chip--live" : ""}`}
-        onClick={onToggleCall}
-        title={inCall ? "Leave the commons" : "Join the commons and start the call"}
-      >
-        {inCall ? <Video size={14} /> : <Users size={14} />}
-        {peers}
-      </button>
-    </div>
-  </header>
-);
+        <button
+          type="button"
+          className={`icon-btn sq ${reacting ? "icon-btn--on" : ""}`}
+          onClick={() => setReacting(!reacting)}
+          aria-pressed={reacting}
+          aria-label={t("emote.label")}
+          title={t("emote.label")}
+        >
+          <Smile size={17} />
+        </button>
+
+        <button
+          type="button"
+          className={`icon-btn sq ${inCall ? "icon-btn--live" : ""}`}
+          onClick={onToggleCall}
+          aria-pressed={inCall}
+          aria-label={inCall ? t("call.leave") : t("call.join")}
+          title={inCall ? t("call.leave") : t("call.join")}
+        >
+          <Video size={17} />
+        </button>
+
+        <button type="button" className="icon-btn sq" onClick={onOpenSettings} aria-label={t("settings.title")} title={t("settings.title")}>
+          <Settings size={17} />
+        </button>
+
+        {reacting && (
+          <EmoteBar
+            onPick={(id) => {
+              onEmote(id);
+              setReacting(false);
+            }}
+          />
+        )}
+      </div>
+    </header>
+  );
+};

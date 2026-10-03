@@ -34,6 +34,8 @@ interface MeshOptions {
 
 export class CallMesh {
   #connections = new Map<string, RTCPeerConnection>();
+  #chains = new Map<string, Promise<void>>();
+  #pending = new Map<string, RTCIceCandidateInit[]>();
   #local: MediaStream | null = null;
   #options: MeshOptions;
 
@@ -93,11 +95,27 @@ export class CallMesh {
     this.#options.send(peerId, { kind: "offer", sdp: offer });
   }
 
-  async accept(peerId: string, signal: Signal) {
+  /**
+   * Handles one signalling message from a peer. Messages for one peer are
+   * processed strictly in order: the relay delivers an offer and the candidates
+   * behind it a millisecond apart, and applying them concurrently meant a
+   * candidate could meet a connection that had no remote description yet.
+   */
+  accept(peerId: string, signal: Signal): Promise<void> {
+    const previous = this.#chains.get(peerId) ?? Promise.resolve();
+    const next = previous.then(() => this.#apply(peerId, signal)).catch((error) => {
+      console.warn("[call] signal ignored", error);
+    });
+    this.#chains.set(peerId, next);
+    return next;
+  }
+
+  async #apply(peerId: string, signal: Signal) {
     const connection = this.#peer(peerId);
 
     if (signal.kind === "offer") {
       await connection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+      await this.#flush(peerId, connection);
       const answer = await connection.createAnswer();
       await connection.setLocalDescription(answer);
       this.#options.send(peerId, { kind: "answer", sdp: answer });
@@ -107,14 +125,26 @@ export class CallMesh {
     if (signal.kind === "answer") {
       if (connection.signalingState === "have-local-offer") {
         await connection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        await this.#flush(peerId, connection);
       }
       return;
     }
 
-    // Candidates that arrive before the remote description would throw.
+    // A candidate that beats its description is kept, not dropped: a dropped
+    // host candidate is often the only route between two people on one network.
     if (connection.remoteDescription) {
       await connection.addIceCandidate(new RTCIceCandidate(signal.candidate));
+      return;
     }
+    const waiting = this.#pending.get(peerId) ?? [];
+    waiting.push(signal.candidate);
+    this.#pending.set(peerId, waiting);
+  }
+
+  async #flush(peerId: string, connection: RTCPeerConnection) {
+    const waiting = this.#pending.get(peerId) ?? [];
+    this.#pending.delete(peerId);
+    for (const candidate of waiting) await connection.addIceCandidate(new RTCIceCandidate(candidate));
   }
 
   remove(peerId: string) {
@@ -125,6 +155,8 @@ export class CallMesh {
     connection.onconnectionstatechange = null;
     connection.close();
     this.#connections.delete(peerId);
+    this.#chains.delete(peerId);
+    this.#pending.delete(peerId);
     this.#options.onClosed(peerId);
   }
 

@@ -4,10 +4,10 @@ import { join, resolve } from "node:path";
 import { config } from "./config.js";
 
 /**
- * An address for a shipped plot.
+ * An address for a finished page.
  *
- * Product Studio could already build a single-file app; the loop just ended in
- * your downloads folder. Publishing writes that document under
+ * The builder can hand over a single-file app; without this the loop would end
+ * in your downloads folder. Publishing writes that document under
  * `.data/releases/<id>.html` and the relay serves it back at `/r/<id>`, so a
  * release is something you can open in another tab or hand to somebody on the
  * same network.

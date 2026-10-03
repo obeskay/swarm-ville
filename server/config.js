@@ -61,6 +61,27 @@ export const config = {
     ? list(process.env.ALLOWED_ORIGINS)
     : DEFAULT_ORIGINS,
 
+  /**
+   * The built app (`npm run build`). When this folder holds an index.html the
+   * relay serves it, so one process is the whole deployment. Relative paths
+   * resolve against the working directory, like ARCHIVE_FILE.
+   */
+  staticDir: process.env.STATIC_DIR || "dist",
+
+  /**
+   * Off by default. Set, every API call and the WebSocket need it, and the app
+   * shows a lock screen first. It is the only thing between the internet and
+   * your model budget once HOST is not loopback.
+   */
+  accessCode: (process.env.ACCESS_CODE || "").trim(),
+
+  /**
+   * Off by default. On, the client address for rate limiting is the first entry
+   * of X-Forwarded-For. Only turn it on when the relay is reachable through your
+   * reverse proxy alone, otherwise anyone can pick their own address.
+   */
+  trustProxy: bool(process.env.TRUST_PROXY),
+
   provider: (process.env.PROVIDER || "agy").toLowerCase(),
 
   anthropic: {
@@ -97,7 +118,11 @@ export const config = {
     /** Revise cycles allowed before a run is force-finished. */
     maxRevisions: int(process.env.MAX_REVISIONS, 2),
     /** People allowed in the meeting room at once. */
-    roomCapacity: int(process.env.ROOM_CAPACITY, 8)
+    roomCapacity: int(process.env.ROOM_CAPACITY, 8),
+    /** Jobs in the shared queue at once, the running one included. */
+    queueMax: int(process.env.QUEUE_MAX, 12),
+    /** Jobs one peer may have queued or running at once. */
+    jobsPerPeer: int(process.env.JOBS_PER_PEER, 2)
   }
 };
 

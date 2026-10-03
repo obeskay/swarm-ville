@@ -40,6 +40,9 @@ export interface Step {
 export interface Run {
   id: string;
   goal: string;
+  /** Who left the objective. Absent on runs recorded before the queue existed. */
+  ownerId?: string;
+  ownerName?: string;
   status: RunStatus;
   provider: string;
   model: string;
@@ -67,6 +70,24 @@ export interface ArchiveEntry {
   tokens: number;
 }
 
+/**
+ * One objective somebody left with the swarm. The running job is first; the
+ * rest are ordered by how many people back them, then by arrival.
+ */
+export interface Job {
+  id: string;
+  goal: string;
+  ownerId: string;
+  ownerName: string;
+  /** Peer ids that backed the job, which is what moves it up the line. */
+  backers: string[];
+  /** Where the owner set their agent down on the map; null when they just pressed send. */
+  at: { x: number; z: number } | null;
+  status: "running" | "queued";
+  createdAt: number;
+  runId: string | null;
+}
+
 export interface LogEvent {
   id: string;
   agentId: AgentId | string;
@@ -90,80 +111,6 @@ export interface Peer {
   inRoom: boolean;
 }
 
-export type ProjectStage = "plan" | "design" | "build" | "review" | "verify" | "ship";
-
-export interface WorkspaceFile {
-  path: string;
-  language: string;
-  content: string;
-}
-
-export interface ReleaseArtifact {
-  runId: string;
-  shippedAt: string;
-  plan: string;
-  build: string;
-  review: string;
-  verify: string;
-  archive: string;
-  revision?: number;
-  publishedAt?: string;
-  workspace?: WorkspaceFile[];
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  kind: string;
-  brief: string;
-  stage: ProjectStage;
-  progress: number;
-  color: string;
-  createdAt: string;
-  readyToHarvest?: boolean;
-  harvested?: boolean;
-  tendCount?: number;
-  lastRunId?: string | null;
-  release?: ReleaseArtifact;
-}
-
-export interface GameProfile {
-  xp: number;
-  coins: number;
-  gems: number;
-  harvests: number;
-  energy?: number;
-  maxEnergy?: number;
-  tended?: number;
-  projectsCreated?: number;
-  studioVisits?: number;
-  claimedQuests?: string[];
-  fertilizer?: number;
-  dailyKey?: string;
-  dailyTended?: number;
-  dailyHarvests?: number;
-  plotLimit?: number;
-}
-
-export interface AvatarProfile {
-  name: string;
-  accent: string;
-  skin: string;
-}
-
-export type MarketItemId = "fertilizer" | "energy" | "plot";
-
-export interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  xp: number;
-  coins: number;
-  gems: number;
-  completed: boolean;
-  claimed: boolean;
-}
-
 export interface Snapshot {
   agents: Agent[];
   zones: Zone[];
@@ -174,6 +121,7 @@ export interface Snapshot {
   runs: Run[];
   events: LogEvent[];
   run: Run | null;
+  queue: Job[];
 }
 
 export type ServerMessage =
@@ -183,6 +131,7 @@ export type ServerMessage =
   | { type: "event"; data: LogEvent }
   | { type: "agent"; data: { id: AgentId; state: AgentState } }
   | { type: "handoff"; data: { from: AgentId; to: AgentId } }
+  | { type: "queue"; data: { items: Job[] } }
   | { type: "provider"; data: { provider: string; note: string | null } }
   | { type: "error"; data: { error: string } }
   | { type: "presence:self"; data: { id: string } }
@@ -191,59 +140,9 @@ export type ServerMessage =
   | { type: "presence:update"; data: Peer }
   | { type: "presence:move"; data: { id: string; x: number; z: number } }
   | { type: "presence:leave"; data: { id: string } }
+  | { type: "presence:emote"; data: { id: string; emote: string } }
   | { type: "room:joined"; data: { peers: Peer[] } }
   | { type: "room:peer-joined"; data: Peer }
   | { type: "room:peer-left"; data: { id: string } }
   | { type: "room:full"; data: { capacity: number } }
   | { type: "rtc:signal"; data: { from: string; payload: unknown } };
-
-export type WorldContextMenuTarget =
-  | { type: "agent"; agentId: AgentId }
-  | { type: "plot"; projectId: string }
-  | { type: "market" }
-  | { type: "commons" }
-  | { type: "ground" };
-
-export interface WorldContextMenuEvent {
-  screenX: number;
-  screenY: number;
-  worldX: number;
-  worldZ: number;
-  artX: number;
-  artY: number;
-  target: WorldContextMenuTarget;
-}
-
-export interface SpeechBubble {
-  id: string;
-  actorId: AgentId | string;
-  text: string;
-  age: number;
-  duration: number;
-  color?: string;
-  isEmote?: boolean;
-}
-
-export interface AgentArchetype {
-  id: AgentId | string;
-  name: string;
-  role: string;
-  zone: ZoneId;
-  accent: string;
-  sheet: string;
-  iconName?: string;
-  tagline: string;
-  description: string;
-  personality: string;
-  systemPrompt: string;
-  quickPrompts: string[];
-}
-
-export interface AgentChatMessage {
-  id: string;
-  sender: "user" | "agent";
-  agentId: AgentId | string;
-  text: string;
-  timestamp: number;
-}
-
