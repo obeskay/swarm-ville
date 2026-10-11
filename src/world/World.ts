@@ -66,8 +66,11 @@ const CROP_STAGES = ["crop_0", "crop_1", "crop_2", "crop_3"];
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-/** Walking zoom. A phone at 3x would only see six tiles across, so it stays at 1. */
-const walkScale = () => (window.innerWidth < 720 ? 1 : 2);
+/** Walking zoom. A phone at 3x would only see six tiles across, so it stays at 1.
+ *  Measured from the canvas box, not the viewport: cmux docks and other embeds
+ *  are narrow while the page viewport stays wide. */
+const walkScale = (canvas?: HTMLCanvasElement | null) =>
+  (canvas?.clientWidth ?? window.innerWidth) < 720 ? 1 : 2;
 
 /** Framerate-independent smoothing: the gap halves every `halfLife` seconds. */
 const smooth = (current: number, target: number, halfLife: number, dt: number) =>
@@ -254,6 +257,13 @@ export class World {
     window.addEventListener("keyup", this.handleKeyUp);
     window.addEventListener("blur", this.handleBlur);
     window.addEventListener("resize", this.resize);
+    // The canvas lives inside whatever container owns it (cmux dock, split pane,
+    // iframe). Observing its box makes the render track the real size, not the
+    // page viewport, and re-bakes on every container resize.
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(() => this.resize());
+      this.resizeObserver.observe(canvas);
+    }
 
     this.lastTime = performance.now();
     this.frame = requestAnimationFrame(this.tick);
@@ -328,6 +338,8 @@ export class World {
 
   // ── camera ─────────────────────────────────────────────────────────────────
 
+  private resizeObserver: ResizeObserver | null = null;
+
   private resize = () => {
     if (!this.canvas) return;
     this.dpr = clamp(Math.round(window.devicePixelRatio || 1), 1, 2);
@@ -379,7 +391,7 @@ export class World {
     if (this.engaged) return;
     this.engaged = true;
     this.follow = true;
-    this.setZoom(walkScale());
+    this.setZoom(walkScale(this.canvas));
   }
 
   // ── agents and peers ───────────────────────────────────────────────────────
@@ -1432,6 +1444,8 @@ export class World {
     window.removeEventListener("keyup", this.handleKeyUp);
     window.removeEventListener("blur", this.handleBlur);
     window.removeEventListener("resize", this.resize);
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.agents.clear();
     this.peers.clear();
     this.arcs.length = 0;

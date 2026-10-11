@@ -4546,3 +4546,357 @@ button {
 .kind-pill:hover {
   background: rgba(255, 255, 255, 0.08);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Embedded / container responsiveness
+   ───────────────────────────────────────────────────────────────────────────
+   SwarmVille also runs inside narrow containers — a cmux dock pane, a split
+   view, an iframe — where the page viewport stays wide but the element box is
+   small. Viewport @media queries never fire there, so the floating HUD used to
+   overlap and clip. These mirrors key off the .app box instead (cqw/cqh) and
+   fire wherever the app is actually narrow.
+   ═════════════════════════════════════════════════════════════════════════��═ */
+
+.app {
+  container-type: size;
+  container-name: stage;
+}
+@container stage (max-width: 1024px) {
+  .garden {
+    top: max(16px, env(safe-area-inset-top, 16px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    left: auto;
+    width: 300px;
+    max-width: calc(100cqw - 32px);
+  }
+
+  .agent {
+    top: auto;
+    right: max(16px, env(safe-area-inset-right, 16px));
+    bottom: max(88px, env(safe-area-inset-bottom, 88px));
+    left: auto;
+    width: min(340px, calc(100cqw - 32px));
+    max-height: 52vh;
+  }
+
+  .plot-detail {
+    top: auto;
+    right: max(16px, env(safe-area-inset-right, 16px));
+    bottom: max(88px, env(safe-area-inset-bottom, 88px));
+    left: auto;
+    width: min(340px, calc(100cqw - 32px));
+    max-height: 52vh;
+  }
+
+  .run {
+    top: max(58px, env(safe-area-inset-top, 58px));
+    left: max(16px, env(safe-area-inset-left, 16px));
+    right: auto;
+    width: min(440px, calc(100cqw - 32px));
+    max-height: 52vh;
+  }
+
+  .log {
+    left: max(16px, env(safe-area-inset-left, 16px));
+    bottom: max(88px, env(safe-area-inset-bottom, 88px));
+    width: min(280px, calc(100cqw - 32px));
+  }
+
+  .command {
+    bottom: max(18px, env(safe-area-inset-bottom, 18px));
+    width: min(520px, calc(100% - 32px));
+  }
+
+  .workspace-modal {
+    width: min(840px, 100%);
+    max-height: min(780px, calc(100cqh - 36px));
+  }
+
+  .workspace-body {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+}
+
+@container stage (max-width: 1024px) {
+  .agent-spawner-dock {
+    display: none;
+  }
+}
+
+@container stage (max-width: 700px) {
+  .app--plot-open .garden,
+  .app--running .garden {
+    display: none;
+  }
+
+  .topbar {
+    top: max(10px, env(safe-area-inset-top, 10px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    gap: 8px;
+    max-width: calc(100cqw - 20px);
+  }
+
+  .topbar__right {
+    gap: 5px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .topbar__right .select,
+  .brand__copy small {
+    display: none;
+  }
+
+  .brand__copy strong {
+    font-size: 13px;
+  }
+
+  .avatar-chip {
+    max-width: 110px;
+    padding: 0 7px 0 4px;
+    font-size: 10px;
+  }
+
+  .garden {
+    top: max(52px, env(safe-area-inset-top, 52px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+    max-width: calc(100cqw - 20px);
+    transform: none;
+    padding: 10px;
+  }
+
+  .garden__plots {
+    max-height: 140px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Above the map controls and the event log, which own the 76px row. */
+  .guide,
+  .plot-detail,
+  .agent {
+    top: auto;
+    right: max(10px, env(safe-area-inset-right, 10px));
+    bottom: max(138px, env(safe-area-inset-bottom, 138px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+    max-width: calc(100cqw - 20px);
+    max-height: calc(100cqh - 212px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .run {
+    top: max(52px, env(safe-area-inset-top, 52px));
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+    max-width: calc(100cqw - 20px);
+    max-height: calc(100cqh - 150px);
+    overflow-y: auto;
+  }
+
+  .run-dock {
+    right: max(10px, env(safe-area-inset-right, 10px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+    width: auto;
+  }
+
+  .log {
+    right: max(10px, env(safe-area-inset-right, 10px));
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+    left: auto;
+    width: min(220px, calc(100cqw - 20px));
+  }
+
+  .map-controls {
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+    left: max(10px, env(safe-area-inset-left, 10px));
+  }
+
+  .map-controls small {
+    display: none;
+  }
+
+  .map-controls__button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .command {
+    bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 20px);
+    max-width: calc(100cqw - 20px);
+    padding: 5px 5px 5px 12px;
+  }
+
+  .command input {
+    font-size: 13px;
+    height: 36px;
+  }
+
+  .command__go,
+  .command__stop {
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .call {
+    bottom: max(76px, env(safe-area-inset-bottom, 76px));
+  }
+
+  .modal-layer {
+    padding: max(10px, env(safe-area-inset-top, 10px)) max(10px, env(safe-area-inset-right, 10px)) max(10px, env(safe-area-inset-bottom, 10px)) max(10px, env(safe-area-inset-left, 10px));
+  }
+
+  .modal {
+    max-height: calc(100cqh - 20px);
+    padding: 14px;
+  }
+
+  .workspace-modal {
+    max-height: calc(100cqh - 20px);
+  }
+
+  .workspace-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .workspace-toolbar > div {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workspace-body {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .workspace-files {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+
+  .workspace-files button {
+    width: auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+
+  .workspace-code,
+  .workspace-preview {
+    height: calc(100cqh - 270px);
+    max-height: none;
+  }
+
+  .library-modal {
+    max-height: calc(100cqh - 20px);
+  }
+
+  .library-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .library-stats span {
+    padding: 6px;
+  }
+
+  .library-stats strong {
+    font-size: 13px;
+  }
+
+  .library-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .library-row__actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+
+  .library-row__actions .secondary {
+    padding: 0 9px;
+    min-height: 32px;
+  }
+
+  .kind-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Compact dock mode (< 480px): a stack that never overlaps ─────────────── */
+@container stage (max-width: 480px) {
+  /* The guide is onboarding, redundant once you're in a dock. */
+  .guide { display: none; }
+
+  .topbar {
+    top: 8px; left: 8px; right: 8px;
+    max-width: calc(100cqw - 16px);
+    padding: 6px 8px;
+  }
+  .topbar__right .select,
+  .brand__copy small,
+  .brand__health { display: none; }
+
+  /* Garden becomes a slim horizontal chip row under the topbar. */
+  .garden {
+    top: 50px; left: 8px; right: 8px; width: auto;
+    max-width: calc(100cqw - 16px);
+    padding: 8px;
+  }
+  /* Cap the gardener so it can never push into the bottom row. */
+  .garden { max-height: 108px; overflow: hidden; }
+  .garden__plots { max-height: 64px; overflow-y: auto; }
+
+  /* Command bar hugs the bottom, full width. Reset the base centering. */
+  .command {
+    bottom: 8px; left: 8px; right: 8px; width: auto;
+    max-width: calc(100cqw - 16px);
+    transform: none;
+  }
+
+  /* In a dock this short the event log is noise; the run panel carries the
+     loop. Map controls stay, parked above the command bar. */
+  .log { display: none; }
+  .map-controls { right: 8px; left: auto; bottom: 66px; }
+  .map-controls small { display: none; }
+
+  /* Detail / agent / run panels take the full narrow width, stacked. */
+  .plot-detail,
+  .agent,
+  .run {
+    top: 50px; left: 8px; right: 8px; width: auto;
+    max-width: calc(100cqw - 16px);
+    max-height: calc(100cqh - 140px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .run-dock { left: 8px; right: 8px; width: auto; }
+}
+
+/* ── Ultra narrow (< 360px): drop to essentials only ──────────────────────── */
+@container stage (max-width: 360px) {
+  .garden { display: none; }
+  .log { display: none; }
+  .command { bottom: 8px; transform: none; }
+}
