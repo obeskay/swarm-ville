@@ -1,8 +1,25 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="18" fill="#090D16"/>
-  <path d="M32 10L49.32 20V40L32 50L14.68 40V20L32 10Z" stroke="#A855F7" stroke-width="3"/>
-  <path d="M22 27.5L32 21.5L42 27.5V36.5L32 42.5L22 36.5V27.5Z" fill="#F59E0B"/>
-  <circle cx="26.5" cy="31.5" r="2.2" fill="#090D16"/>
-  <circle cx="37.5" cy="31.5" r="2.2" fill="#090D16"/>
-  <path d="M27 36C29.7 38.2 34.3 38.2 37 36" stroke="#090D16" stroke-width="2" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#161022"/>
+      <stop offset="1" stop-color="#0A0C16"/>
+    </linearGradient>
+    <linearGradient id="hive" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C084FC"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCD34D"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <!-- hexagon hive shell -->
+  <path d="M32 9.5L50.5 20.25V41.75L32 52.5L13.5 41.75V20.25L32 9.5Z"
+        stroke="url(#hive)" stroke-width="3" stroke-linejoin="round"/>
+  <!-- amber core with a face -->
+  <path d="M22.5 27.6L32 22.2L41.5 27.6V37.4L32 42.8L22.5 37.4V27.6Z" fill="url(#core)"/>
+  <circle cx="27.4" cy="31.4" r="2" fill="#0A0C16"/>
+  <circle cx="36.6" cy="31.4" r="2" fill="#0A0C16"/>
+  <path d="M27.6 35.6C30.1 37.5 33.9 37.5 36.4 35.6" stroke="#0A0C16" stroke-width="1.9" stroke-linecap="round"/>
 </svg>
