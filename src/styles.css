@@ -4962,3 +4962,10 @@ button {
     animation: none !important;
   }
 }
+
+.calm__note {
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  color: var(--rust);
+  text-wrap: pretty;
+}

@@ -11,6 +11,7 @@ import { Sprout, Map, MousePointer2, ListChecks, Sparkles, ArrowRight, X } from 
  */
 interface Props {
   hasProjects: boolean;
+  online: boolean;
   onPlant: () => void;
   onExplore: () => void;
   onStart: (goal: string) => void;
@@ -22,7 +23,7 @@ type StepId = "welcome" | "plant" | "objective" | "done";
 const stepsFor = (hasProjects: boolean): StepId[] =>
   hasProjects ? ["welcome", "objective"] : ["welcome", "plant", "objective"];
 
-export const CalmGuide = ({ hasProjects, onPlant, onExplore, onStart, onClose }: Props) => {
+export const CalmGuide = ({ hasProjects, online, onPlant, onExplore, onStart, onClose }: Props) => {
   const [step, setStep] = useState<StepId>("welcome");
   const [goal, setGoal] = useState("");
 
@@ -88,10 +89,11 @@ export const CalmGuide = ({ hasProjects, onPlant, onExplore, onStart, onClose }:
                 placeholder="e.g. a landing page for a coffee subscription"
                 aria-label="Objective for the swarm"
               />
-              <button type="submit" className="calm__cta" disabled={!canStart}>
+              <button type="submit" className="calm__cta" disabled={!canStart || !online}>
                 Send to the swarm <ArrowRight size={15} />
               </button>
             </form>
+            {!online && <p className="calm__note">Waiting for the relay — the map still works.</p>}
             <button type="button" className="calm__ghost" onClick={onExplore}>
               <Map size={14} /> Just look around first
             </button>

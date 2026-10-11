@@ -842,6 +842,7 @@ export default function App() {
       {calm && calmWalkthrough && !run && !selectedProject && (
         <CalmGuide
           hasProjects={projects.length > 0}
+          online={status === "online"}
           onPlant={() => { dismissCalmWalkthrough(); setShowProject(true); }}
           onExplore={() => { dismissCalmWalkthrough(); if (projects[0]) selectProject(projects[0].id); }}
           onStart={(goal) => { dismissCalmWalkthrough(); activeProjectRef.current = null; send({ type: "run:start", goal }); }}
