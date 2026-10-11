@@ -4969,3 +4969,45 @@ button {
   color: var(--rust);
   text-wrap: pretty;
 }
+
+/* Empty garden: a real invitation, not a floating sentence. */
+.garden__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 22px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: rgba(224, 168, 107, 0.04);
+  color: var(--ink-soft);
+  text-align: center;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-press) var(--ease-out);
+}
+.garden__empty:hover { background: rgba(224, 168, 107, 0.08); border-color: var(--clay); }
+.garden__empty:active { transform: scale(0.985); }
+.garden__empty svg { color: var(--clay); }
+.garden__empty strong { font-size: var(--text-sm); color: var(--ink); font-weight: 600; }
+.garden__empty span { font-size: var(--text-xs); color: var(--ink-faint); text-wrap: pretty; }
+
+/* Agent card: drop the tray-in-tray, flatten onto one surface. */
+.agent-card-aesthetic { padding: 0; }
+.agent-card__activity-box,
+.agent-card__stats-compact {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.agent-card__actions-bar { border: 0; background: transparent; }
+.agent-card__action-btn {
+  border: 1px solid var(--line);
+  background: rgba(244, 236, 224, 0.03);
+}
+.agent-card__action-btn--primary {
+  border-color: var(--line-strong);
+  background: rgba(224, 168, 107, 0.12);
+  color: var(--ink);
+}

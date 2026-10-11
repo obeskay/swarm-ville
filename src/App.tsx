@@ -768,8 +768,8 @@ export default function App() {
     });
 
     worldRef.current?.celebrateSpawn(targetX, targetZ, arch.accent);
-    worldRef.current?.addSpeechBubble(arch.id, "¡Listo para cooperar!", 3.5, false, arch.accent);
-    showReward(`${arch.name} en el mapa`, `${arch.role} · ¡Listo para trabajar!`);
+    worldRef.current?.addSpeechBubble(arch.id, "Ready to help.", 3.5, false, arch.accent);
+    showReward(`${arch.name} spawned`, `${arch.role} · ready to work`);
   }, [showReward]);
 
   const summonAgent = useCallback((agentId: string) => {
@@ -780,7 +780,7 @@ export default function App() {
 
   const summonAll = useCallback(() => {
     worldRef.current?.summonAll();
-    showReward("Reunión de la aldea", "Todos los agentes se dirigen hacia ti.");
+    showReward("Village meetup", "Every agent is heading to you.");
   }, [showReward]);
 
   const handleAgentDropped = useCallback((agentId: string, worldX: number, worldZ: number, target: import("./types").WorldContextMenuTarget) => {
@@ -790,7 +790,7 @@ export default function App() {
       if (proj) {
         worldRef.current?.celebrateProject(proj.id);
         worldRef.current?.addSpeechBubble(agentId, "¡Cuidando plot!", 3.0, false, arch.accent);
-        showReward(`${arch.name} asignado`, `Apoyando en «${proj.name}»`);
+        showReward(`${arch.name} asignado`, `Helping on ${proj.name}`);
         tendProject(proj);
       }
     } else {

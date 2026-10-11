@@ -70,11 +70,11 @@ export const ProjectModal = ({ open, projects, onClose, onCreate }: Props) => {
         <header className="modal__head">
           <div>
             <span className="project-modal-badge">
-              <Sparkles size={11} /> Nuevo Plot · {projects.length} Activos
+              <Sparkles size={11} /> New plot · {projects.length} active
             </span>
             <h2 id="new-project-title">Sembrar una Idea</h2>
           </div>
-          <button type="button" className="icon" onClick={onClose} aria-label="Cerrar">
+          <button type="button" className="icon" onClick={onClose} aria-label="Close">
             <X size={17} />
           </button>
         </header>
@@ -154,7 +154,7 @@ export const ProjectModal = ({ open, projects, onClose, onCreate }: Props) => {
               Explorar
             </button>
             <button type="submit" className="primary" disabled={!canCreate}>
-              <Sprout size={15} /> Sembrar en la Aldea
+              <Sprout size={15} /> Plant in the village
             </button>
           </div>
         </form>

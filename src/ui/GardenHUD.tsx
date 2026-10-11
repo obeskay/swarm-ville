@@ -17,7 +17,13 @@ export const GardenHUD = ({ projects, profile, plotLimit, queuedProjectIds, onCr
       <div className="garden__track" aria-label={`${levelXp} of 100 experience points to the next level`}><i style={{ width: `${levelXp}%` }} /></div>
       <div className="garden__plots">
         <div className="garden__plots-head"><span><Sprout size={12} /> Plots <em>{Math.min(projects.length, plotLimit)}/{plotLimit}</em></span><button type="button" onClick={onCreate} aria-label="Create product plot" disabled={projects.length >= plotLimit}><Plus size={14} /></button></div>
-        {projects.length === 0 ? <p className="empty">Plant your first idea.</p> : projects.slice(0, plotLimit).map((project) => (
+        {projects.length === 0 ? (
+          <button type="button" className="garden__empty" onClick={onCreate}>
+            <Sprout size={20} />
+            <strong>Plant your first idea</strong>
+            <span>A plot holds one product. The swarm builds it.</span>
+          </button>
+        ) : projects.slice(0, plotLimit).map((project) => (
           <button key={project.id} type="button" className={`garden__plot ${project.readyToHarvest ? "garden__plot--ready" : ""} ${queuedProjectIds.includes(project.id) ? "garden__plot--queued" : ""}`} onClick={() => onSelect(project)}><i style={{ color: project.color, background: project.color }} /><span><strong>{project.name}</strong><small>{project.readyToHarvest ? "Ready" : queuedProjectIds.includes(project.id) ? "Queued" : stageLabel[project.stage]}</small></span><b style={{ width: `${Math.max(7, project.progress)}%`, background: project.color }} /></button>
         ))}
       </div>

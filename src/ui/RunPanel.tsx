@@ -107,7 +107,7 @@ const StepRow = ({
               className="step-card__chat-btn"
               onClick={() => onChat(agent)}
             >
-              <Bot size={12} /> Platicar con {agent.name} sobre esta fase
+              <Bot size={12} /> Chat with {agent.name} about this phase
             </button>
           )}
 
@@ -165,7 +165,7 @@ export const RunPanel = ({ run, agents, onClose, onChatWithAgent }: Props) => {
       {/* Footer */}
       <footer className="run-panel__foot">
         <span>{run.steps.length} fases completadas</span>
-        <span>{run.revisions > 0 ? `${run.revisions} revisiones` : "Aprobado en primer ciclo"}</span>
+        <span>{run.revisions > 0 ? `${run.revisions} revisiones` : "Passed en primer ciclo"}</span>
       </footer>
     </section>
   );

@@ -55,22 +55,22 @@ export const AgentCard = ({
           </p>
         </div>
 
-        <button type="button" className="icon agent-card__close" onClick={onClose} aria-label="Cerrar">
+        <button type="button" className="icon agent-card__close" onClick={onClose} aria-label="Close">
           <X size={16} />
         </button>
       </header>
 
-      {/* Quick Action Bar (Platicar & Llamar) */}
+      {/* Quick actions */}
       <div className="agent-card__actions-bar">
         {onChat && (
           <button
             type="button"
             className="agent-card__action-btn agent-card__action-btn--primary"
             onClick={() => onChat(agent)}
-            title="Abrir conversación directa con el agente"
+            title="Chat with this agent"
           >
             <MessageSquare size={13} />
-            <span>Platicar</span>
+            <span>Chat</span>
           </button>
         )}
 
@@ -79,10 +79,10 @@ export const AgentCard = ({
             type="button"
             className="agent-card__action-btn"
             onClick={() => onSummon(agent)}
-            title="Llamar al agente a tu posición actual"
+            title="Summon to my position"
           >
             <Megaphone size={13} />
-            <span>Llamar aquí</span>
+            <span>Summon</span>
           </button>
         )}
       </div>
@@ -91,12 +91,12 @@ export const AgentCard = ({
       <div className="agent-card__activity-box">
         <div className="agent-card__activity-head">
           <Sparkles size={13} style={{ color: agent.accent }} />
-          <strong>Actividad Reciente</strong>
+          <strong>Recent activity</strong>
           {summary.verdict === "pass" && (
-            <span className="verdict-pill verdict-pill--pass">Aprobado</span>
+            <span className="verdict-pill verdict-pill--pass">Passed</span>
           )}
           {summary.verdict === "revise" && (
-            <span className="verdict-pill verdict-pill--revise">Ajustes</span>
+            <span className="verdict-pill verdict-pill--revise">Revise</span>
           )}
         </div>
 
@@ -110,7 +110,7 @@ export const AgentCard = ({
             ))}
           </ul>
         ) : (
-          <p className="empty">Sin tareas asignadas en esta ejecución.</p>
+          <p className="empty">No work in this run yet.</p>
         )}
       </div>
 
@@ -135,7 +135,7 @@ export const AgentCard = ({
         <div className="agent-card__raw-toggle">
           <button type="button" onClick={() => setShowRaw(!showRaw)}>
             {showRaw ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            <span>{showRaw ? "Ocultar salida técnica" : "Ver salida técnica / prompt"}</span>
+            <span>{showRaw ? "Hide raw output" : "Show raw output"}</span>
           </button>
           {showRaw && <pre className="agent__output">{latest.error ?? latest.output}</pre>}
         </div>
@@ -143,7 +143,7 @@ export const AgentCard = ({
 
       {agent.id === "archivist" && (
         <button type="button" className="secondary agent__archive" onClick={onOpenArchive}>
-          <Archive size={13} /> Abrir Archivo Histórico
+          <Archive size={13} /> Open archive
         </button>
       )}
     </section>

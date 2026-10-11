@@ -42,10 +42,10 @@ export const AgentSpawnerDock = ({
             type="button"
             className="dock-summon-all-btn"
             onClick={onSummonAll}
-            title="Llamar a todos los agentes a reunirse contigo"
+            title="Summon every agent to the commons"
           >
             <Megaphone size={12} />
-            <span>Reunir Aldea</span>
+            <span>Summon all</span>
           </button>
 
           <button

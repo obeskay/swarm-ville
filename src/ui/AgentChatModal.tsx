@@ -148,13 +148,13 @@ export const AgentChatModal = ({
                   onSummon(agent.id);
                   sendMessage("¡Ven aquí conmigo!");
                 }}
-                title="Llamar al agente a tu ubicación"
+                title="Summon to my position"
               >
                 <Megaphone size={13} />
-                <span>Llamar</span>
+                <span>Summon</span>
               </button>
             )}
-            <button type="button" className="icon" onClick={onClose} aria-label="Cerrar chat">
+            <button type="button" className="icon" onClick={onClose} aria-label="Close chat">
               <X size={17} />
             </button>
           </div>
@@ -234,7 +234,7 @@ export const AgentChatModal = ({
             type="submit"
             className="agent-chat-modal__send-btn"
             disabled={!input.trim() || isTyping}
-            aria-label="Enviar"
+            aria-label="Send"
           >
             <Send size={15} />
           </button>

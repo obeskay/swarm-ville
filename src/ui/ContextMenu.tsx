@@ -219,7 +219,7 @@ export const ContextMenu = ({
               }}
             >
               <Bot size={13} />
-              <span>Platicar con {agent.name}</span>
+              <span>Chat with {agent.name}</span>
             </button>
           )}
 
@@ -233,7 +233,7 @@ export const ContextMenu = ({
               }}
             >
               <Footprints size={13} />
-              <span>Llamar a {agent.name} aquí</span>
+              <span>Summon {agent.name} here</span>
             </button>
           )}
 
@@ -375,7 +375,7 @@ export const ContextMenu = ({
                 }}
               >
                 <Droplets size={13} />
-                <span>Tend Plot (+6% growth)</span>
+                <span>Tend plot</span>
                 <span className="context-menu__cost">−1</span>
               </button>
 
@@ -389,7 +389,7 @@ export const ContextMenu = ({
                 }}
               >
                 <FlaskConical size={13} />
-                <span>Fertilize Plot (+12% growth)</span>
+                <span>Fertilize (+12%)</span>
                 <span className="context-menu__cost">−1</span>
               </button>
             </>
