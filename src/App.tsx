@@ -15,6 +15,7 @@ import { GardenHUD } from "./ui/GardenHUD";
 import { ProjectModal } from "./ui/ProjectModal";
 import { PlotPanel } from "./ui/PlotPanel";
 import { GuideCard } from "./ui/GuideCard";
+import { CalmGuide } from "./ui/CalmGuide";
 import { MapControls } from "./ui/MapControls";
 import { RewardToast } from "./ui/RewardToast";
 import { WorkspaceModal } from "./ui/WorkspaceModal";
@@ -50,6 +51,7 @@ const MAX_PLOTS = 8;
 const PROJECT_STORAGE = "swarm-ville.projects.v4";
 const PROFILE_STORAGE = "swarm-ville.profile.v1";
 const GUIDE_STORAGE = "swarm-ville.guide.v1";
+const CALM_STORAGE = "swarm-ville.calm.v1";
 const QUEUE_STORAGE = "swarm-ville.queue.v1";
 const AVATAR_STORAGE = "swarm-ville.avatar.v1";
 const DEFAULT_PROFILE: GameProfile = { xp: 45, coins: 1320, gems: 51, harvests: 0, energy: 8, maxEnergy: 8, tended: 0, projectsCreated: 0, studioVisits: 0, claimedQuests: [], fertilizer: 1, dailyTended: 0, dailyHarvests: 0, plotLimit: 6 };
@@ -99,6 +101,14 @@ const loadProfile = (): GameProfile => {
 const loadGuide = () => {
   try { return window.localStorage.getItem(GUIDE_STORAGE) !== "1"; }
   catch { return true; }
+};
+/** Calm mode defaults on: a first-timer should see one thing, not eight panels.
+ *  Anyone who turns it off keeps that choice across reloads. */
+const loadCalm = () => {
+  try {
+    const stored = window.localStorage.getItem(CALM_STORAGE);
+    return stored === null ? true : stored === "1";
+  } catch { return true; }
 };
 const loadQueue = (): string[] => {
   try {
@@ -159,6 +169,8 @@ export default function App() {
   const [showProject, setShowProject] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(loadGuide);
+  const [calm, setCalm] = useState(loadCalm);
+  const [calmWalkthrough, setCalmWalkthrough] = useState(loadGuide);
   const [rewardMessage, setRewardMessage] = useState<string | null>(null);
   const [rewardTitle, setRewardTitle] = useState("Village update");
   const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
@@ -693,6 +705,21 @@ export default function App() {
   const selectedAgent = selected ? agentById.get(selected) : undefined;
   const selectedProject = selectedProjectId ? projects.find((project) => project.id === selectedProjectId) ?? null : null;
   const workspaceProject = workspaceProjectId ? projects.find((project) => project.id === workspaceProjectId) ?? null : null;
+  const toggleCalm = useCallback(() => {
+    setCalm((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(CALM_STORAGE, next ? "1" : "0"); } catch { /* private mode */ }
+      // Entering calm for the first time re-offers the one-thing-at-a-time walk.
+      if (next) setCalmWalkthrough(true);
+      return next;
+    });
+  }, []);
+
+  const dismissCalmWalkthrough = useCallback(() => {
+    try { window.localStorage.setItem(GUIDE_STORAGE, "1"); } catch { /* private mode */ }
+    setCalmWalkthrough(false);
+  }, []);
+
   const dismissGuide = useCallback(() => {
     window.localStorage.setItem(GUIDE_STORAGE, "1");
     setShowGuide(false);
@@ -777,7 +804,7 @@ export default function App() {
   }, [handleAgentDropped]);
 
   return (
-    <div className={`app ${running ? "app--running" : ""} ${selectedProject ? "app--plot-open" : ""}`}>
+    <div className={`app ${running ? "app--running app--working" : ""} ${selectedProject ? "app--plot-open" : ""} ${calm ? "app--calm" : ""}`}>
       <canvas ref={canvasRef} className="stage" aria-label="Live map of the swarm" />
 
       <TopBar
@@ -789,6 +816,8 @@ export default function App() {
         inCall={inCall}
         avatarName={avatar.name}
         avatarAccent={avatar.accent}
+        calm={calm}
+        onToggleCalm={toggleCalm}
         onOpenAvatar={() => { dismissGuide(); setShowAvatar(true); }}
         onProviderChange={(next) => {
           setProvider(next);
@@ -811,7 +840,17 @@ export default function App() {
         onRecharge={rechargeEnergy}
       />}
 
-      {showGuide && !run && !selectedProject && <GuideCard
+      {calm && calmWalkthrough && !run && !selectedProject && (
+        <CalmGuide
+          hasProjects={projects.length > 0}
+          onPlant={() => { dismissCalmWalkthrough(); setShowProject(true); }}
+          onExplore={() => { dismissCalmWalkthrough(); if (projects[0]) selectProject(projects[0].id); }}
+          onStart={(goal) => { dismissCalmWalkthrough(); activeProjectRef.current = null; send({ type: "run:start", goal }); }}
+          onClose={dismissCalmWalkthrough}
+        />
+      )}
+
+      {!calm && showGuide && !run && !selectedProject && <GuideCard
         onCreate={() => { dismissGuide(); setShowProject(true); }}
         onExplore={() => { if (projects[0]) selectProject(projects[0].id); }}
         onClose={dismissGuide}

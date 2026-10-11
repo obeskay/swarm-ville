@@ -4900,3 +4900,213 @@ button {
   .log { display: none; }
   .command { bottom: 8px; transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Calm mode — one thing at a time
+   ───────────────────────────────────────────────────────────────────────────
+   The floating HUD is informative but noisy: eight widgets compete for the eye
+   at once. Calm mode dims everything except the one thing you're doing — first
+   the objective, then the run. ADHD-friendly: a single focus, no timers, no
+   badges, nothing moving in the periphery.
+   ══════════════════════════════════════════════════════════��═══════════════ */
+
+.app--calm .garden,
+.app--calm .guide,
+.app--calm .log,
+.app--calm .agent-spawner-dock,
+.app--calm .reward-toast,
+.app--calm .run-dock { display: none; }
+
+/* The map recedes: dimmed and desaturated so panels read as the only foreground. */
+.app--calm .stage {
+  opacity: 0.55;
+  filter: saturate(0.7);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+.app--calm.app--working .stage { opacity: 0.85; filter: none; }
+
+/* Topbar keeps only the essentials; the provider picker and call chip hide. */
+.app--calm .topbar__right .select,
+.app--calm .avatar-chip { display: none; }
+.app--calm .topbar { justify-content: center; padding: 6px 10px; }
+.app--calm .topbar .brand { margin: 0 auto; }
+
+/* The one field grows: a single, generous target instead of a pill at the edge. */
+.app--calm .command {
+  bottom: auto;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  width: min(520px, calc(100% - 48px));
+  padding: 12px 12px 12px 20px;
+  transform: translate(-50%, -50%);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: 0 24px 60px rgba(8, 6, 4, 0.5);
+}
+.app--calm .command input { font-size: 15px; }
+.app--calm.app--working .command {
+  top: auto;
+  bottom: 20px;
+  transform: translateX(-50%);
+  padding: 7px 7px 7px 16px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.app--calm.app--working .command input { font-size: 13px; }
+
+/* Panels that DO belong in calm mode sit centre-stage, alone. */
+.app--calm .plot-detail,
+.app--calm .agent,
+.app--calm .run {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100% - 40px));
+  max-height: min(560px, calc(100% - 80px));
+}
+
+/* ── the walkthrough itself ─────────────────────────────────────────────── */
+.calm {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at center, rgba(20, 16, 12, 0.72), rgba(12, 9, 6, 0.9));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: calm-fade 0.3s ease both;
+}
+.calm__skip {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(30, 27, 24, 0.6);
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+.calm__skip:hover { color: var(--ink-soft); border-color: var(--line-strong); }
+
+.calm__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(460px, 100%);
+  text-align: center;
+  animation: calm-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.calm__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(224, 168, 107, 0.28);
+  background: rgba(224, 168, 107, 0.1);
+  color: var(--clay);
+}
+.calm__icon--live { animation: calm-pulse 2s ease-in-out infinite; }
+.calm__title {
+  margin: 0;
+  max-width: 22ch;
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.calm__lede {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.calm__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  margin-top: 6px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(224, 168, 107, 0.4);
+  background: var(--clay);
+  color: #2b2116;
+  font-size: 14px;
+  font-weight: 650;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.calm__cta:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.calm__cta:disabled { opacity: 0.4; cursor: not-allowed; }
+.calm__ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: none;
+  border: 0;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+.calm__ghost:hover { color: var(--ink-soft); }
+.calm__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+.calm__form input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(20, 17, 14, 0.9);
+  color: var(--ink);
+  font-size: 15px;
+  text-align: center;
+}
+.calm__form input::placeholder { color: var(--ink-faint); }
+.calm__form input:focus { outline: none; border-color: var(--clay); }
+.calm__dots {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transform: translateX(-50%);
+}
+.calm__dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: background 0.25s ease, width 0.25s ease;
+}
+.calm__dots span.is-on { background: var(--clay); }
+.calm__dots span.is-on:last-of-type { width: 18px; }
+.calm__dots small { margin-left: 6px; color: var(--ink-faint); font-size: 11px; }
+
+@keyframes calm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes calm-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes calm-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 168, 107, 0.3); }
+  50% { box-shadow: 0 0 0 10px rgba(224, 168, 107, 0); }
+}
+
+.chip--calm { padding: 0 9px; }
+.chip--calm[aria-pressed="true"] { border-color: var(--clay); color: var(--clay); }

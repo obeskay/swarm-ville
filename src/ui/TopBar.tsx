@@ -1,4 +1,4 @@
-import { UserRound, Users, Video } from "lucide-react";
+import { UserRound, Users, Video, Focus } from "lucide-react";
 import type { ProviderInfo, Status } from "./shared";
 
 interface Props {
@@ -10,6 +10,8 @@ interface Props {
   inCall: boolean;
   avatarName: string;
   avatarAccent: string;
+  calm: boolean;
+  onToggleCalm: () => void;
   onOpenAvatar: () => void;
   onProviderChange: (provider: string) => void;
   onToggleCall: () => void;
@@ -24,6 +26,8 @@ export const TopBar = ({
   inCall,
   avatarName,
   avatarAccent,
+  calm,
+  onToggleCalm,
   onOpenAvatar,
   onProviderChange,
   onToggleCall
@@ -36,6 +40,16 @@ export const TopBar = ({
     </div>
 
     <div className="topbar__right">
+      <button
+        type="button"
+        className={`chip chip--calm ${calm ? "chip--live" : ""}`}
+        onClick={onToggleCalm}
+        title={calm ? "Leave calm mode" : "Calm mode — one thing at a time"}
+        aria-pressed={calm}
+      >
+        <Focus size={14} />
+      </button>
+
       <button type="button" className="avatar-chip" onClick={onOpenAvatar} title="Open avatar locker">
         <span className="avatar-chip__dot" style={{ background: avatarAccent }}><UserRound size={12} /></span>
         <span>{avatarName}</span>
