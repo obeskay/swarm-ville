@@ -265,6 +265,7 @@ export class World {
       this.resizeObserver.observe(canvas);
     }
 
+    document.addEventListener("visibilitychange", this.handleVisibility);
     this.lastTime = performance.now();
     this.frame = requestAnimationFrame(this.tick);
   }
@@ -339,6 +340,12 @@ export class World {
   // ── camera ─────────────────────────────────────────────────────────────────
 
   private resizeObserver: ResizeObserver | null = null;
+
+  /** Snap the clock on return so the first frame after a hidden stretch has a
+   *  sane dt instead of a jump. */
+  private handleVisibility = () => {
+    if (!document.hidden) this.lastTime = performance.now();
+  };
 
   private resize = () => {
     if (!this.canvas) return;
@@ -1369,6 +1376,14 @@ export class World {
 
   private tick = (time: number) => {
     if (this.disposed) return;
+    // A hidden tab (cmux dock on another workspace, background browser) still
+    // burns a RAF per frame. Skip the simulate+draw work while hidden and just
+    // keep the loop alive so it resumes the instant it is shown again.
+    if (typeof document !== "undefined" && document.hidden) {
+      this.lastTime = time;
+      this.frame = requestAnimationFrame(this.tick);
+      return;
+    }
     this.frame = requestAnimationFrame(this.tick);
     const dt = clamp((time - this.lastTime) / 1000, 0.001, 0.05);
     this.lastTime = time;
@@ -1446,6 +1461,7 @@ export class World {
     window.removeEventListener("resize", this.resize);
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    document.removeEventListener("visibilitychange", this.handleVisibility);
     this.agents.clear();
     this.peers.clear();
     this.arcs.length = 0;
