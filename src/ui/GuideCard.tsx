@@ -8,8 +8,8 @@ interface Props {
 
 export const GuideCard = ({ onCreate, onExplore, onClose }: Props) => (
   <section className="panel guide" aria-label="Getting started">
-    <header className="guide__head"><div><h2>Grow your next product</h2></div><button type="button" className="icon" onClick={onClose} aria-label="Close guide"><X size={14} /></button></header>
-    <p>Every idea becomes a plot. Five agents plan it, build it, review it and ship it.</p>
+    <header className="guide__head"><div><h2>Give the agents a job</h2></div><button type="button" className="icon" onClick={onClose} aria-label="Close guide"><X size={14} /></button></header>
+    <p>One objective. The loop plans, builds and reviews it.</p>
     <ol className="guide__steps">
       <li><span><MousePointer2 size={13} /></span><strong>Pick a plot</strong></li>
       <li><span><Sprout size={13} /></span><strong>Plant an idea</strong></li>

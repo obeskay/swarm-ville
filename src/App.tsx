@@ -70,10 +70,9 @@ const DEFAULT_AGENT_STATES: Record<string, AgentState> = {
   verifier: "idle",
   archivist: "idle"
 };
-const DEFAULT_PROJECTS: Project[] = [
-  { id: "project-launch", name: "Launch Garden", kind: "Web app", brief: "A focused launch workspace that keeps a small product moving.", stage: "build", progress: 68, color: "#e0a86b", createdAt: "2026-08-01T12:00:00.000Z" },
-  { id: "project-orbit", name: "Orbit API", kind: "Data tool", brief: "A simple service that turns product signals into useful next actions.", stage: "design", progress: 34, color: "#8fbf8a", createdAt: "2026-08-03T12:00:00.000Z" }
-];
+// Empty by default. Sample plots would imply the user already has work to do;
+// the village starts clean and the first plot is theirs to plant.
+const DEFAULT_PROJECTS: Project[] = [];
 const dayKey = () => {
   const now = new Date();
   return [now.getFullYear(), now.getMonth() + 1, now.getDate()].map((value, index) => index === 0 ? String(value) : String(value).padStart(2, "0")).join("-");
@@ -770,7 +769,7 @@ export default function App() {
 
     worldRef.current?.celebrateSpawn(targetX, targetZ, arch.accent);
     worldRef.current?.addSpeechBubble(arch.id, "¡Listo para cooperar!", 3.5, false, arch.accent);
-    showReward(`✨ ${arch.name} en el mapa`, `${arch.role} · ¡Listo para trabajar!`);
+    showReward(`${arch.name} en el mapa`, `${arch.role} · ¡Listo para trabajar!`);
   }, [showReward]);
 
   const summonAgent = useCallback((agentId: string) => {
@@ -781,7 +780,7 @@ export default function App() {
 
   const summonAll = useCallback(() => {
     worldRef.current?.summonAll();
-    showReward("📣 Reunión de la Aldea", "Todos los agentes se dirigen hacia ti.");
+    showReward("Reunión de la aldea", "Todos los agentes se dirigen hacia ti.");
   }, [showReward]);
 
   const handleAgentDropped = useCallback((agentId: string, worldX: number, worldZ: number, target: import("./types").WorldContextMenuTarget) => {
@@ -791,7 +790,7 @@ export default function App() {
       if (proj) {
         worldRef.current?.celebrateProject(proj.id);
         worldRef.current?.addSpeechBubble(agentId, "¡Cuidando plot!", 3.0, false, arch.accent);
-        showReward(`🌱 ${arch.name} asignado`, `Apoyando en «${proj.name}»`);
+        showReward(`${arch.name} asignado`, `Apoyando en «${proj.name}»`);
         tendProject(proj);
       }
     } else {

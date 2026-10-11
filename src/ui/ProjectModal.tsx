@@ -17,10 +17,10 @@ const kinds = [
 ] as const;
 
 const starterIdeas = [
-  { label: "🚀 Launch Garden", name: "Launch Garden", brief: "Workspace de lanzamiento rápido con iteraciones continuas.", kind: "web" as const },
-  { label: "⚡ Orbit Engine", name: "Orbit Engine", brief: "Pipeline en tiempo real para procesar eventos y métricas de producto.", kind: "data" as const },
-  { label: "💬 Concierge AI", name: "Concierge AI", brief: "Asistente conversacional multi-agente con soporte omnicanal.", kind: "agent" as const },
-  { label: "📱 Mobile Kit", name: "Mobile Kit", brief: "Componentes nativos y tokens de diseño ultra-responsivos.", kind: "mobile" as const }
+  { label: "Launch workspace", name: "Launch Garden", brief: "Workspace de lanzamiento rápido con iteraciones continuas.", kind: "web" as const },
+  { label: "Data pipeline", name: "Orbit Engine", brief: "Pipeline en tiempo real para procesar eventos y métricas de producto.", kind: "data" as const },
+  { label: "Concierge", name: "Concierge AI", brief: "Asistente conversacional multi-agente con soporte omnicanal.", kind: "agent" as const },
+  { label: "Mobile kit", name: "Mobile Kit", brief: "Componentes nativos y tokens de diseño ultra-responsivos.", kind: "mobile" as const }
 ];
 
 export const ProjectModal = ({ open, projects, onClose, onCreate }: Props) => {

@@ -51,7 +51,7 @@ export const AgentCard = ({
             </span>
           </div>
           <p className="agent-card__status-text">
-            {state === "working" ? "⚡ Trabajando en el loop activo..." : "🌱 En reposo · Listo para actuar"}
+            {state === "working" ? "Working" : "Idle"}
           </p>
         </div>
 

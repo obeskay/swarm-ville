@@ -376,7 +376,7 @@ export const ContextMenu = ({
               >
                 <Droplets size={13} />
                 <span>Tend Plot (+6% growth)</span>
-                <span className="context-menu__cost">−1 ⚡</span>
+                <span className="context-menu__cost">−1</span>
               </button>
 
               <button
@@ -390,7 +390,7 @@ export const ContextMenu = ({
               >
                 <FlaskConical size={13} />
                 <span>Fertilize Plot (+12% growth)</span>
-                <span className="context-menu__cost">−1 🧪</span>
+                <span className="context-menu__cost">−1</span>
               </button>
             </>
           )}
@@ -510,7 +510,7 @@ export const ContextMenu = ({
             }}
           >
             <Zap size={13} />
-            <span>Energy drink (+3 ⚡)</span>
+            <span>Energy drink (+3)</span>
             <span className="context-menu__cost">35c</span>
           </button>
 
@@ -524,7 +524,7 @@ export const ContextMenu = ({
             }}
           >
             <FlaskConical size={13} />
-            <span>Plant fertilizer (+1 🧪)</span>
+            <span>Fertilizer (+1)</span>
             <span className="context-menu__cost">45c</span>
           </button>
 

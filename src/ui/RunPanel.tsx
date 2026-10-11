@@ -65,7 +65,7 @@ const StepRow = ({
 
           <p className="step-card__preview">
             {isRunning ? (
-              <span className="pulse-text">⚡ Procesando fase activamente…</span>
+              <span className="pulse-text">Working…</span>
             ) : (
               summary.cleanPreview
             )}
@@ -132,7 +132,7 @@ export const RunPanel = ({ run, agents, onClose, onChatWithAgent }: Props) => {
       <header className="run-panel__header">
         <div className="run-panel__status-wrap">
           <span className={`run-status-badge run-status-badge--${run.status}`}>
-            {run.status === "running" ? "⚡ En Progreso" : run.status === "done" ? "✨ Completado" : run.status}
+            {run.status === "running" ? "Running" : run.status === "done" ? "Done" : run.status}
           </span>
           <span className="run-panel__duration">
             {formatMs(run.ms || Date.now() - run.startedAt)}

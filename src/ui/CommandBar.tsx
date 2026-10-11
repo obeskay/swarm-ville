@@ -49,7 +49,7 @@ export const CommandBar = ({ running, disabled, prefill, onStart, onStop }: Prop
         maxLength={600}
         disabled={running || disabled}
         onChange={(event) => setGoal(event.target.value)}
-        placeholder={running ? "The swarm is working…" : `Give your five agents an objective   ${shortcut}`}
+        placeholder={running ? "Working…" : `What should the agents build?   ${shortcut}`}
         aria-label="Objective for the swarm"
       />
       {running ? (

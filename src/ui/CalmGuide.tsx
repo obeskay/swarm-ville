@@ -41,13 +41,13 @@ export const CalmGuide = ({ hasProjects, onPlant, onExplore, onStart, onClose }:
         {step === "welcome" && (
           <>
             <span className="calm__icon"><Sparkles size={20} /></span>
-            <h1 className="calm__title">Your five agents need a job.</h1>
+            <h1 className="calm__title">Give the agents a job.</h1>
             <p className="calm__lede">
-              You write one objective. Atlas plans, Neo builds, Socrates reviews it,
-              Vanguard verifies, Alexandria files it. Watch it happen on the map.
+              One objective. The loop plans, builds and reviews it — and you watch
+              every step land on the map.
             </p>
             <button type="button" className="calm__cta" onClick={() => setStep(stepsFor(hasProjects)[1])}>
-              {hasProjects ? "Give them a job" : "Start"} <ArrowRight size={15} />
+              {hasProjects ? "Write an objective" : "Start"} <ArrowRight size={15} />
             </button>
           </>
         )}
@@ -56,7 +56,7 @@ export const CalmGuide = ({ hasProjects, onPlant, onExplore, onStart, onClose }:
           <>
             <span className="calm__icon"><Sprout size={20} /></span>
             <h1 className="calm__title">Where should it happen?</h1>
-            <p className="calm__lede">A plot is just a place to hold the work. Pick one and the village opens up.</p>
+            <p className="calm__lede">Pick a plot to hold the work.</p>
             <button type="button" className="calm__cta" onClick={onPlant}>
               <Sprout size={15} /> Plant my first product
             </button>
@@ -70,7 +70,7 @@ export const CalmGuide = ({ hasProjects, onPlant, onExplore, onStart, onClose }:
           <>
             <span className="calm__icon"><ListChecks size={20} /></span>
             <h1 className="calm__title">What should they build?</h1>
-            <p className="calm__lede">One sentence is enough. Be specific about the outcome you want.</p>
+            <p className="calm__lede">One sentence is enough.</p>
             <form
               className="calm__form"
               onSubmit={(event) => {
@@ -103,8 +103,7 @@ export const CalmGuide = ({ hasProjects, onPlant, onExplore, onStart, onClose }:
             <span className="calm__icon calm__icon--live"><Sparkles size={20} /></span>
             <h1 className="calm__title">They're on it.</h1>
             <p className="calm__lede">
-              The ring around an agent's name lights up while it thinks. You can close
-              this and watch, or click any agent to read what it's doing.
+              A lit ring means an agent is thinking. Click one to read what it's doing.
             </p>
             <button type="button" className="calm__cta" onClick={onClose}>
               <MousePointer2 size={15} /> Watch the village
