@@ -234,7 +234,7 @@ button {
   align-items: center;
   gap: 5px;
   color: var(--ink-faint);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   text-transform: uppercase;
 }
 
@@ -252,7 +252,7 @@ button {
 .brand__copy small {
   margin-top: 2px;
   color: var(--ink-faint);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -399,7 +399,7 @@ button {
 
 .command kbd {
   color: var(--ink-faint);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
 }
 
 /* ------------------------------------------------------------------- run -- */
@@ -457,7 +457,7 @@ button {
   align-items: center;
   gap: 4px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   font-style: normal;
   text-transform: uppercase;
 }
@@ -489,7 +489,7 @@ button {
   border-radius: 999px;
   background: rgba(242, 233, 220, 0.1);
   color: var(--ink-soft);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -532,7 +532,7 @@ button {
 .run__stats dt,
 .agent__stats dt {
   color: var(--ink-faint);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
@@ -598,7 +598,7 @@ button {
   align-items: center;
   gap: 2px;
   color: var(--clay);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   font-style: normal;
 }
 
@@ -613,7 +613,7 @@ button {
   gap: 7px;
   margin-left: auto;
   color: var(--ink-soft);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
 }
 
 .step__meta i {
@@ -640,7 +640,7 @@ button {
   border-radius: 9px;
   background: rgba(0, 0, 0, 0.28);
   color: var(--ink-soft);
-  font: 11px/1.6 var(--mono);
+  font: 12px/1.6 var(--mono);
   white-space: pre-wrap;
 }
 
@@ -656,7 +656,7 @@ button {
   padding-top: 10px;
   border-top: 1px solid var(--line);
   color: var(--ink-faint);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
 }
 
 /* ----------------------------------------------------------------- agent -- */
@@ -757,11 +757,11 @@ button {
 
 .log__item time {
   color: var(--ink-faint);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
 }
 
 .log__who {
-  font: 10px var(--mono);
+  font: 12px var(--mono);
 }
 
 .log__item p {
@@ -823,7 +823,7 @@ button {
 .map-controls small {
   margin: 0 7px 0 4px;
   color: var(--ink-faint);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   white-space: nowrap;
 }
 
@@ -876,7 +876,7 @@ button {
 .reward-toast__copy small {
   margin-top: 3px;
   color: rgba(255, 243, 214, 0.64);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
 }
 
 .reward-toast__tokens {
@@ -1028,7 +1028,7 @@ button {
 .garden__quest small,
 .project-form__label {
   color: var(--ink-faint);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -1046,7 +1046,7 @@ button {
   flex-wrap: wrap;
   gap: 10px;
   color: #f1c98c;
-  font: 500 10px var(--mono);
+  font: 500 12px var(--mono);
 }
 
 .garden__resources span {
@@ -1061,7 +1061,7 @@ button {
   gap: 4px;
   padding: 0;
   color: #a8d4cf;
-  font: 500 10px var(--mono);
+  font: 500 12px var(--mono);
 }
 
 .garden__energy--ready {
@@ -1097,7 +1097,7 @@ button {
 .garden__xp {
   margin: 9px 0 5px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .garden__xp span {
@@ -1171,7 +1171,7 @@ button {
   overflow: hidden;
   margin-top: 2px;
   color: #e0efd9;
-  font: 600 10px ui-sans-serif, system-ui, sans-serif;
+  font: 600 12px ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 0;
   text-overflow: ellipsis;
   text-transform: none;
@@ -1197,7 +1197,7 @@ button {
 .garden__plots-head {
   margin-bottom: 4px;
   color: var(--ink-soft);
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
 }
 
 .garden__plots-head > span:first-child {
@@ -1275,7 +1275,7 @@ button {
 .garden__plot small {
   margin-top: 2px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .garden__plot > b {
@@ -1319,7 +1319,7 @@ button {
 
 .guide__head small {
   color: var(--sky);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.11em;
 }
 
@@ -1429,7 +1429,7 @@ button {
 .plot-detail__progress small,
 .plot-detail__note {
   color: var(--ink-faint);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1509,7 +1509,7 @@ button {
   align-items: center;
   gap: 5px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .plot-detail__stages li > span {
@@ -1544,7 +1544,7 @@ button {
 
 .plot-detail__action strong {
   margin-left: auto;
-  font: 700 10px var(--mono);
+  font: 700 12px var(--mono);
 }
 
 .plot-detail__care {
@@ -1570,7 +1570,7 @@ button {
 
 .plot-detail__care small {
   color: var(--sky);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1579,7 +1579,7 @@ button {
   margin-top: 3px;
   overflow: hidden;
   color: var(--ink-soft);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1596,7 +1596,7 @@ button {
   gap: 2px;
   margin-left: 2px;
   color: var(--sky);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .plot-detail__note {
@@ -1659,13 +1659,13 @@ button {
 .release-card__head small {
   margin-top: 2px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .release-card__status {
   gap: 3px;
   color: var(--sage);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   text-transform: uppercase;
 }
 
@@ -1676,13 +1676,13 @@ button {
   margin: 8px 0 6px;
   overflow: hidden;
   color: var(--ink-soft);
-  font: 9px/1.45 var(--mono);
+  font: 12px/1.45 var(--mono);
 }
 
 .release-card__meta {
   justify-content: space-between;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .release-card__actions {
@@ -1752,7 +1752,7 @@ button {
 
 .modal__head small {
   color: var(--ink-faint);
-  font: 500 8px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
@@ -1784,7 +1784,7 @@ button {
   display: block;
   margin: 12px 0 6px;
   color: var(--ink-faint);
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1895,7 +1895,7 @@ button {
 .kind-grid small {
   margin-top: 3px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .kind-grid button > svg:last-child {
@@ -1931,7 +1931,7 @@ button {
 .project-flow small {
   margin-top: 2px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .modal__actions {
@@ -1985,7 +1985,7 @@ button {
   padding-top: 13px;
   border-top: 1px solid var(--line);
   color: var(--ink-soft);
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
 }
 
 .project-existing > div:first-child {
@@ -2042,7 +2042,7 @@ button {
   border-bottom: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.18);
   color: var(--ink-soft);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
 }
 
 .workspace-toolbar > span,
@@ -2111,7 +2111,7 @@ button {
   justify-content: space-between;
   margin: 0 2px 6px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -2138,7 +2138,7 @@ button {
   border-radius: 7px;
   background: rgba(0, 0, 0, 0.2);
   color: var(--ink-soft);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
 }
 
 .workspace-new-file input:focus {
@@ -2181,14 +2181,14 @@ button {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .workspace-files button small {
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .workspace-code {
@@ -2199,7 +2199,7 @@ button {
   overflow: auto;
   background: #171614;
   color: #e4d9c8;
-  font: 11px/1.7 var(--mono);
+  font: 12px/1.7 var(--mono);
   tab-size: 2;
   white-space: pre;
 }
@@ -2220,7 +2220,7 @@ button {
 .workspace-dirty {
   margin-left: 7px;
   color: var(--clay);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   font-style: normal;
   text-transform: uppercase;
 }
@@ -2279,7 +2279,7 @@ button {
 
 .library-stats small {
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   text-transform: uppercase;
 }
 
@@ -2335,7 +2335,7 @@ button {
 .library-row__copy small {
   margin-top: 2px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .library-row__copy i {
@@ -2382,7 +2382,7 @@ button {
 }
 
 .library-empty small {
-  font: 9px var(--mono);
+  font: 11px var(--mono);
 }
 
 /* ------------------------------------------------------------- quest board -- */
@@ -2397,7 +2397,7 @@ button {
   gap: 10px;
   margin-top: 16px;
   color: var(--sage);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
 }
 
 .quest-progress > span {
@@ -2492,7 +2492,7 @@ button {
   gap: 8px;
   margin-top: 7px;
   color: var(--clay);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
 }
 
 .quest-row__reward span {
@@ -2537,7 +2537,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--ink-soft);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
 }
 
 .market-wallet span:first-child {
@@ -2610,7 +2610,7 @@ button {
 .market-item__copy em {
   margin-top: 5px;
   color: var(--sage);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   font-style: normal;
 }
 
@@ -2632,7 +2632,7 @@ button {
 .market-note {
   margin: 12px 0 0;
   color: var(--ink-faint);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
 }
 
 /* ------------------------------------------------------------- avatar locker -- */
@@ -2769,7 +2769,7 @@ button {
   gap: 5px;
   margin: 12px 0 6px;
   color: var(--ink-faint);
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -2852,7 +2852,7 @@ button {
 .log__toggle em {
   margin-left: 6px;
   color: var(--ink-faint);
-  font: 500 10px var(--mono);
+  font: 500 12px var(--mono);
   font-style: normal;
 }
 
@@ -3060,13 +3060,13 @@ button {
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.35);
   color: var(--ink-faint);
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
   border: 1px solid var(--line);
 }
 
 .context-menu__cost {
   color: var(--amber);
-  font: 600 10px var(--mono);
+  font: 600 12px var(--mono);
 }
 
 .status-dot {
@@ -3101,7 +3101,7 @@ button {
   display: block;
   margin-bottom: 4px;
   color: var(--ink-faint);
-  font: 8px var(--mono);
+  font: 11px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -3121,7 +3121,7 @@ button {
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.25);
   color: var(--ink-soft);
-  font: 9px var(--mono);
+  font: 11px var(--mono);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -3175,7 +3175,7 @@ button {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3216,7 +3216,7 @@ button {
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.35);
   color: var(--ink);
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   outline: none;
 }
 
@@ -3252,7 +3252,7 @@ button {
   flex-direction: column;
   gap: 8px;
   max-width: 480px;
-  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: background-color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 /* Below this width the bottom edge belongs to the command bar, the map
@@ -3289,7 +3289,7 @@ button {
 }
 
 .dock-count-badge {
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
   color: var(--ink-faint);
   background: rgba(255, 255, 255, 0.06);
   padding: 2px 6px;
@@ -3314,7 +3314,7 @@ button {
   color: var(--clay);
   font-size: 12px;
   font-weight: 600;
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .dock-summon-all-btn:hover {
@@ -3363,7 +3363,7 @@ button {
   cursor: grab;
   user-select: none;
   touch-action: none;
-  transition: all 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .spawner-agent-card:hover {
@@ -3431,7 +3431,7 @@ button {
   place-items: center;
   font-size: 13px;
   font-weight: bold;
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .spawner-card__quick-spawn:hover {
@@ -3511,7 +3511,7 @@ button {
 }
 
 .agent-card__role-badge {
-  font: 600 9px var(--mono);
+  font: 600 11px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 2px 6px;
@@ -3544,7 +3544,7 @@ button {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(224, 168, 107, 0.2);
   color: var(--ink);
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .agent-card__action-btn:hover {
@@ -3584,7 +3584,7 @@ button {
 
 .verdict-pill {
   margin-left: auto;
-  font: 700 9px var(--mono);
+  font: 700 11px var(--mono);
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -3640,7 +3640,7 @@ button {
 }
 
 .agent-card__stats-compact dt {
-  font: 500 9px var(--mono);
+  font: 500 11px var(--mono);
   color: var(--ink-faint);
   text-transform: uppercase;
 }
@@ -3719,7 +3719,7 @@ button {
 }
 
 .agent-chat-modal__badge {
-  font: 600 9px var(--mono);
+  font: 600 11px var(--mono);
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: 6px;
@@ -3792,7 +3792,7 @@ button {
   border: 1px solid rgba(224, 168, 107, 0.16);
   color: var(--ink-soft);
   font-size: 12px;
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
   white-space: nowrap;
 }
 
@@ -3921,7 +3921,7 @@ button {
   border-radius: 10px;
   background: var(--clay);
   color: #16140f;
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .agent-chat-modal__send-btn:disabled {
@@ -3960,7 +3960,7 @@ button {
 }
 
 .run-status-badge {
-  font: 700 9px var(--mono);
+  font: 700 11px var(--mono);
   text-transform: uppercase;
   padding: 3px 8px;
   border-radius: 99px;
@@ -3980,7 +3980,7 @@ button {
 }
 
 .run-panel__duration {
-  font: 500 11px var(--mono);
+  font: 500 12px var(--mono);
   color: var(--ink-faint);
 }
 
@@ -4021,7 +4021,7 @@ button {
   border: 1px solid rgba(224, 168, 107, 0.12);
   border-radius: 10px;
   overflow: hidden;
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .step-card-aesthetic:hover {
@@ -4062,7 +4062,7 @@ button {
 }
 
 .step-card__revision-badge {
-  font: 600 8px var(--mono);
+  font: 600 11px var(--mono);
   background: rgba(217, 136, 120, 0.25);
   color: var(--rust);
   padding: 1px 4px;
@@ -4099,7 +4099,7 @@ button {
 }
 
 .step-card__verdict-chip {
-  font: 700 8px var(--mono);
+  font: 700 11px var(--mono);
   padding: 2px 5px;
   border-radius: 4px;
   display: inline-flex;
@@ -4119,7 +4119,7 @@ button {
 }
 
 .step-card__time {
-  font: 500 10px var(--mono);
+  font: 500 12px var(--mono);
   color: var(--ink-faint);
 }
 
@@ -4186,7 +4186,7 @@ button {
   padding: 8px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 6px;
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   color: var(--ink-soft);
   max-height: 140px;
   overflow-y: auto;
@@ -4195,7 +4195,7 @@ button {
 .run-panel__foot {
   display: flex;
   justify-content: space-between;
-  font: 500 10px var(--mono);
+  font: 500 12px var(--mono);
   color: var(--ink-faint);
   border-top: 1px solid rgba(224, 168, 107, 0.1);
   padding-top: 8px;
@@ -4210,7 +4210,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font: 600 9px var(--mono);
+  font: 600 11px var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--clay);
@@ -4241,7 +4241,7 @@ button {
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-soft);
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .starter-seed-pill:hover {
@@ -4282,7 +4282,7 @@ button {
   border: 1px solid rgba(224, 168, 107, 0.15);
   font-size: 12px;
   color: var(--ink-soft);
-  transition: all 0.15s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
 
 .kind-pill.is-selected {
